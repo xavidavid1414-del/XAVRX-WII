@@ -90,4 +90,17 @@ int main() {
     memory.write32_be(100, xform(3, 13, 4, 24));
     assert(cpu.step());
     assert(cpu.state().gpr[13] == 0u);
+
+    // Arithmetic shifts preserve the sign bit for negative values.
+    auto arithmetic_state = cpu.state();
+    arithmetic_state.pc = 104;
+    arithmetic_state.gpr[3] = 0xfffffff0u; // -16
+    arithmetic_state.gpr[4] = 2u;
+    cpu.set_state(arithmetic_state);
+    memory.write32_be(104, xform(3, 15, 4, 792)); // sraw r15,r3,r4
+    memory.write32_be(108, xform(3, 16, 3, 824)); // srawi r16,r3,3
+    assert(cpu.step());
+    assert(cpu.state().gpr[15] == 0xfffffffcu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[16] == 0xfffffffeu);
 }
