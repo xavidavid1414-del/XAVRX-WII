@@ -366,6 +366,24 @@ int main() {
     assert(cpu.state().gpr[6] == 2u);
     assert((cpu.state().xer & (1u << 29)) == 0u);
 
+    // Rc variants of arithmetic instructions update CR0 and preserve XER[SO].
+    auto record_arithmetic_state = cpu.state();
+    record_arithmetic_state.pc = 16;
+    record_arithmetic_state.gpr[3] = 0xffffffffu;
+    record_arithmetic_state.gpr[4] = 1u;
+    record_arithmetic_state.xer = 1u << 31; // SO
+    record_arithmetic_state.cr = 0x01234567u;
+    cpu.set_state(record_arithmetic_state);
+    memory.write32_be(16, xform(5, 3, 4, 266) | 1u); // add. r5,r3,r4
+    memory.write32_be(20, xform(6, 3, 4, 40) | 1u);  // subf. r6,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == 0u);
+    assert((cpu.state().cr >> 28) == 3u); // EQ | SO
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 2u);
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+
     // adde and subfe consume XER[CA] and update the carry-out bit.
     auto extended_arithmetic_state = cpu.state();
     extended_arithmetic_state.pc = 8;
