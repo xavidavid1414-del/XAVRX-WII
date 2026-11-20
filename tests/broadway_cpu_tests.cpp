@@ -121,4 +121,22 @@ int main() {
     assert(cpu.state().gpr[17] == 0x00567800u);
     assert(cpu.step());
     assert(cpu.state().gpr[18] == 0x30000002u);
+
+    // rlwimi preserves destination bits outside the selected mask.
+    auto insert_state = cpu.state();
+    insert_state.gpr[19] = 0xaaaaaaaau;
+    insert_state.gpr[20] = 0xaaaaaaaau;
+    cpu.set_state(insert_state);
+    const auto rlwimi = [](std::uint32_t rs, std::uint32_t ra,
+                           std::uint32_t sh, std::uint32_t mb,
+                           std::uint32_t me) {
+        return (20u << 26) | (rs << 21) | (ra << 16) |
+               (sh << 11) | (mb << 6) | (me << 1);
+    };
+    memory.write32_be(120, rlwimi(3, 19, 8, 8, 23));
+    memory.write32_be(124, rlwimi(3, 20, 8, 28, 3));
+    assert(cpu.step());
+    assert(cpu.state().gpr[19] == 0xaa3456aau);
+    assert(cpu.step());
+    assert(cpu.state().gpr[20] == 0x3aaaaaa2u);
 }
