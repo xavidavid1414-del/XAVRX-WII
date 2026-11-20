@@ -156,6 +156,27 @@ bool BroadwayCpu::step() {
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
         switch (xo) {
+        case 0: // cmp: compare signed 32-bit registers
+        case 32: { // cmpl: compare unsigned 32-bit registers
+            if ((instruction & (1u << 21)) != 0) return false;
+            const std::uint32_t field = (instruction >> 23) & 7u;
+            bool less = false;
+            bool greater = false;
+            if (xo == 0) {
+                const std::int32_t signed_a = static_cast<std::int32_t>(a);
+                const std::int32_t signed_b = static_cast<std::int32_t>(b);
+                less = signed_a < signed_b;
+                greater = signed_a > signed_b;
+            } else {
+                less = a < b;
+                greater = a > b;
+            }
+            const std::uint32_t result = less ? 8u : greater ? 4u : 2u;
+            const std::uint32_t shift = 28u - (field * 4u);
+            const std::uint32_t mask = 0xfu << shift;
+            state_.cr = (state_.cr & ~mask) | (result << shift);
+            break;
+        }
         case 266: // add
             state_.gpr[rt] = a + b;
             break;
