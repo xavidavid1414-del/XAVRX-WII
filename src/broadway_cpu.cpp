@@ -48,6 +48,16 @@ bool BroadwayCpu::step() {
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
 
     switch (opcode) {
+    case 20: { // rlwimi: rotate left, then insert selected bits into RA
+        const std::uint32_t rs = rt;
+        const std::uint32_t shift = (instruction >> 11) & 31u;
+        const std::uint32_t mb = (instruction >> 6) & 31u;
+        const std::uint32_t me = (instruction >> 1) & 31u;
+        const std::uint32_t mask = ppc_mask(mb, me);
+        const std::uint32_t rotated = rotate_left_32(state_.gpr[rs], shift);
+        state_.gpr[ra] = (state_.gpr[ra] & ~mask) | (rotated & mask);
+        break;
+    }
     case 21: { // rlwinm: rotate left word immediate then AND with mask
         const std::uint32_t rs = rt;
         const std::uint32_t shift = (instruction >> 11) & 31u;
