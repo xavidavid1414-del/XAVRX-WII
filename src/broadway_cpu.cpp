@@ -236,6 +236,10 @@ bool BroadwayCpu::step() {
         case 266: // add
             state_.gpr[rt] = a + b;
             break;
+        case 235: // mullw: multiply low 32 bits
+            state_.gpr[rt] = static_cast<std::uint32_t>(
+                static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
+            break;
         case 40: // subf: RT = RB - RA
             state_.gpr[rt] = b - a;
             break;
