@@ -292,7 +292,7 @@ int main() {
     multiply_state.gpr[3] = 0x10000u;
     multiply_state.gpr[4] = 0x10001u;
     cpu.set_state(multiply_state);
-    memory.write32_be(216, xform(3, 9, 4, 235)); // mullw r9,r3,r4
+    memory.write32_be(216, xform(9, 3, 4, 235)); // mullw r9,r3,r4
     assert(cpu.step());
     assert(cpu.state().gpr[9] == 0x00010000u);
 
@@ -302,8 +302,8 @@ int main() {
     high_multiply_state.gpr[3] = 0x80000000u;
     high_multiply_state.gpr[4] = 4u;
     cpu.set_state(high_multiply_state);
-    memory.write32_be(220, xform(3, 10, 4, 75)); // mulhw r10,r3,r4
-    memory.write32_be(224, xform(3, 11, 4, 11)); // mulhwu r11,r3,r4
+    memory.write32_be(220, xform(10, 3, 4, 75)); // mulhw r10,r3,r4
+    memory.write32_be(224, xform(11, 3, 4, 11)); // mulhwu r11,r3,r4
     assert(cpu.step());
     assert(cpu.state().gpr[10] == 0xfffffffeu);
     assert(cpu.step());
