@@ -139,4 +139,9 @@ int main() {
     assert(cpu.state().gpr[19] == 0xaa3456aau);
     assert(cpu.step());
     assert(cpu.state().gpr[20] == 0x3aaaaaa2u);
+
+    // xoris XORs the immediate in the upper 16 bits.
+    memory.write32_be(128, (27u << 26) | (3u << 21) | (21u << 16) | 0x00ffu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[21] == 0x12cb5678u);
 }
