@@ -290,7 +290,8 @@ bool BroadwayCpu::execute_one() {
                              : state_.pc + static_cast<std::uint32_t>(displacement);
         return true;
     }
-    case 63: { // Foundational floating-point instructions
+    case 59: // Single-precision floating-point arithmetic
+    case 63: { // Double-precision floating-point and conversion instructions
         const std::uint32_t frt = rt;
         const std::uint32_t fra = ra;
         const std::uint32_t frb = (instruction >> 11) & 31u;
@@ -307,12 +308,23 @@ bool BroadwayCpu::execute_one() {
         if (a_xo == 18u || a_xo == 20u || a_xo == 21u || a_xo == 25u) {
             const double rhs = a_xo == 25u
                 ? std::bit_cast<double>(state_.fpr[frc]) : b;
-            const double value = a_xo == 18u ? a / rhs
-                : a_xo == 20u ? a - rhs
-                : a_xo == 21u ? a + rhs : a * rhs;
-            write_fpr(value);
+            if (opcode == 59u) {
+                const float lhs_single = static_cast<float>(a);
+                const float rhs_single = static_cast<float>(rhs);
+                const float value_single = a_xo == 18u ? lhs_single / rhs_single
+                    : a_xo == 20u ? lhs_single - rhs_single
+                    : a_xo == 21u ? lhs_single + rhs_single
+                    : lhs_single * rhs_single;
+                write_fpr(static_cast<double>(value_single));
+            } else {
+                const double value = a_xo == 18u ? a / rhs
+                    : a_xo == 20u ? a - rhs
+                    : a_xo == 21u ? a + rhs : a * rhs;
+                write_fpr(value);
+            }
             break;
         }
+        if (opcode == 59u) return false;
         switch (xo) {
         case 0:   // fcmpu: unordered compare into selected CR field
         case 32: { // fcmpo: ordered compare (basic compare result)
@@ -486,9 +498,12 @@ bool BroadwayCpu::execute_one() {
             state_.gpr[rt] = 0u - a;
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
-        case 202: { // addze: RA + XER[CA]
-            const std::uint32_t carry_in = (state_.xer >> 29) & 1u;
-            state_.gpr[rt] = a + carry_in;
+        case 202: { // addze: RA + XER[CA], recording carry-out
+            const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
+            const std::uint64_t sum = static_cast<std::uint64_t>(a) + carry_in;
+            state_.gpr[rt] = static_cast<std::uint32_t>(sum);
+            state_.xer = (state_.xer & ~(1u << 29)) |
+                         ((sum >> 32) != 0 ? (1u << 29) : 0u);
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
