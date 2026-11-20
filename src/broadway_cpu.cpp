@@ -56,14 +56,38 @@ bool BroadwayCpu::step() {
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
 
     switch (opcode) {
-    case 19: { // mcrf: move one condition-register field
-        const std::uint32_t bf = (instruction >> 23) & 7u;
-        const std::uint32_t bfa = (instruction >> 18) & 7u;
-        const std::uint32_t destination_shift = 28u - bf * 4u;
-        const std::uint32_t source_shift = 28u - bfa * 4u;
-        const std::uint32_t field = (state_.cr >> source_shift) & 0xfu;
-        const std::uint32_t mask = 0xfu << destination_shift;
-        state_.cr = (state_.cr & ~mask) | (field << destination_shift);
+    case 19: { // CR logical operations and mcrf
+        const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
+        if (xo == 0) { // mcrf: move one condition-register field
+            const std::uint32_t bf = (instruction >> 23) & 7u;
+            const std::uint32_t bfa = (instruction >> 18) & 7u;
+            const std::uint32_t destination_shift = 28u - bf * 4u;
+            const std::uint32_t source_shift = 28u - bfa * 4u;
+            const std::uint32_t field = (state_.cr >> source_shift) & 0xfu;
+            const std::uint32_t mask = 0xfu << destination_shift;
+            state_.cr = (state_.cr & ~mask) | (field << destination_shift);
+            break;
+        }
+
+        const std::uint32_t bt = (instruction >> 21) & 31u;
+        const std::uint32_t ba = (instruction >> 16) & 31u;
+        const std::uint32_t bb = (instruction >> 11) & 31u;
+        const bool a_bit = ((state_.cr >> (31u - ba)) & 1u) != 0;
+        const bool b_bit = ((state_.cr >> (31u - bb)) & 1u) != 0;
+        bool result = false;
+        switch (xo) {
+        case 33:  result = !(a_bit || b_bit); break; // crnor
+        case 129: result = a_bit && !b_bit; break;   // crandc
+        case 193: result = a_bit != b_bit; break;    // crxor
+        case 225: result = !(a_bit && b_bit); break; // crnand
+        case 257: result = a_bit && b_bit; break;    // crand
+        case 289: result = a_bit == b_bit; break;    // creqv
+        case 417: result = a_bit || !b_bit; break;   // crorc
+        case 449: result = a_bit || b_bit; break;    // cror
+        default: return false;
+        }
+        const std::uint32_t mask = 1u << (31u - bt);
+        state_.cr = result ? (state_.cr | mask) : (state_.cr & ~mask);
         break;
     }
     case 20: { // rlwimi: rotate left, then insert selected bits into RA
