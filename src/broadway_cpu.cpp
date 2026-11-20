@@ -54,6 +54,16 @@ bool BroadwayCpu::step() {
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
 
     switch (opcode) {
+    case 19: { // mcrf: move one condition-register field
+        const std::uint32_t bf = (instruction >> 23) & 7u;
+        const std::uint32_t bfa = (instruction >> 18) & 7u;
+        const std::uint32_t destination_shift = 28u - bf * 4u;
+        const std::uint32_t source_shift = 28u - bfa * 4u;
+        const std::uint32_t field = (state_.cr >> source_shift) & 0xfu;
+        const std::uint32_t mask = 0xfu << destination_shift;
+        state_.cr = (state_.cr & ~mask) | (field << destination_shift);
+        break;
+    }
     case 20: { // rlwimi: rotate left, then insert selected bits into RA
         const std::uint32_t rs = rt;
         const std::uint32_t shift = (instruction >> 11) & 31u;
@@ -193,6 +203,20 @@ bool BroadwayCpu::step() {
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
         switch (xo) {
+        case 19: // mfcr: move condition register to a GPR
+            state_.gpr[rt] = state_.cr;
+            break;
+        case 144: { // mtcrf: move selected GPR fields into the condition register
+            const std::uint32_t fxm = (instruction >> 12) & 0xffu;
+            const std::uint32_t source = state_.gpr[rs];
+            for (std::uint32_t field = 0; field < 8; ++field) {
+                if ((fxm & (1u << (7u - field))) == 0) continue;
+                const std::uint32_t shift = 28u - field * 4u;
+                const std::uint32_t mask = 0xfu << shift;
+                state_.cr = (state_.cr & ~mask) | (source & mask);
+            }
+            break;
+        }
         case 528: { // bctr: conditional branch to CTR
             const std::uint32_t bo = rt;
             const std::uint32_t bi = ra;
