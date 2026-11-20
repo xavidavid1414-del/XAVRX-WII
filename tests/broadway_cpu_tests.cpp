@@ -73,6 +73,20 @@ int main() {
     assert(cpu.state().gpr[11] == 0xfffff00fu);
     assert(cpu.step());
     assert(cpu.state().gpr[12] == 0xfffffff0u);
+    // Record-form logical instructions update CR0, including XER[SO].
+    auto record_logic_state = cpu.state();
+    record_logic_state.pc = 24;
+    record_logic_state.gpr[3] = 0x80000000u;
+    record_logic_state.gpr[4] = 0u;
+    record_logic_state.xer |= 1u << 31;
+    record_logic_state.cr = 0x01234567u;
+    cpu.set_state(record_logic_state);
+    memory.write32_be(24, xform(3, 8, 4, 28) | 1u); // and. r8,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[8] == 0u);
+    assert((cpu.state().cr >> 28) == 3u); // EQ | SO
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+
     // Immediate multiply and XOR.
     memory.write32_be(84, (7u << 26) | (11u << 21) | (3u << 16) | 0xfffeu);
     memory.write32_be(88, (26u << 26) | (3u << 21) | (12u << 16) | 0x00ffu);
