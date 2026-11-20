@@ -786,5 +786,45 @@ int main() {
     assert(cpu.step());
     assert(memory.read32_be(364) == std::bit_cast<std::uint32_t>(1.25f));
 
+    // Structured CPU exceptions: fetch, illegal instruction and data faults.
+    auto exception_state = cpu.state();
+    exception_state.pc = 401u;
+    cpu.set_state(exception_state);
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().pc == 401u);
+
+    exception_state = cpu.state();
+    exception_state.pc = 512u;
+    cpu.set_state(exception_state);
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::InstructionStorage);
+
+    exception_state = cpu.state();
+    exception_state.pc = 384u;
+    cpu.set_state(exception_state);
+    memory.write32_be(384, 0u); // Primary opcode zero is unsupported.
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+    assert(cpu.state().pc == 384u);
+
+    exception_state = cpu.state();
+    exception_state.pc = 388u;
+    exception_state.gpr[3] = 508u;
+    cpu.set_state(exception_state);
+    memory.write32_be(388, (32u << 26) | (10u << 21) | (3u << 16)); // lwz r10,0(r3)
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
+    assert(cpu.state().pc == 388u);
+
+    exception_state = cpu.state();
+    exception_state.pc = 392u;
+    exception_state.gpr[3] = 321u;
+    cpu.set_state(exception_state);
+    memory.write32_be(392, (32u << 26) | (10u << 21) | (3u << 16)); // unaligned lwz
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().pc == 392u);
+
     return 0;
 }
