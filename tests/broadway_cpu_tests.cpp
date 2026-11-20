@@ -832,7 +832,7 @@ int main() {
     memory.write32_be(404, (37u << 26) | (6u << 21) | (4u << 16) | 8u); // stwu r6,8(r4)
     memory.write32_be(408, (49u << 26) | (7u << 21) | (3u << 16) | 4u); // lfsu f7,4(r3)
     memory.write32_be(412, (53u << 26) | (1u << 21) | (4u << 16) | 4u); // stfsu f1,4(r4)
-    memory.write32_be(416, (51u << 26) | (8u << 21) | (3u << 16) | 12u); // lfdu f8,12(r3)
+    memory.write32_be(416, (51u << 26) | (8u << 21) | (3u << 16) | 4u); // lfdu f8,4(r3)
     memory.write32_be(420, (55u << 26) | (2u << 21) | (4u << 16) | 4u); // stfdu f2,4(r4)
     assert(cpu.step());
     assert(cpu.state().gpr[5] == 0x12345678u);
@@ -848,7 +848,7 @@ int main() {
     assert(cpu.state().gpr[4] == 476u);
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[8]) == 1.5);
-    assert(cpu.state().gpr[3] == 472u);
+    assert(cpu.state().gpr[3] == 464u);
     assert(cpu.step());
     assert(memory.read64_be(480) == std::bit_cast<std::uint64_t>(1.25));
     assert(cpu.state().gpr[4] == 480u);
