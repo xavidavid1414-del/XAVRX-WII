@@ -257,6 +257,24 @@ bool BroadwayCpu::step() {
         case 476: // nand
             state_.gpr[ra] = ~(state_.gpr[rs] & b);
             break;
+        case 26: { // cntlzw: count leading zero bits
+            std::uint32_t value = state_.gpr[rs];
+            std::uint32_t count = 0;
+            while (count < 32u && (value & 0x80000000u) == 0) {
+                ++count;
+                value <<= 1;
+            }
+            state_.gpr[ra] = count;
+            break;
+        }
+        case 954: // extsb: sign-extend byte
+            state_.gpr[ra] = static_cast<std::uint32_t>(
+                static_cast<std::int32_t>(static_cast<std::int8_t>(state_.gpr[rs])));
+            break;
+        case 922: // extsh: sign-extend halfword
+            state_.gpr[ra] = static_cast<std::uint32_t>(
+                static_cast<std::int32_t>(static_cast<std::int16_t>(state_.gpr[rs])));
+            break;
         case 24: // slw: shift left word
             state_.gpr[ra] = (b & 0x20u) != 0 ? 0u : state_.gpr[rs] << (b & 0x3fu);
             break;
