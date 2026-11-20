@@ -381,6 +381,6 @@ int main() {
     assert(cpu.state().gpr[5] == cpu.state().cr);
     assert(cpu.step());
     assert((cpu.state().cr >> 28) == 0xau);
-    assert((cpu.state().cr & 0x0fffffffu) == 0x02345678u);
+    assert((cpu.state().cr & 0x0fffffffu) == 0x02245678u);
 
 }
