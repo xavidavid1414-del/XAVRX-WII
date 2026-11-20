@@ -366,6 +366,24 @@ int main() {
     assert(cpu.state().gpr[6] == 2u);
     assert((cpu.state().xer & (1u << 29)) == 0u);
 
+    // adde and subfe consume XER[CA] and update the carry-out bit.
+    auto extended_arithmetic_state = cpu.state();
+    extended_arithmetic_state.pc = 8;
+    extended_arithmetic_state.gpr[3] = 0xffffffffu;
+    extended_arithmetic_state.gpr[4] = 0u;
+    extended_arithmetic_state.gpr[7] = 5u;
+    extended_arithmetic_state.gpr[8] = 10u;
+    extended_arithmetic_state.xer |= 1u << 29;
+    cpu.set_state(extended_arithmetic_state);
+    memory.write32_be(8, xform(9, 3, 4, 138));  // adde r9,r3,r4
+    memory.write32_be(12, xform(10, 7, 8, 136)); // subfe r10,r7,r8
+    assert(cpu.step());
+    assert(cpu.state().gpr[9] == 0u);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[10] == 5u);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+
     // mcrf copies a selected CR field; mfcr reads the full CR into a GPR.
     auto cr_transfer_state = cpu.state();
     cr_transfer_state.pc = 244;
