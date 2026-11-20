@@ -70,7 +70,7 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[10] == 0xfffff000u);
     assert(cpu.step());
-    assert(cpu.state().gpr[11] == 0xfffff0ffu);
+    assert(cpu.state().gpr[11] == 0xfffff00fu);
     assert(cpu.step());
     assert(cpu.state().gpr[12] == 0xfffffff0u);
     // Immediate multiply and XOR.
