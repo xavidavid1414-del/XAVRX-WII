@@ -378,6 +378,16 @@ bool BroadwayCpu::step() {
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
+        case 232: { // subfme: ~RA + XER[CA] - 1, recording carry-out
+            const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
+            const std::uint64_t sum = static_cast<std::uint64_t>(~a) +
+                                      0xffffffffu + carry_in;
+            state_.gpr[rt] = static_cast<std::uint32_t>(sum);
+            state_.xer = (state_.xer & ~(1u << 29)) |
+                         ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
+            break;
+        }
         case 234: { // addme: RA - 1 + XER[CA], recording carry-out
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum = static_cast<std::uint64_t>(a) +
