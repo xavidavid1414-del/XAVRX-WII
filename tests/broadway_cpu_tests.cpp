@@ -173,4 +173,24 @@ int main() {
     assert(cpu.state().gpr[3] == 0xffffffffu);
     assert(cpu.step());
     assert(((cpu.state().cr >> 24) & 0xfu) == 4u); // CR1: GT
+
+    // cmp and cmpl compare GPRs and update the selected CR field.
+    auto register_compare_state = cpu.state();
+    register_compare_state.pc = 148;
+    register_compare_state.gpr[5] = 0xffffffffu;
+    register_compare_state.gpr[6] = 1u;
+    register_compare_state.cr = 0x01234567u;
+    cpu.set_state(register_compare_state);
+    const auto compare_xform = [](std::uint32_t bf, std::uint32_t ra,
+                                  std::uint32_t rb, std::uint32_t xo) {
+        return (31u << 26) | (bf << 23) | (ra << 16) |
+               (rb << 11) | (xo << 1);
+    };
+    memory.write32_be(148, compare_xform(3, 5, 6, 0));  // cmp cr3,r5,r6
+    memory.write32_be(152, compare_xform(4, 5, 6, 32)); // cmpl cr4,r5,r6
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 16) & 0xfu) == 8u); // signed -1 < 1
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 12) & 0xfu) == 4u); // unsigned max > 1
+    assert(cpu.state().gpr[5] == 0xffffffffu);
 }
