@@ -144,4 +144,19 @@ int main() {
     memory.write32_be(128, (27u << 26) | (3u << 21) | (21u << 16) | 0x00ffu);
     assert(cpu.step());
     assert(cpu.state().gpr[21] == 0x12cb5678u);
+
+    // andi. and andis. update CR0 from the logical result.
+    auto logical_state = cpu.state();
+    logical_state.gpr[4] = 0xf2345678u;
+    logical_state.cr = 0x01234567u;
+    cpu.set_state(logical_state);
+    memory.write32_be(132, (28u << 26) | (3u << 21) | (22u << 16) | 0x00ffu);
+    memory.write32_be(136, (29u << 26) | (4u << 21) | (23u << 16) | 0x8000u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[22] == 0x78u);
+    assert((cpu.state().cr >> 28) == 4u); // GT
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[23] == 0x80000000u);
+    assert((cpu.state().cr >> 28) == 8u); // LT
 }
