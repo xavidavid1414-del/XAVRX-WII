@@ -357,7 +357,7 @@ int main() {
     carry_state.gpr[4] = 1u;
     carry_state.xer = 0x12345678u;
     cpu.set_state(carry_state);
-    memory.write32_be(0, xform(3, 5, 4, 10)); // addc r5,r3,r4
+    memory.write32_be(0, xform(5, 3, 4, 10)); // addc r5,r3,r4
     memory.write32_be(4, xform(6, 3, 4, 8));  // subfc r6,r3,r4
     assert(cpu.step());
     assert(cpu.state().gpr[5] == 0u);
