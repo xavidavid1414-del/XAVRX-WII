@@ -248,6 +248,15 @@ bool BroadwayCpu::step() {
         case 316: // xor
             state_.gpr[ra] = state_.gpr[rs] ^ b;
             break;
+        case 124: // nor
+            state_.gpr[ra] = ~(state_.gpr[rs] | b);
+            break;
+        case 284: // eqv: bitwise equivalence
+            state_.gpr[ra] = ~(state_.gpr[rs] ^ b);
+            break;
+        case 476: // nand
+            state_.gpr[ra] = ~(state_.gpr[rs] & b);
+            break;
         case 24: // slw: shift left word
             state_.gpr[ra] = (b & 0x20u) != 0 ? 0u : state_.gpr[rs] << (b & 0x3fu);
             break;
