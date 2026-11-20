@@ -352,21 +352,27 @@ bool BroadwayCpu::step() {
             break;
         case 28: // and
             state_.gpr[ra] = state_.gpr[rs] & b;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 444: // or
             state_.gpr[ra] = state_.gpr[rs] | b;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 316: // xor
             state_.gpr[ra] = state_.gpr[rs] ^ b;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 124: // nor
             state_.gpr[ra] = ~(state_.gpr[rs] | b);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 284: // eqv: bitwise equivalence
             state_.gpr[ra] = ~(state_.gpr[rs] ^ b);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 476: // nand
             state_.gpr[ra] = ~(state_.gpr[rs] & b);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 26: { // cntlzw: count leading zero bits
             std::uint32_t value = state_.gpr[rs];
