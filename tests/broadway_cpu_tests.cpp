@@ -792,7 +792,7 @@ int main() {
     cpu.set_state(single_arithmetic_state);
     memory.write32_be(368, (59u << 26) | (10u << 21) | (1u << 16) | (2u << 11) | (21u << 1)); // fadds f10,f1,f2
     memory.write32_be(372, (59u << 26) | (11u << 21) | (1u << 16) | (2u << 11) | (18u << 1)); // fdivs f11,f1,f2
-    memory.write32_be(376, (59u << 26) | (12u << 21) | (1u << 16) | (2u << 11) | (25u << 1)); // fmuls f12,f1,f2
+    memory.write32_be(376, (59u << 26) | (12u << 21) | (1u << 16) | (2u << 6) | (25u << 1)); // fmuls f12,f1,f2
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[10]) ==
            static_cast<double>(static_cast<float>(1.0 / 3.0) + 2.0f));
