@@ -616,3 +616,7 @@ int main() {
         assert(cpu.step());
         const bool actual = ((cpu.state().cr >> (31u - 5u)) & 1u) != 0;
         assert(actual == cr_expected[i]);
+    }
+
+    return 0;
+}
