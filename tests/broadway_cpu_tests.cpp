@@ -819,42 +819,39 @@ int main() {
     // Update-form loads/stores write the effective address back to RA.
     auto update_memory_state = cpu.state();
     update_memory_state.pc = 400;
-    update_memory_state.gpr[3] = 400u;
-    update_memory_state.gpr[4] = 416u;
+    update_memory_state.gpr[3] = 448u;
+    update_memory_state.gpr[4] = 464u;
     update_memory_state.gpr[6] = 0xaabbccddu;
     update_memory_state.fpr[1] = std::bit_cast<std::uint64_t>(2.5);
     update_memory_state.fpr[2] = std::bit_cast<std::uint64_t>(1.25);
     cpu.set_state(update_memory_state);
-    memory.write32_be(408, 0x12345678u);
-    memory.write32_be(412, std::bit_cast<std::uint32_t>(3.5f));
-    memory.write32_be(420, 0x3ff8000000000000ull >> 32);
-    memory.write64_be(420, std::bit_cast<std::uint64_t>(1.5));
+    memory.write32_be(456, 0x12345678u);
+    memory.write32_be(460, std::bit_cast<std::uint32_t>(3.5f));
+    memory.write64_be(464, std::bit_cast<std::uint64_t>(1.5));
     memory.write32_be(400, (33u << 26) | (5u << 21) | (3u << 16) | 8u); // lwzu r5,8(r3)
     memory.write32_be(404, (37u << 26) | (6u << 21) | (4u << 16) | 8u); // stwu r6,8(r4)
-    memory.write32_be(408 + 0u, 0x12345678u); // Keep the load source stable.
-    memory.write32_be(412, std::bit_cast<std::uint32_t>(3.5f));
-    memory.write32_be(416, (49u << 26) | (7u << 21) | (3u << 16) | 4u); // lfsu f7,4(r3)
-    memory.write32_be(420, (53u << 26) | (1u << 21) | (4u << 16) | 4u); // stfsu f1,4(r4)
-    memory.write32_be(424, (51u << 26) | (8u << 21) | (3u << 16) | 8u); // lfdu f8,8(r3)
-    memory.write32_be(428, (55u << 26) | (2u << 21) | (4u << 16) | 8u); // stfdu f2,8(r4)
+    memory.write32_be(408, (49u << 26) | (7u << 21) | (3u << 16) | 4u); // lfsu f7,4(r3)
+    memory.write32_be(412, (53u << 26) | (1u << 21) | (4u << 16) | 4u); // stfsu f1,4(r4)
+    memory.write32_be(416, (51u << 26) | (8u << 21) | (3u << 16) | 12u); // lfdu f8,12(r3)
+    memory.write32_be(420, (55u << 26) | (2u << 21) | (4u << 16) | 4u); // stfdu f2,4(r4)
     assert(cpu.step());
     assert(cpu.state().gpr[5] == 0x12345678u);
-    assert(cpu.state().gpr[3] == 408u);
+    assert(cpu.state().gpr[3] == 456u);
     assert(cpu.step());
-    assert(memory.read32_be(424) == 0xaabbccddu);
-    assert(cpu.state().gpr[4] == 424u);
+    assert(memory.read32_be(472) == 0xaabbccddu);
+    assert(cpu.state().gpr[4] == 472u);
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[7]) == 3.5);
-    assert(cpu.state().gpr[3] == 412u);
+    assert(cpu.state().gpr[3] == 460u);
     assert(cpu.step());
-    assert(memory.read32_be(428) == std::bit_cast<std::uint32_t>(2.5f));
-    assert(cpu.state().gpr[4] == 428u);
+    assert(memory.read32_be(476) == std::bit_cast<std::uint32_t>(2.5f));
+    assert(cpu.state().gpr[4] == 476u);
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[8]) == 1.5);
-    assert(cpu.state().gpr[3] == 420u);
+    assert(cpu.state().gpr[3] == 472u);
     assert(cpu.step());
-    assert(memory.read64_be(436) == std::bit_cast<std::uint64_t>(1.25));
-    assert(cpu.state().gpr[4] == 436u);
+    assert(memory.read64_be(480) == std::bit_cast<std::uint64_t>(1.25));
+    assert(cpu.state().gpr[4] == 480u);
 
     // Update-form instructions with RA=r0 are invalid and leave state unchanged.
     auto invalid_update_state = cpu.state();
