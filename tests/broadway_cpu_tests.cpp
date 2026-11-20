@@ -383,4 +383,33 @@ int main() {
     assert((cpu.state().cr >> 28) == 0xau);
     assert((cpu.state().cr & 0x0fffffffu) == 0x02245678u);
 
+    // sraw/srawi update XER[CA] from one-bits shifted out of the low end.
+    auto arithmetic_carry_state = cpu.state();
+    arithmetic_carry_state.pc = 0;
+    arithmetic_carry_state.gpr[3] = 0xfffffff1u;
+    arithmetic_carry_state.gpr[4] = 2u;
+    arithmetic_carry_state.xer = 0x12345678u;
+    cpu.set_state(arithmetic_carry_state);
+    memory.write32_be(0, xform(3, 15, 4, 792)); // sraw r15,r3,r4
+    memory.write32_be(4, xform(3, 16, 3, 824)); // srawi r16,r3,3
+    assert(cpu.step());
+    assert(cpu.state().gpr[15] == 0xfffffffcu);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+    assert((cpu.state().xer & ~(1u << 29)) ==
+           (arithmetic_carry_state.xer & ~(1u << 29)));
+    assert(cpu.step());
+    assert(cpu.state().gpr[16] == 0xfffffffeu);
+    assert((cpu.state().xer & (1u << 29)) == 0u);
+
+    // A shift of 32 or more discards the entire nonzero source word.
+    auto wide_arithmetic_carry_state = cpu.state();
+    wide_arithmetic_carry_state.pc = 8;
+    wide_arithmetic_carry_state.gpr[3] = 0x80000000u;
+    wide_arithmetic_carry_state.gpr[4] = 32u;
+    cpu.set_state(wide_arithmetic_carry_state);
+    memory.write32_be(8, xform(3, 17, 4, 792)); // sraw r17,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[17] == 0xffffffffu);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+
 }
