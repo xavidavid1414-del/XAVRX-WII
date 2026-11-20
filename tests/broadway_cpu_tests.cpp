@@ -552,4 +552,48 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[21] == 0xff000000u);
     assert((cpu.state().cr >> 28) == 9u); // LT | SO
+
+    // mfspr/mtspr transfer the supported XER, LR and CTR registers.
+    auto spr_state = cpu.state();
+    spr_state.pc = 228;
+    spr_state.lr = 0x11223344u;
+    spr_state.ctr = 0x55667788u;
+    spr_state.xer = 0xaabbccddu;
+    spr_state.gpr[25] = 0x01020304u;
+    spr_state.gpr[26] = 0x05060708u;
+    spr_state.gpr[27] = 0x090a0b0cu;
+    cpu.set_state(spr_state);
+    const auto spr_xform = [](std::uint32_t reg, std::uint32_t spr,
+                              std::uint32_t xo) {
+        return (31u << 26) | (reg << 21) | ((spr & 31u) << 16) |
+               (((spr >> 5) & 31u) << 11) | (xo << 1);
+    };
+    memory.write32_be(228, spr_xform(22, 8, 339)); // mfspr r22,LR
+    memory.write32_be(232, spr_xform(23, 9, 339)); // mfspr r23,CTR
+    memory.write32_be(236, spr_xform(24, 1, 339)); // mfspr r24,XER
+    memory.write32_be(240, spr_xform(25, 8, 467)); // mtspr LR,r25
+    memory.write32_be(244, spr_xform(26, 9, 467)); // mtspr CTR,r26
+    memory.write32_be(248, spr_xform(27, 1, 467)); // mtspr XER,r27
+    assert(cpu.step());
+    assert(cpu.state().gpr[22] == 0x11223344u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[23] == 0x55667788u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[24] == 0xaabbccddu);
+    assert(cpu.step());
+    assert(cpu.state().lr == 0x01020304u);
+    assert(cpu.step());
+    assert(cpu.state().ctr == 0x05060708u);
+    assert(cpu.step());
+    assert(cpu.state().xer == 0x090a0b0cu);
+
+    // An unsupported SPR must be rejected without changing CPU state.
+    auto unsupported_spr_state = cpu.state();
+    unsupported_spr_state.pc = 252;
+    cpu.set_state(unsupported_spr_state);
+    memory.write32_be(252, spr_xform(22, 2, 339)); // unsupported SPR
+    assert(!cpu.step());
+    assert(cpu.state().pc == 252u);
+    assert(cpu.state().gpr[22] == unsupported_spr_state.gpr[22]);
+
 }
