@@ -390,7 +390,7 @@ int main() {
     arithmetic_carry_state.gpr[4] = 2u;
     arithmetic_carry_state.xer = 0x12345678u;
     cpu.set_state(arithmetic_carry_state);
-    arithmetic_carry_state.gpr[7] = 0xfffffff8u;
+    arithmetic_carry_state.gpr[7] = 0xfffffff0u;
     cpu.set_state(arithmetic_carry_state);
     memory.write32_be(0, xform(3, 15, 4, 792)); // sraw r15,r3,r4
     memory.write32_be(4, xform(7, 16, 3, 824)); // srawi r16,r7,3
