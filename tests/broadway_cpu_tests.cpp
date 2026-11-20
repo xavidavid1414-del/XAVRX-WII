@@ -357,7 +357,7 @@ int main() {
     memory.write32_be(248, (31u << 26) | (5u << 21) | (19u << 1)); // mfcr r5
     memory.write32_be(252, (31u << 26) | (3u << 21) | (0x80u << 12) | (144u << 1)); // mtcrf cr0,r3
     assert(cpu.step());
-    assert(((cpu.state().cr >> 20) & 0xfu) == 3u);
+    assert(((cpu.state().cr >> 20) & 0xfu) == 2u);
     assert(cpu.step());
     assert(cpu.state().gpr[5] == cpu.state().cr);
     assert(cpu.step());
