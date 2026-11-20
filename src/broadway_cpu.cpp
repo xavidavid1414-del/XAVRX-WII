@@ -82,6 +82,9 @@ bool BroadwayCpu::step() {
     case 26: // xori (RS is encoded in RT)
         state_.gpr[ra] = state_.gpr[rt] ^ immediate;
         break;
+    case 27: // xoris
+        state_.gpr[ra] = state_.gpr[rt] ^ (immediate << 16);
+        break;
     case 25: // oris
         state_.gpr[ra] = state_.gpr[rt] | (immediate << 16);
         break;
