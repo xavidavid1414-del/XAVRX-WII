@@ -790,9 +790,9 @@ int main() {
     single_arithmetic_state.fpr[1] = std::bit_cast<std::uint64_t>(1.0 / 3.0);
     single_arithmetic_state.fpr[2] = std::bit_cast<std::uint64_t>(2.0);
     cpu.set_state(single_arithmetic_state);
-    memory.write32_be(368, fform(10, 1, 2, 21) | (59u << 26)); // fadds f10,f1,f2
-    memory.write32_be(372, fform(11, 1, 2, 18) | (59u << 26)); // fdivs f11,f1,f2
-    memory.write32_be(376, fform(12, 1, 2, 25) | (59u << 26)); // fmuls f12,f1,f2
+    memory.write32_be(368, (59u << 26) | (10u << 21) | (1u << 16) | (2u << 11) | (21u << 1)); // fadds f10,f1,f2
+    memory.write32_be(372, (59u << 26) | (11u << 21) | (1u << 16) | (2u << 11) | (18u << 1)); // fdivs f11,f1,f2
+    memory.write32_be(376, (59u << 26) | (12u << 21) | (1u << 16) | (2u << 11) | (25u << 1)); // fmuls f12,f1,f2
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[10]) ==
            static_cast<double>(static_cast<float>(1.0 / 3.0) + 2.0f));
