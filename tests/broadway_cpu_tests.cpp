@@ -347,4 +347,21 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[13] == 11u);
 
+    // mcrf copies a selected CR field; mfcr reads the full CR into a GPR.
+    auto cr_transfer_state = cpu.state();
+    cr_transfer_state.pc = 244;
+    cr_transfer_state.cr = 0x12345678u;
+    cr_transfer_state.gpr[3] = 0xabcdef01u;
+    cpu.set_state(cr_transfer_state);
+    memory.write32_be(244, (19u << 26) | (2u << 23) | (1u << 18)); // mcrf cr2,cr1
+    memory.write32_be(248, (31u << 26) | (5u << 21) | (19u << 1)); // mfcr r5
+    memory.write32_be(252, (31u << 26) | (3u << 21) | (0x80u << 12) | (144u << 1)); // mtcrf cr0,r3
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 20) & 0xfu) == 3u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == cpu.state().cr);
+    assert(cpu.step());
+    assert((cpu.state().cr >> 28) == 0xau);
+    assert((cpu.state().cr & 0x0fffffffu) == 0x12345678u);
+
 }
