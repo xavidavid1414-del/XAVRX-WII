@@ -734,5 +734,56 @@ int main() {
     assert((cpu.state().xer & (1u << 29)) != 0u);
     assert((cpu.state().cr >> 28) == 9u); // LT | SO
 
+    // Big-endian 64-bit memory access used by floating-point loads/stores.
+    memory.write64_be(320, 0x3ff8000000000000ull); // 1.5
+    assert(memory.read64_be(320) == 0x3ff8000000000000ull);
+
+    // Foundational FPU: lfd/stfd, arithmetic, sign operations and comparison.
+    auto fpu_state = cpu.state();
+    fpu_state.pc = 324;
+    fpu_state.gpr[3] = 320u;
+    fpu_state.fpr[1] = 0x4000000000000000ull; // 2.0
+    fpu_state.fpr[2] = 0x4008000000000000ull; // 3.0
+    cpu.set_state(fpu_state);
+    const auto fform = [](std::uint32_t frt, std::uint32_t fra,
+                          std::uint32_t frb, std::uint32_t xo) {
+        return (63u << 26) | (frt << 21) | (fra << 16) |
+               (frb << 11) | (xo << 1);
+    };
+    memory.write32_be(324, (50u << 26) | (4u << 21) | (3u << 16)); // lfd f4,0(r3)
+    memory.write32_be(328, fform(5, 1, 2, 21)); // fadd f5,f1,f2
+    memory.write32_be(332, fform(6, 2, 1, 20)); // fsub f6,f2,f1
+    memory.write32_be(336, fform(7, 1, 2, 18)); // fdiv f7,f1,f2
+    memory.write32_be(340, fform(8, 0, 1, 264)); // fabs f8,f1
+    memory.write32_be(344, fform(0, 1, 2, 0)); // fcmpu cr0,f1,f2
+    memory.write32_be(348, (54u << 26) | (5u << 21) | (3u << 16)); // stfd f5,0(r3)
+    assert(cpu.step());
+    assert(cpu.state().fpr[4] == 0x3ff8000000000000ull);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[5]) == 5.0);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[6]) == 1.0);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[7]) == (2.0 / 3.0));
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[8]) == 2.0);
+    assert(cpu.step());
+    assert((cpu.state().cr >> 28) == 8u); // 2.0 < 3.0
+    assert(cpu.step());
+    assert(memory.read64_be(320) == std::bit_cast<std::uint64_t>(5.0));
+
+    // lfs/stfs convert between binary32 memory and binary64 FPR storage.
+    auto single_state = cpu.state();
+    single_state.pc = 352;
+    single_state.gpr[3] = 360u;
+    cpu.set_state(single_state);
+    memory.write32_be(360, std::bit_cast<std::uint32_t>(1.25f));
+    memory.write32_be(352, (48u << 26) | (9u << 21) | (3u << 16));
+    memory.write32_be(356, (52u << 26) | (9u << 21) | (3u << 16) | 4u);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[9]) == 1.25);
+    assert(cpu.step());
+    assert(memory.read32_be(364) == std::bit_cast<std::uint32_t>(1.25f));
+
     return 0;
 }
