@@ -32,6 +32,9 @@ bool BroadwayCpu::step() {
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
 
     switch (opcode) {
+    case 7: // mulli
+        state_.gpr[rt] = base * static_cast<std::uint32_t>(sign_extend_16(immediate));
+        break;
     case 14: // addi
         state_.gpr[rt] = base + static_cast<std::uint32_t>(sign_extend_16(immediate));
         break;
@@ -41,6 +44,9 @@ bool BroadwayCpu::step() {
         break;
     case 24: // ori (RS is encoded in the RT field)
         state_.gpr[ra] = state_.gpr[rt] | immediate;
+        break;
+    case 26: // xori (RS is encoded in RT)
+        state_.gpr[ra] = state_.gpr[rt] ^ immediate;
         break;
     case 25: // oris
         state_.gpr[ra] = state_.gpr[rt] | (immediate << 16);
