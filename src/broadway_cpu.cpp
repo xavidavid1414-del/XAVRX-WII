@@ -258,11 +258,23 @@ bool BroadwayCpu::step() {
         const std::uint32_t frb = (instruction >> 11) & 31u;
         const std::uint32_t frc = (instruction >> 6) & 31u;
         const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
+        const std::uint32_t a_xo = (instruction >> 1) & 31u;
         const double a = std::bit_cast<double>(state_.fpr[fra]);
         const double b = std::bit_cast<double>(state_.fpr[frb]);
         auto write_fpr = [&](double value) {
             state_.fpr[frt] = std::bit_cast<std::uint64_t>(value);
         };
+        // A-form arithmetic encodes a five-bit XO; FRC occupies the
+        // adjacent field and must not be included in that decode.
+        if (a_xo == 18u || a_xo == 20u || a_xo == 21u || a_xo == 25u) {
+            const double rhs = a_xo == 25u
+                ? std::bit_cast<double>(state_.fpr[frc]) : b;
+            const double value = a_xo == 18u ? a / rhs
+                : a_xo == 20u ? a - rhs
+                : a_xo == 21u ? a + rhs : a * rhs;
+            write_fpr(value);
+            break;
+        }
         switch (xo) {
         case 0:   // fcmpu: unordered compare into selected CR field
         case 32: { // fcmpo: ordered compare (basic compare result)
@@ -291,20 +303,6 @@ bool BroadwayCpu::step() {
         case 264: // fabs
             write_fpr(std::fabs(b));
             break;
-        case 18: // fdiv
-        case 20: // fsub
-        case 21: // fadd
-        case 25: { // fmul uses FRA and FRC
-            const double rhs = xo == 25
-                ? std::bit_cast<double>(state_.fpr[frc]) : b;
-            double value = 0.0;
-            if (xo == 18) value = a / rhs;
-            else if (xo == 20) value = a - rhs;
-            else if (xo == 21) value = a + rhs;
-            else value = a * rhs;
-            write_fpr(value);
-            break;
-        }
         default:
             return false;
         }
