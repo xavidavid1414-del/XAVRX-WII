@@ -689,7 +689,7 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[14] == 0u);
     assert((cpu.state().xer & (1u << 29)) != 0u);
-    assert((cpu.state().cr >> 28) == 2u); // EQ
+    assert((cpu.state().cr >> 28) == 3u); // EQ | SO
 
     return 0;
 }
