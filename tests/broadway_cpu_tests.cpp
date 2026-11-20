@@ -179,6 +179,7 @@ int main() {
     auto logical_state = cpu.state();
     logical_state.gpr[4] = 0xf2345678u;
     logical_state.cr = 0x01234567u;
+    logical_state.xer &= ~(1u << 31); // Isolate this CR0 test from prior SO checks.
     cpu.set_state(logical_state);
     memory.write32_be(132, (28u << 26) | (3u << 21) | (22u << 16) | 0x00ffu);
     memory.write32_be(136, (29u << 26) | (4u << 21) | (23u << 16) | 0x8000u);
