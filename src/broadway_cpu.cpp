@@ -249,6 +249,25 @@ bool BroadwayCpu::step() {
             state_.gpr[rt] = static_cast<std::uint32_t>(
                 static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
             break;
+        case 491: { // divw: signed word division
+            const std::int32_t dividend = static_cast<std::int32_t>(a);
+            const std::int32_t divisor = static_cast<std::int32_t>(b);
+            if (divisor == 0 ||
+                (dividend == (-2147483647 - 1) && divisor == -1)) {
+                state_.gpr[rt] = 0;
+            } else {
+                state_.gpr[rt] = static_cast<std::uint32_t>(dividend / divisor);
+            }
+            break;
+        }
+        case 459: { // divwu: unsigned word division
+            if (b == 0) {
+                state_.gpr[rt] = 0;
+            } else {
+                state_.gpr[rt] = a / b;
+            }
+            break;
+        }
         case 75: { // mulhw: signed high word of product
             const std::int64_t product =
                 static_cast<std::int64_t>(static_cast<std::int32_t>(a)) *
