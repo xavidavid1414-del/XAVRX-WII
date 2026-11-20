@@ -103,4 +103,22 @@ int main() {
     assert(cpu.state().gpr[15] == 0xfffffffcu);
     assert(cpu.step());
     assert(cpu.state().gpr[16] == 0xfffffffeu);
+
+    // rlwinm rotates left then applies PowerPC's MSB-numbered bit mask.
+    auto rotate_state = cpu.state();
+    rotate_state.pc = 112;
+    rotate_state.gpr[3] = 0x12345678u;
+    cpu.set_state(rotate_state);
+    const auto rlwinm = [](std::uint32_t rs, std::uint32_t ra,
+                           std::uint32_t sh, std::uint32_t mb,
+                           std::uint32_t me) {
+        return (21u << 26) | (rs << 21) | (ra << 16) |
+               (sh << 11) | (mb << 6) | (me << 1);
+    };
+    memory.write32_be(112, rlwinm(3, 17, 8, 8, 23));
+    memory.write32_be(116, rlwinm(3, 18, 8, 28, 3));
+    assert(cpu.step());
+    assert(cpu.state().gpr[17] == 0x00567800u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[18] == 0x30000002u);
 }
