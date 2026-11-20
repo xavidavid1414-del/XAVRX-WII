@@ -286,18 +286,6 @@ bool BroadwayCpu::execute_one() {
         if (update) state_.gpr[ra] = address;
         break;
     }
-    case 32: // lwz
-    case 33: { // lwzu: load word and update RA
-        const bool update = opcode == 33u;
-        if (update && ra == 0u) return false;
-        const std::uint32_t address = base + static_cast<std::uint32_t>(
-            sign_extend_16(immediate));
-        if ((address & 3u) != 0u) throw std::invalid_argument("unaligned lwz");
-        const std::uint32_t value = memory_.read32_be(address);
-        state_.gpr[rt] = value;
-        if (update) state_.gpr[ra] = address;
-        break;
-    }
     case 38: // stb
     case 39: // stbu
     case 44: // sth
