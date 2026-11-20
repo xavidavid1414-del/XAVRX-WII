@@ -72,6 +72,15 @@ bool BroadwayCpu::step() {
         state_.gpr[ra] = rotate_left_32(state_.gpr[rs], shift) & ppc_mask(mb, me);
         break;
     }
+    case 23: { // rlwnm: rotate left word using shift amount from RB, then mask
+        const std::uint32_t rs = rt;
+        const std::uint32_t rb = (instruction >> 11) & 31u;
+        const std::uint32_t shift = state_.gpr[rb] & 31u;
+        const std::uint32_t mb = (instruction >> 6) & 31u;
+        const std::uint32_t me = (instruction >> 1) & 31u;
+        state_.gpr[ra] = rotate_left_32(state_.gpr[rs], shift) & ppc_mask(mb, me);
+        break;
+    }
     case 10: // cmpli: compare logical immediate (32-bit)
     case 11: { // cmpi: compare signed immediate (32-bit)
         if ((instruction & (1u << 21)) != 0) return false;
