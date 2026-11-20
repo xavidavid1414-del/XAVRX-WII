@@ -217,4 +217,23 @@ int main() {
     cpu.set_state(not_taken_state);
     assert(cpu.step());
     assert(cpu.state().pc == 168u);
+
+    // bclr uses the aligned LR target and the same CR condition logic.
+    auto link_branch_state = cpu.state();
+    link_branch_state.pc = 172;
+    link_branch_state.lr = 200;
+    link_branch_state.cr = 2u << 28; // CR0 EQ
+    link_branch_state.ctr = 5;
+    cpu.set_state(link_branch_state);
+    memory.write32_be(172, xform(12, 2, 0, 16)); // bclr: branch if CR0 EQ
+    assert(cpu.step());
+    assert(cpu.state().pc == 200u);
+    assert(cpu.state().ctr == 5u);
+    auto link_branch_false = cpu.state();
+    link_branch_false.pc = 176;
+    link_branch_false.cr = 0;
+    cpu.set_state(link_branch_false);
+    memory.write32_be(176, xform(12, 2, 0, 16));
+    assert(cpu.step());
+    assert(cpu.state().pc == 180u);
 }
