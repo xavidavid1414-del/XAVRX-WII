@@ -596,4 +596,30 @@ int main() {
     assert(cpu.state().pc == 252u);
     assert(cpu.state().gpr[22] == unsupported_spr_state.gpr[22]);
 
+
+    // CR logical instructions read CR bits BA/BB and write only BT.
+    auto cr_logic_state = cpu.state();
+    cr_logic_state.pc = 256;
+    cr_logic_state.cr = (1u << (31u - 6u)); // BA=1, BB=0
+    cpu.set_state(cr_logic_state);
+    const auto cr_logic = [](std::uint32_t bt, std::uint32_t ba,
+                             std::uint32_t bb, std::uint32_t xo) {
+        return (19u << 26) | (bt << 21) | (ba << 16) |
+               (bb << 11) | (xo << 1);
+    };
+    const std::uint32_t cr_ops[] = {
+        257u, 129u, 449u, 417u, 193u, 289u, 225u, 33u
+    };
+    const bool cr_expected[] = {
+        false, true, true, true, true, false, true, false
+    };
+    for (std::uint32_t i = 0; i < 8u; ++i) {
+        memory.write32_be(256u + i * 4u, cr_logic(5, 6, 7, cr_ops[i]));
+        assert(cpu.step());
+        const bool actual = ((cpu.state().cr >> (31u - 5u)) & 1u) != 0;
+        assert(actual == cr_expected[i]);
+        assert(((cpu.state().cr >> (31u - 6u)) & 1u) != 0);
+        assert(((cpu.state().cr >> (31u - 7u)) & 1u) == 0);
+    }
+
 }
