@@ -151,7 +151,7 @@ int main() {
     memory.write32_be(120, rlwimi(3, 19, 8, 8, 23));
     memory.write32_be(124, rlwimi(3, 20, 8, 28, 3));
     assert(cpu.step());
-    assert(cpu.state().gpr[19] == 0xaa3456aau);
+    assert(cpu.state().gpr[19] == 0xaa5678aau);
     assert(cpu.step());
     assert(cpu.state().gpr[20] == 0x3aaaaaa2u);
 
