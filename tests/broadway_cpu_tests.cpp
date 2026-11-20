@@ -69,4 +69,25 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[12] == 0x0ff0u);
 
+    // Register shifts: slw r13,r3,r4 and srw r14,r3,r4.
+    auto shift_state = cpu.state();
+    shift_state.pc = 92;
+    shift_state.gpr[3] = 0x0000000fu;
+    shift_state.gpr[4] = 2u;
+    cpu.set_state(shift_state);
+    memory.write32_be(92, xform(3, 13, 4, 24));  // slw r13,r3,r4
+    memory.write32_be(96, xform(3, 14, 4, 536)); // srw r14,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[13] == 0x0000003cu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[14] == 0x00000003u);
+
+    // A shift amount of 32 or more produces zero for logical shifts.
+    auto large_shift_state = cpu.state();
+    large_shift_state.pc = 100;
+    large_shift_state.gpr[4] = 32u;
+    cpu.set_state(large_shift_state);
+    memory.write32_be(100, xform(3, 13, 4, 24));
+    assert(cpu.step());
+    assert(cpu.state().gpr[13] == 0u);
 }
