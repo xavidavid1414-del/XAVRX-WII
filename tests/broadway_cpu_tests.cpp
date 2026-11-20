@@ -712,5 +712,27 @@ int main() {
     assert(cpu.state().gpr[16] == 0u);
     assert((cpu.state().xer & (1u << 29)) != 0u);
 
+    // subfme computes ~RA + XER[CA] - 1 and records carry-out.
+    auto subfme_state = cpu.state();
+    subfme_state.pc = 40;
+    subfme_state.gpr[3] = 0u;
+    subfme_state.xer &= ~(1u << 29);
+    cpu.set_state(subfme_state);
+    memory.write32_be(40, xform(17, 3, 0, 232)); // subfme r17,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[17] == 0xfffffffeu);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+
+    auto subfme_carry_state = cpu.state();
+    subfme_carry_state.pc = 44;
+    subfme_carry_state.gpr[3] = 0u;
+    subfme_carry_state.xer |= 1u << 29;
+    cpu.set_state(subfme_carry_state);
+    memory.write32_be(44, xform(18, 3, 0, 232) | 1u); // subfme. r18,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[18] == 0xffffffffu);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+
     return 0;
 }
