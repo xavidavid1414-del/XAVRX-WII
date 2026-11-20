@@ -669,5 +669,27 @@ int main() {
     assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
     assert(cpu.state().pc == 300u);
 
+    // addme computes RA - 1 + XER[CA] and updates carry-out.
+    auto addme_state = cpu.state();
+    addme_state.pc = 24;
+    addme_state.gpr[3] = 0u;
+    addme_state.xer &= ~(1u << 29);
+    cpu.set_state(addme_state);
+    memory.write32_be(24, xform(13, 3, 0, 234)); // addme r13,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[13] == 0xffffffffu);
+    assert((cpu.state().xer & (1u << 29)) == 0u);
+
+    auto addme_carry_state = cpu.state();
+    addme_carry_state.pc = 28;
+    addme_carry_state.gpr[3] = 0u;
+    addme_carry_state.xer |= 1u << 29;
+    cpu.set_state(addme_carry_state);
+    memory.write32_be(28, xform(14, 3, 0, 234) | 1u); // addme. r14,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[14] == 0u);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+    assert((cpu.state().cr >> 28) == 2u); // EQ
+
     return 0;
 }
