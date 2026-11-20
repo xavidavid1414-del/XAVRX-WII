@@ -866,12 +866,12 @@ int main() {
     // Byte and halfword loads/stores, sign extension, update forms and alignment.
     auto narrow_memory_state = cpu.state();
     narrow_memory_state.pc = 448;
-    narrow_memory_state.gpr[3] = 500u;
+    narrow_memory_state.gpr[3] = 480u;
     narrow_memory_state.gpr[4] = 0x89abcdefu;
     cpu.set_state(narrow_memory_state);
-    memory.write8(500, 0x80u);
-    memory.write16_be(502, 0x8001u);
-    memory.write8(504, 0x80u);
+    memory.write8(480, 0x80u);
+    memory.write16_be(482, 0x8001u);
+    memory.write8(484, 0x80u);
     memory.write32_be(448, (34u << 26) | (10u << 21) | (3u << 16)); // lbz r10,0(r3)
     memory.write32_be(452, (42u << 26) | (11u << 21) | (3u << 16) | 2u); // lha r11,2(r3)
     memory.write32_be(456, (40u << 26) | (12u << 21) | (3u << 16) | 2u); // lhz r12,2(r3)
@@ -887,24 +887,24 @@ int main() {
     assert(cpu.state().gpr[12] == 0x8001u);
     assert(cpu.step());
     assert(cpu.state().gpr[13] == 0x80u);
-    assert(cpu.state().gpr[3] == 504u);
+    assert(cpu.state().gpr[3] == 484u);
     assert(cpu.step());
-    assert(memory.read8(512) == 0xefu);
+    assert(memory.read8(488) == 0xefu);
     assert(cpu.step());
-    assert(memory.read16_be(514) == 0xcdefu);
+    assert(memory.read16_be(490) == 0xcdefu);
     assert(cpu.step());
-    assert(memory.read8(516) == 0xefu);
-    assert(cpu.state().gpr[3] == 516u);
+    assert(memory.read8(492) == 0xefu);
+    assert(cpu.state().gpr[3] == 492u);
 
     // Update-form stores reject RA=0 and RA=RS without changing CPU state.
     auto invalid_narrow_update = cpu.state();
     invalid_narrow_update.pc = 476;
-    invalid_narrow_update.gpr[3] = 520u;
+    invalid_narrow_update.gpr[3] = 496u;
     cpu.set_state(invalid_narrow_update);
     memory.write32_be(476, (39u << 26) | (3u << 21) | (3u << 16) | 4u);
     assert(!cpu.step());
     assert(cpu.state().pc == 476u);
-    assert(cpu.state().gpr[3] == 520u);
+    assert(cpu.state().gpr[3] == 496u);
 
     // Structured CPU exceptions: fetch, illegal instruction and data faults.
     auto exception_state = cpu.state();
