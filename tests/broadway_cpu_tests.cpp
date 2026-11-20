@@ -691,5 +691,26 @@ int main() {
     assert((cpu.state().xer & (1u << 29)) != 0u);
     assert((cpu.state().cr >> 28) == 3u); // EQ | SO
 
+    // subfze computes ~RA + XER[CA] and records carry-out.
+    auto subfze_state = cpu.state();
+    subfze_state.pc = 32;
+    subfze_state.gpr[3] = 0u;
+    subfze_state.xer &= ~(1u << 29);
+    cpu.set_state(subfze_state);
+    memory.write32_be(32, xform(15, 3, 0, 200)); // subfze r15,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[15] == 0xffffffffu);
+    assert((cpu.state().xer & (1u << 29)) == 0u);
+
+    auto subfze_carry_state = cpu.state();
+    subfze_carry_state.pc = 36;
+    subfze_carry_state.gpr[3] = 0u;
+    subfze_carry_state.xer |= 1u << 29;
+    cpu.set_state(subfze_carry_state);
+    memory.write32_be(36, xform(16, 3, 0, 200)); // subfze r16,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[16] == 0xffffffffu);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+
     return 0;
 }
