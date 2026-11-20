@@ -403,6 +403,20 @@ int main() {
     assert(cpu.state().gpr[16] == 0xfffffffeu);
     assert((cpu.state().xer & (1u << 29)) == 0u);
 
+    // CR record fields and compare fields include XER[SO].
+    auto summary_overflow_state = cpu.state();
+    summary_overflow_state.pc = 16;
+    summary_overflow_state.xer |= 1u << 31;
+    summary_overflow_state.gpr[3] = 1u;
+    summary_overflow_state.gpr[4] = 1u;
+    cpu.set_state(summary_overflow_state);
+    memory.write32_be(16, (28u << 26) | (3u << 21) | (22u << 16) | 1u); // andi. r22,r3,1
+    assert(cpu.step());
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    memory.write32_be(20, (11u << 26) | (2u << 23) | (3u << 16) | 1u); // cmpi cr2,r3,1
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 20) & 0xfu) == 3u); // EQ | SO
+
     // A shift of 32 or more discards the entire nonzero source word.
     auto wide_arithmetic_carry_state = cpu.state();
     wide_arithmetic_carry_state.pc = 8;
