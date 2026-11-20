@@ -72,6 +72,28 @@ bool BroadwayCpu::step() {
         state_.gpr[ra] = rotate_left_32(state_.gpr[rs], shift) & ppc_mask(mb, me);
         break;
     }
+    case 10: // cmpli: compare logical immediate (32-bit)
+    case 11: { // cmpi: compare signed immediate (32-bit)
+        if ((instruction & (1u << 21)) != 0) return false;
+        const std::uint32_t field = (instruction >> 23) & 7u;
+        const std::uint32_t lhs = state_.gpr[ra];
+        bool less = false;
+        bool greater = false;
+        if (opcode == 11) {
+            const std::int32_t signed_lhs = static_cast<std::int32_t>(lhs);
+            const std::int32_t signed_rhs = sign_extend_16(immediate);
+            less = signed_lhs < signed_rhs;
+            greater = signed_lhs > signed_rhs;
+        } else {
+            less = lhs < immediate;
+            greater = lhs > immediate;
+        }
+        const std::uint32_t result = less ? 8u : greater ? 4u : 2u;
+        const std::uint32_t shift = 28u - (field * 4u);
+        const std::uint32_t mask = 0xfu << shift;
+        state_.cr = (state_.cr & ~mask) | (result << shift);
+        break;
+    }
     case 7: // mulli
         state_.gpr[rt] = base * static_cast<std::uint32_t>(sign_extend_16(immediate));
         break;
