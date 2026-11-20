@@ -61,11 +61,11 @@ int main() {
     assert(cpu.state().gpr[9] == 0x0fffu);
     assert(cpu.step());
     assert(cpu.state().gpr[10] == 0x0ff0u);
-    memory.write32_be(80, xform(3, 10, 4, 124)); // nor r10,r3,r4
-    memory.write32_be(84, xform(3, 11, 4, 284)); // eqv r11,r3,r4
-    memory.write32_be(88, xform(3, 12, 4, 476)); // nand r12,r3,r4
+    memory.write32_be(192, xform(3, 10, 4, 124)); // nor r10,r3,r4
+    memory.write32_be(196, xform(3, 11, 4, 284)); // eqv r11,r3,r4
+    memory.write32_be(200, xform(3, 12, 4, 476)); // nand r12,r3,r4
     auto logic_extra_state = cpu.state();
-    logic_extra_state.pc = 80;
+    logic_extra_state.pc = 192;
     cpu.set_state(logic_extra_state);
     assert(cpu.step());
     assert(cpu.state().gpr[10] == 0xfffff000u);
