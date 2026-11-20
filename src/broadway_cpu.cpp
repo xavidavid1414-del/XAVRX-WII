@@ -230,6 +230,15 @@ bool BroadwayCpu::step() {
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
         switch (xo) {
+        case 512: { // mcrxr: move XER summary bits into a CR field and clear them
+            const std::uint32_t field = (instruction >> 23) & 7u;
+            const std::uint32_t xer_flags = (state_.xer >> 28) & 0xeu;
+            const std::uint32_t shift = 28u - field * 4u;
+            const std::uint32_t mask = 0xfu << shift;
+            state_.cr = (state_.cr & ~mask) | (xer_flags << shift);
+            state_.xer &= ~0xe0000000u;
+            break;
+        }
         case 19: // mfcr: move condition register to a GPR
             state_.gpr[rt] = state_.cr;
             break;
