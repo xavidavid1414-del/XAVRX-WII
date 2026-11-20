@@ -293,4 +293,17 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[9] == 0x00010000u);
 
+    // mulhw and mulhwu return the high 32 bits, signed and unsigned.
+    auto high_multiply_state = cpu.state();
+    high_multiply_state.pc = 220;
+    high_multiply_state.gpr[3] = 0x80000000u;
+    high_multiply_state.gpr[4] = 4u;
+    cpu.set_state(high_multiply_state);
+    memory.write32_be(220, xform(3, 10, 4, 75)); // mulhw r10,r3,r4
+    memory.write32_be(224, xform(3, 11, 4, 11)); // mulhwu r11,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[10] == 0xfffffffeu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[11] == 2u);
+
 }
