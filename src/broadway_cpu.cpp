@@ -375,6 +375,11 @@ bool BroadwayCpu::step() {
                     ? (~0u << (32u - shift)) : 0u;
                 state_.gpr[ra] = (value >> shift) | fill;
             }
+            const bool shifted_out_ones = shift >= 32
+                ? value != 0u
+                : shift != 0u && (value & ((1u << shift) - 1u)) != 0u;
+            state_.xer = (state_.xer & ~(1u << 29)) |
+                         (shifted_out_ones ? (1u << 29) : 0u);
             break;
         }
         case 824: { // srawi: arithmetic shift right word immediate
@@ -387,6 +392,10 @@ bool BroadwayCpu::step() {
                     ? (~0u << (32u - shift)) : 0u;
                 state_.gpr[ra] = (value >> shift) | fill;
             }
+            const bool shifted_out_ones =
+                shift != 0u && (value & ((1u << shift) - 1u)) != 0u;
+            state_.xer = (state_.xer & ~(1u << 29)) |
+                         (shifted_out_ones ? (1u << 29) : 0u);
             break;
         }
         default:
