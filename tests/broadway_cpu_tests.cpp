@@ -889,22 +889,22 @@ int main() {
     assert(cpu.state().gpr[13] == 0x80u);
     assert(cpu.state().gpr[3] == 484u);
     assert(cpu.step());
-    assert(memory.read8(488) == 0xefu);
-    assert(cpu.step());
-    assert(memory.read16_be(490) == 0xcdefu);
-    assert(cpu.step());
     assert(memory.read8(492) == 0xefu);
-    assert(cpu.state().gpr[3] == 492u);
+    assert(cpu.step());
+    assert(memory.read16_be(494) == 0xcdefu);
+    assert(cpu.step());
+    assert(memory.read8(496) == 0xefu);
+    assert(cpu.state().gpr[3] == 496u);
 
     // Update-form stores reject RA=0 and RA=RS without changing CPU state.
     auto invalid_narrow_update = cpu.state();
     invalid_narrow_update.pc = 476;
-    invalid_narrow_update.gpr[3] = 496u;
+    invalid_narrow_update.gpr[3] = 500u;
     cpu.set_state(invalid_narrow_update);
     memory.write32_be(476, (39u << 26) | (3u << 21) | (3u << 16) | 4u);
     assert(!cpu.step());
     assert(cpu.state().pc == 476u);
-    assert(cpu.state().gpr[3] == 496u);
+    assert(cpu.state().gpr[3] == 500u);
 
     // Structured CPU exceptions: fetch, illegal instruction and data faults.
     auto exception_state = cpu.state();
