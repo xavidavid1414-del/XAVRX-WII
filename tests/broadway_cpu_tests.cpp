@@ -478,4 +478,35 @@ int main() {
     assert(cpu.state().gpr[17] == 0xffffffffu);
     assert((cpu.state().xer & (1u << 29)) != 0u);
 
+
+    // Rc variants of multiply/divide instructions update CR0 and retain XER[SO].
+    auto record_muldiv_state = cpu.state();
+    record_muldiv_state.pc = 0;
+    record_muldiv_state.gpr[3] = 0x80000000u;
+    record_muldiv_state.gpr[4] = 2u;
+    record_muldiv_state.xer |= 1u << 31;
+    record_muldiv_state.cr = 0x01234567u;
+    cpu.set_state(record_muldiv_state);
+    memory.write32_be(0, xform(10, 3, 4, 235) | 1u); // mullw.
+    memory.write32_be(4, xform(11, 3, 4, 491) | 1u); // divw.
+    memory.write32_be(8, xform(12, 3, 4, 459) | 1u); // divwu.
+    memory.write32_be(12, xform(13, 3, 4, 75) | 1u); // mulhw.
+    memory.write32_be(16, xform(14, 3, 4, 11) | 1u); // mulhwu.
+    assert(cpu.step());
+    assert(cpu.state().gpr[10] == 0u);
+    assert((cpu.state().cr >> 28) == 3u); // EQ | SO
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[11] == 0xc0000000u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == 0x40000000u);
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[13] == 0xc0000000u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[14] == 1u);
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
 }
