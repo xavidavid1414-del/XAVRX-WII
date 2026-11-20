@@ -810,7 +810,7 @@ int main() {
 
     exception_state = cpu.state();
     exception_state.pc = 388u;
-    exception_state.gpr[3] = 508u;
+    exception_state.gpr[3] = 512u;
     cpu.set_state(exception_state);
     memory.write32_be(388, (32u << 26) | (10u << 21) | (3u << 16)); // lwz r10,0(r3)
     assert(!cpu.step());
