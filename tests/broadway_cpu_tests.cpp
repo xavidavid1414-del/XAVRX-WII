@@ -159,4 +159,18 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[23] == 0x80000000u);
     assert((cpu.state().cr >> 28) == 8u); // LT
+
+    // cmpi and cmpli write the selected CR field without changing GPRs.
+    auto compare_state = cpu.state();
+    compare_state.pc = 140;
+    compare_state.gpr[3] = 0xffffffffu;
+    compare_state.cr = 0x01234567u;
+    cpu.set_state(compare_state);
+    memory.write32_be(140, (11u << 26) | (2u << 23) | (3u << 16)); // cmpi cr2,r3,0
+    memory.write32_be(144, (10u << 26) | (1u << 23) | (3u << 16) | 0xffffu); // cmpli cr1,r3,65535
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 20) & 0xfu) == 8u); // CR2: LT
+    assert(cpu.state().gpr[3] == 0xffffffffu);
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 24) & 0xfu) == 4u); // CR1: GT
 }
