@@ -417,6 +417,24 @@ int main() {
     assert(cpu.state().gpr[10] == 5u);
     assert((cpu.state().xer & (1u << 29)) != 0u);
 
+    // addze adds XER[CA] to RA and records CR0 only when Rc is set.
+    auto addze_state = cpu.state();
+    addze_state.pc = 16;
+    addze_state.gpr[3] = 41u;
+    addze_state.xer |= 1u << 29;
+    addze_state.xer |= 1u << 31;
+    addze_state.cr = 0x01234567u;
+    cpu.set_state(addze_state);
+    memory.write32_be(16, xform(11, 3, 0, 202)); // addze r11,r3
+    memory.write32_be(20, xform(12, 3, 0, 202) | 1u); // addze. r12,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[11] == 42u);
+    assert(cpu.state().cr == 0x01234567u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == 42u);
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+
     // mcrf copies a selected CR field; mfcr reads the full CR into a GPR.
     auto cr_transfer_state = cpu.state();
     cr_transfer_state.pc = 244;
