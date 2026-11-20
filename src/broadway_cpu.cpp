@@ -7,6 +7,22 @@ namespace {
 std::int32_t sign_extend_16(std::uint32_t value) noexcept {
     return static_cast<std::int16_t>(value & 0xffffu);
 }
+
+std::uint32_t rotate_left_32(std::uint32_t value, std::uint32_t amount) noexcept {
+    amount &= 31u;
+    return amount == 0 ? value : (value << amount) | (value >> (32u - amount));
+}
+
+std::uint32_t ppc_mask(std::uint32_t begin, std::uint32_t end) noexcept {
+    std::uint32_t mask = 0;
+    for (std::uint32_t bit = 0; bit < 32; ++bit) {
+        const bool selected = begin <= end
+            ? (bit >= begin && bit <= end)
+            : (bit >= begin || bit <= end);
+        if (selected) mask |= (1u << (31u - bit));
+    }
+    return mask;
+}
 }
 
 BroadwayCpu::BroadwayCpu(Memory& memory, std::uint32_t entry) noexcept
@@ -32,6 +48,14 @@ bool BroadwayCpu::step() {
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
 
     switch (opcode) {
+    case 21: { // rlwinm: rotate left word immediate then AND with mask
+        const std::uint32_t rs = rt;
+        const std::uint32_t shift = (instruction >> 11) & 31u;
+        const std::uint32_t mb = (instruction >> 6) & 31u;
+        const std::uint32_t me = (instruction >> 1) & 31u;
+        state_.gpr[ra] = rotate_left_32(state_.gpr[rs], shift) & ppc_mask(mb, me);
+        break;
+    }
     case 7: // mulli
         state_.gpr[rt] = base * static_cast<std::uint32_t>(sign_extend_16(immediate));
         break;
