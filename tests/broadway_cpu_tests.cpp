@@ -33,4 +33,32 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[6] == 7);
     assert(cpu.state().pc == 28);
+
+    // Exercise X-form register instructions using known register values.
+    auto state = cpu.state();
+    state.pc = 64;
+    state.gpr[3] = 0x0f0fu;
+    state.gpr[4] = 0x00ffu;
+    cpu.set_state(state);
+    const auto xform = [](std::uint32_t rt, std::uint32_t ra,
+                          std::uint32_t rb, std::uint32_t xo) {
+        return (31u << 26) | (rt << 21) | (ra << 16) |
+               (rb << 11) | (xo << 1);
+    };
+    memory.write32_be(64, xform(6, 3, 4, 266)); // add r6,r3,r4
+    memory.write32_be(68, xform(7, 3, 4, 40));  // subf r7,r3,r4
+    memory.write32_be(72, xform(3, 8, 4, 28));  // and r8,r3,r4
+    memory.write32_be(76, xform(3, 9, 4, 444)); // or r9,r3,r4
+    memory.write32_be(80, xform(3, 10, 4, 316)); // xor r10,r3,r4
+
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0x100eu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[7] == 0xfffff0f0u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[8] == 0x000fu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[9] == 0x0fffu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[10] == 0x0ff0u);
 }
