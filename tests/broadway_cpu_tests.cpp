@@ -1,6 +1,7 @@
 #include "xavrx/broadway_cpu.hpp"
 
 #include <cassert>
+#include <bit>
 #include <cstdint>
 
 int main() {
