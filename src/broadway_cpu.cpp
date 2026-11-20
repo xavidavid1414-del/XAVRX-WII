@@ -82,39 +82,51 @@ bool BroadwayCpu::execute_one() {
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
 
     switch (opcode) {
-    case 48: // lfs: load single and widen to the FPR's binary64 representation
-    case 50: { // lfd: load double
+    case 48: // lfs
+    case 49: // lfsu
+    case 50: // lfd
+    case 51: { // lfdu
         const std::uint32_t frt = rt;
+        const bool update = opcode == 49u || opcode == 51u;
+        if (update && ra == 0u) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
-        const std::uint32_t alignment = opcode == 50 ? 8u : 4u;
+        const bool is_double = opcode == 50u || opcode == 51u;
+        const std::uint32_t alignment = is_double ? 8u : 4u;
         if ((address & (alignment - 1u)) != 0u) {
             throw std::invalid_argument("unaligned floating-point load");
         }
-        if (opcode == 48) {
+        if (is_double) {
+            state_.fpr[frt] = memory_.read64_be(address);
+        } else {
             const float value = std::bit_cast<float>(memory_.read32_be(address));
             state_.fpr[frt] = std::bit_cast<std::uint64_t>(static_cast<double>(value));
-        } else {
-            state_.fpr[frt] = memory_.read64_be(address);
         }
+        if (update) state_.gpr[ra] = address;
         break;
     }
-    case 52: // stfs: round FPR value to IEEE-754 binary32
-    case 54: { // stfd: store binary64
+    case 52: // stfs
+    case 53: // stfsu
+    case 54: // stfd
+    case 55: { // stfdu
         const std::uint32_t frs = rt;
+        const bool update = opcode == 53u || opcode == 55u;
+        if (update && ra == 0u) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
-        const std::uint32_t alignment = opcode == 54 ? 8u : 4u;
+        const bool is_double = opcode == 54u || opcode == 55u;
+        const std::uint32_t alignment = is_double ? 8u : 4u;
         if ((address & (alignment - 1u)) != 0u) {
             throw std::invalid_argument("unaligned floating-point store");
         }
         const double value = std::bit_cast<double>(state_.fpr[frs]);
-        if (opcode == 52) {
+        if (is_double) {
+            memory_.write64_be(address, state_.fpr[frs]);
+        } else {
             memory_.write32_be(address, std::bit_cast<std::uint32_t>(
                 static_cast<float>(value)));
-        } else {
-            memory_.write64_be(address, state_.fpr[frs]);
         }
+        if (update) state_.gpr[ra] = address;
         break;
     }
     case 19: { // CR logical operations and mcrf
@@ -235,18 +247,27 @@ bool BroadwayCpu::execute_one() {
     case 25: // oris
         state_.gpr[ra] = state_.gpr[rt] | (immediate << 16);
         break;
-    case 32: { // lwz
+    case 32: // lwz
+    case 33: { // lwzu: load word and update RA
+        const bool update = opcode == 33u;
+        if (update && ra == 0u) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) throw std::invalid_argument("unaligned lwz");
-        state_.gpr[rt] = memory_.read32_be(address);
+        const std::uint32_t value = memory_.read32_be(address);
+        state_.gpr[rt] = value;
+        if (update) state_.gpr[ra] = address;
         break;
     }
-    case 36: { // stw
+    case 36: // stw
+    case 37: { // stwu: store word and update RA
+        const bool update = opcode == 37u;
+        if (update && ra == 0u) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) throw std::invalid_argument("unaligned stw");
         memory_.write32_be(address, state_.gpr[rt]);
+        if (update) state_.gpr[ra] = address;
         break;
     }
     case 16: { // bc: conditional branch
