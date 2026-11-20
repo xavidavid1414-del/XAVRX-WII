@@ -709,7 +709,7 @@ int main() {
     cpu.set_state(subfze_carry_state);
     memory.write32_be(36, xform(16, 3, 0, 200)); // subfze r16,r3
     assert(cpu.step());
-    assert(cpu.state().gpr[16] == 0xffffffffu);
+    assert(cpu.state().gpr[16] == 0u);
     assert((cpu.state().xer & (1u << 29)) != 0u);
 
     return 0;
