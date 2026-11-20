@@ -9,11 +9,20 @@ namespace xavrx {
 
 class BroadwayCpu {
 public:
+    enum class Exception : std::uint8_t {
+        None,
+        Alignment,
+        InstructionStorage,
+        DataStorage,
+        IllegalInstruction
+    };
+
     struct State {
         std::array<std::uint32_t, 32> gpr{};
         // FPRs are stored as IEEE-754 binary64 bit patterns.
         std::array<std::uint64_t, 32> fpr{};
         std::uint32_t fpscr{0};
+        Exception exception{Exception::None};
         std::uint32_t pc{0};
         std::uint32_t lr{0};
         std::uint32_t ctr{0};
@@ -30,6 +39,8 @@ public:
     void set_state(const State& state) noexcept;
 
 private:
+    [[nodiscard]] bool execute_one();
+
     Memory& memory_;
     State state_{};
 };
