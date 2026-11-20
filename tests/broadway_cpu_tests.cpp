@@ -871,6 +871,7 @@ int main() {
     cpu.set_state(narrow_memory_state);
     memory.write8(500, 0x80u);
     memory.write16_be(502, 0x8001u);
+    memory.write8(504, 0x80u);
     memory.write32_be(448, (34u << 26) | (10u << 21) | (3u << 16)); // lbz r10,0(r3)
     memory.write32_be(452, (42u << 26) | (11u << 21) | (3u << 16) | 2u); // lha r11,2(r3)
     memory.write32_be(456, (40u << 26) | (12u << 21) | (3u << 16) | 2u); // lhz r12,2(r3)
