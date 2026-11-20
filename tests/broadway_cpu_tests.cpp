@@ -736,13 +736,13 @@ int main() {
     assert((cpu.state().cr >> 28) == 9u); // LT | SO
 
     // Big-endian 64-bit memory access used by floating-point loads/stores.
-    memory.write64_be(320, 0x3ff8000000000000ull); // 1.5
-    assert(memory.read64_be(320) == 0x3ff8000000000000ull);
+    memory.write64_be(400, 0x3ff8000000000000ull); // 1.5
+    assert(memory.read64_be(400) == 0x3ff8000000000000ull);
 
     // Foundational FPU: lfd/stfd, arithmetic, sign operations and comparison.
     auto fpu_state = cpu.state();
     fpu_state.pc = 324;
-    fpu_state.gpr[3] = 320u;
+    fpu_state.gpr[3] = 400u;
     fpu_state.fpr[1] = 0x4000000000000000ull; // 2.0
     fpu_state.fpr[2] = 0x4008000000000000ull; // 3.0
     cpu.set_state(fpu_state);
@@ -771,7 +771,7 @@ int main() {
     assert(cpu.step());
     assert((cpu.state().cr >> 28) == 8u); // 2.0 < 3.0
     assert(cpu.step());
-    assert(memory.read64_be(320) == std::bit_cast<std::uint64_t>(5.0));
+    assert(memory.read64_be(400) == std::bit_cast<std::uint64_t>(5.0));
 
     // lfs/stfs convert between binary32 memory and binary64 FPR storage.
     auto single_state = cpu.state();
