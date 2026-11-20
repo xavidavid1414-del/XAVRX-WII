@@ -41,6 +41,15 @@ std::uint32_t Memory::read32_be(std::uint32_t address) const {
            static_cast<std::uint32_t>(bytes_[address + 3]);
 }
 
+std::uint64_t Memory::read64_be(std::uint32_t address) const {
+    check_range(address, 8);
+    std::uint64_t value = 0;
+    for (std::size_t i = 0; i < 8; ++i) {
+        value = (value << 8) | bytes_[static_cast<std::size_t>(address) + i];
+    }
+    return value;
+}
+
 void Memory::write8(std::uint32_t address, std::uint8_t value) {
     check_range(address, 1);
     bytes_[address] = value;
@@ -58,6 +67,14 @@ void Memory::write32_be(std::uint32_t address, std::uint32_t value) {
     bytes_[address + 1] = static_cast<std::uint8_t>(value >> 16);
     bytes_[address + 2] = static_cast<std::uint8_t>(value >> 8);
     bytes_[address + 3] = static_cast<std::uint8_t>(value);
+}
+
+void Memory::write64_be(std::uint32_t address, std::uint64_t value) {
+    check_range(address, 8);
+    for (std::size_t i = 0; i < 8; ++i) {
+        bytes_[static_cast<std::size_t>(address) + i] =
+            static_cast<std::uint8_t>(value >> (56u - static_cast<unsigned>(i) * 8u));
+    }
 }
 
 } // namespace xavrx
