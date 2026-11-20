@@ -227,11 +227,11 @@ int main() {
     assert(cpu.state().ctr == 9u);
     // The same condition is false when CR0 EQ is clear.
     auto not_taken_state = cpu.state();
-    not_taken_state.pc = 164;
+    not_taken_state.pc = 160;
     not_taken_state.cr = 0;
     cpu.set_state(not_taken_state);
     assert(cpu.step());
-    assert(cpu.state().pc == 168u);
+    assert(cpu.state().pc == 164u);
 
     // bclr uses the aligned LR target and the same CR condition logic.
     auto link_branch_state = cpu.state();
