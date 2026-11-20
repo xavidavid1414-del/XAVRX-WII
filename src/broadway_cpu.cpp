@@ -359,6 +359,10 @@ bool BroadwayCpu::step() {
             break;
         }
 
+        case 104: // neg: negate RA and write the result to RT
+            state_.gpr[rt] = 0u - a;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
+            break;
         case 266: // add
             state_.gpr[rt] = a + b;
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
