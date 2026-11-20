@@ -692,6 +692,17 @@ int main() {
     assert((cpu.state().xer & (1u << 29)) != 0u);
     assert((cpu.state().cr >> 28) == 3u); // EQ | SO
 
+    // addze records carry-out when RA is 0xffffffff and CA is set.
+    auto addze_carry_state = cpu.state();
+    addze_carry_state.pc = 48;
+    addze_carry_state.gpr[3] = 0xffffffffu;
+    addze_carry_state.xer |= 1u << 29;
+    cpu.set_state(addze_carry_state);
+    memory.write32_be(48, xform(19, 3, 0, 202)); // addze r19,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[19] == 0u);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+
     // subfze computes ~RA + XER[CA] and records carry-out.
     auto subfze_state = cpu.state();
     subfze_state.pc = 32;
@@ -772,6 +783,25 @@ int main() {
     assert((cpu.state().cr >> 28) == 8u); // 2.0 < 3.0
     assert(cpu.step());
     assert(memory.read64_be(400) == std::bit_cast<std::uint64_t>(5.0));
+
+    // Single-precision arithmetic rounds each result to binary32.
+    auto single_arithmetic_state = cpu.state();
+    single_arithmetic_state.pc = 368;
+    single_arithmetic_state.fpr[1] = std::bit_cast<std::uint64_t>(1.0 / 3.0);
+    single_arithmetic_state.fpr[2] = std::bit_cast<std::uint64_t>(2.0);
+    cpu.set_state(single_arithmetic_state);
+    memory.write32_be(368, fform(10, 1, 2, 21) | (59u << 26)); // fadds f10,f1,f2
+    memory.write32_be(372, fform(11, 1, 2, 18) | (59u << 26)); // fdivs f11,f1,f2
+    memory.write32_be(376, fform(12, 1, 2, 25) | (59u << 26)); // fmuls f12,f1,f2
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[10]) ==
+           static_cast<double>(static_cast<float>(1.0 / 3.0) + 2.0f));
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[11]) ==
+           static_cast<double>(static_cast<float>(1.0 / 3.0) / 2.0f));
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[12]) ==
+           static_cast<double>(static_cast<float>(1.0 / 3.0) * 2.0f));
 
     // lfs/stfs convert between binary32 memory and binary64 FPR storage.
     auto single_state = cpu.state();
