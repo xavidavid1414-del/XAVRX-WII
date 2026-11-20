@@ -347,6 +347,22 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[13] == 11u);
 
+    // addc/subfc update the XER carry bit (bit 29).
+    auto carry_state = cpu.state();
+    carry_state.pc = 0;
+    carry_state.gpr[3] = 0xffffffffu;
+    carry_state.gpr[4] = 1u;
+    carry_state.xer = 0x12345678u;
+    cpu.set_state(carry_state);
+    memory.write32_be(0, xform(3, 5, 4, 10)); // addc r5,r3,r4
+    memory.write32_be(4, xform(4, 6, 3, 8));  // subfc r6,r4,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == 0u);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0xfffffffeu);
+    assert((cpu.state().xer & (1u << 29)) == 0u);
+
     // mcrf copies a selected CR field; mfcr reads the full CR into a GPR.
     auto cr_transfer_state = cpu.state();
     cr_transfer_state.pc = 244;
