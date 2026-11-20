@@ -14,8 +14,10 @@ std::uint32_t rotate_left_32(std::uint32_t value, std::uint32_t amount) noexcept
 }
 
 void update_cr0(BroadwayCpu::State& state, std::uint32_t value) noexcept {
-    const std::uint32_t field = (value & 0x80000000u) != 0 ? 8u
+    const std::uint32_t relation = (value & 0x80000000u) != 0 ? 8u
         : value == 0 ? 2u : 4u;
+    const std::uint32_t summary_overflow = (state.xer >> 31) & 1u;
+    const std::uint32_t field = relation | summary_overflow;
     state.cr = (state.cr & 0x0fffffffu) | (field << 28);
 }
 
@@ -107,7 +109,8 @@ bool BroadwayCpu::step() {
             less = lhs < immediate;
             greater = lhs > immediate;
         }
-        const std::uint32_t result = less ? 8u : greater ? 4u : 2u;
+        const std::uint32_t result = (less ? 8u : greater ? 4u : 2u) |
+            ((state_.xer >> 31) & 1u);
         const std::uint32_t shift = 28u - (field * 4u);
         const std::uint32_t mask = 0xfu << shift;
         state_.cr = (state_.cr & ~mask) | (result << shift);
@@ -260,7 +263,8 @@ bool BroadwayCpu::step() {
                 less = a < b;
                 greater = a > b;
             }
-            const std::uint32_t result = less ? 8u : greater ? 4u : 2u;
+            const std::uint32_t result = (less ? 8u : greater ? 4u : 2u) |
+                ((state_.xer >> 31) & 1u);
             const std::uint32_t shift = 28u - (field * 4u);
             const std::uint32_t mask = 0xfu << shift;
             state_.cr = (state_.cr & ~mask) | (result << shift);
