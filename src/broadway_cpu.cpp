@@ -220,6 +220,27 @@ bool BroadwayCpu::step() {
             }
             break;
         }
+        case 339: { // mfspr: move supported special-purpose register to GPR
+            const std::uint32_t spr = ra | (rb << 5);
+            switch (spr) {
+            case 1: state_.gpr[rt] = state_.xer; break; // XER
+            case 8: state_.gpr[rt] = state_.lr; break;  // LR
+            case 9: state_.gpr[rt] = state_.ctr; break; // CTR
+            default: return false;
+            }
+            break;
+        }
+        case 467: { // mtspr: move GPR to supported special-purpose register
+            const std::uint32_t spr = ra | (rb << 5);
+            const std::uint32_t value = state_.gpr[rs];
+            switch (spr) {
+            case 1: state_.xer = value; break; // XER
+            case 8: state_.lr = value; break;  // LR
+            case 9: state_.ctr = value; break; // CTR
+            default: return false;
+            }
+            break;
+        }
         case 528: { // bctr: conditional branch to CTR
             const std::uint32_t bo = rt;
             const std::uint32_t bi = ra;
