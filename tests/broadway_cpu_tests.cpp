@@ -632,5 +632,24 @@ int main() {
     assert(cpu.state().xer == 0x00001234u);
     assert(cpu.state().pc == 292u);
 
+    // neg and neg. compute two's-complement values and record CR0 when Rc=1.
+    auto negate_state = cpu.state();
+    negate_state.pc = 292;
+    negate_state.gpr[3] = 7u;
+    negate_state.gpr[4] = 0x80000000u;
+    negate_state.xer = 1u << 31; // Preserve SO in the recorded CR0 field.
+    negate_state.cr = 0x01234567u;
+    cpu.set_state(negate_state);
+    memory.write32_be(292, xform(5, 3, 0, 104));       // neg r5,r3
+    memory.write32_be(296, xform(6, 4, 0, 104) | 1u); // neg. r6,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == 0xfffffff9u);
+    assert(cpu.state().cr == 0x01234567u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0x80000000u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+    assert(cpu.state().pc == 300u);
+
     return 0;
 }
