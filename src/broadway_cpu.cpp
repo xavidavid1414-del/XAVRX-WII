@@ -1,5 +1,7 @@
 #include "xavrx/broadway_cpu.hpp"
 
+#include <bit>
+#include <cmath>
 #include <cstdint>
 
 namespace xavrx {
@@ -56,6 +58,33 @@ bool BroadwayCpu::step() {
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
 
     switch (opcode) {
+    case 48: // lfs: load single and widen to the FPR's binary64 representation
+    case 50: { // lfd: load double
+        const std::uint32_t frt = rt;
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        if (opcode == 48) {
+            const float value = std::bit_cast<float>(memory_.read32_be(address));
+            state_.fpr[frt] = std::bit_cast<std::uint64_t>(static_cast<double>(value));
+        } else {
+            state_.fpr[frt] = memory_.read64_be(address);
+        }
+        break;
+    }
+    case 52: // stfs: round FPR value to IEEE-754 binary32
+    case 54: { // stfd: store binary64
+        const std::uint32_t frs = rt;
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        const double value = std::bit_cast<double>(state_.fpr[frs]);
+        if (opcode == 52) {
+            memory_.write32_be(address, std::bit_cast<std::uint32_t>(
+                static_cast<float>(value)));
+        } else {
+            memory_.write64_be(address, state_.fpr[frs]);
+        }
+        break;
+    }
     case 19: { // CR logical operations and mcrf
         const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
         if (xo == 0) { // mcrf: move one condition-register field
@@ -222,6 +251,64 @@ bool BroadwayCpu::step() {
         state_.pc = absolute ? static_cast<std::uint32_t>(displacement)
                              : state_.pc + static_cast<std::uint32_t>(displacement);
         return true;
+    }
+    case 63: { // Foundational floating-point instructions
+        const std::uint32_t frt = rt;
+        const std::uint32_t fra = ra;
+        const std::uint32_t frb = (instruction >> 11) & 31u;
+        const std::uint32_t frc = (instruction >> 6) & 31u;
+        const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
+        const double a = std::bit_cast<double>(state_.fpr[fra]);
+        const double b = std::bit_cast<double>(state_.fpr[frb]);
+        auto write_fpr = [&](double value) {
+            state_.fpr[frt] = std::bit_cast<std::uint64_t>(value);
+        };
+        switch (xo) {
+        case 0:   // fcmpu: unordered compare into selected CR field
+        case 32: { // fcmpo: ordered compare (basic compare result)
+            const std::uint32_t field = (instruction >> 23) & 7u;
+            const double lhs = a;
+            const double rhs = b;
+            const std::uint32_t result = std::isnan(lhs) || std::isnan(rhs)
+                ? 1u : lhs < rhs ? 8u : lhs > rhs ? 4u : 2u;
+            const std::uint32_t shift = 28u - field * 4u;
+            const std::uint32_t mask = 0xfu << shift;
+            state_.cr = (state_.cr & ~mask) | (result << shift);
+            break;
+        }
+        case 12: // frsp: round to single precision, retain in FPR
+            write_fpr(static_cast<double>(static_cast<float>(b)));
+            break;
+        case 40: // fneg
+            write_fpr(-b);
+            break;
+        case 72: // fmr
+            state_.fpr[frt] = state_.fpr[frb];
+            break;
+        case 136: // fnabs
+            write_fpr(-std::fabs(b));
+            break;
+        case 264: // fabs
+            write_fpr(std::fabs(b));
+            break;
+        case 18: // fdiv
+        case 20: // fsub
+        case 21: // fadd
+        case 25: { // fmul uses FRA and FRC
+            const double rhs = xo == 25
+                ? std::bit_cast<double>(state_.fpr[frc]) : b;
+            double value = 0.0;
+            if (xo == 18) value = a / rhs;
+            else if (xo == 20) value = a - rhs;
+            else if (xo == 21) value = a + rhs;
+            else value = a * rhs;
+            write_fpr(value);
+            break;
+        }
+        default:
+            return false;
+        }
+        break;
     }
     case 31: { // X-form integer instructions
         const std::uint32_t rs = rt;
