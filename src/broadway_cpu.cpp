@@ -100,6 +100,32 @@ bool BroadwayCpu::step() {
         case 536: // srw: shift right word
             state_.gpr[ra] = (b & 0x20u) != 0 ? 0u : state_.gpr[rs] >> (b & 0x3fu);
             break;
+        case 792: { // sraw: arithmetic shift right word
+            const std::uint32_t value = state_.gpr[rs];
+            const std::uint32_t shift = b & 0x3fu;
+            if (shift == 0) {
+                state_.gpr[ra] = value;
+            } else if (shift >= 32) {
+                state_.gpr[ra] = (value & 0x80000000u) != 0 ? 0xffffffffu : 0u;
+            } else {
+                const std::uint32_t fill = (value & 0x80000000u) != 0
+                    ? (~0u << (32u - shift)) : 0u;
+                state_.gpr[ra] = (value >> shift) | fill;
+            }
+            break;
+        }
+        case 824: { // srawi: arithmetic shift right word immediate
+            const std::uint32_t value = state_.gpr[rs];
+            const std::uint32_t shift = rb;
+            if (shift == 0) {
+                state_.gpr[ra] = value;
+            } else {
+                const std::uint32_t fill = (value & 0x80000000u) != 0
+                    ? (~0u << (32u - shift)) : 0u;
+                state_.gpr[ra] = (value >> shift) | fill;
+            }
+            break;
+        }
         default:
             return false;
         }
