@@ -505,7 +505,7 @@ int main() {
     assert(cpu.state().gpr[12] == 0x40000000u);
     assert((cpu.state().cr >> 28) == 5u); // GT | SO
     assert(cpu.step());
-    assert(cpu.state().gpr[13] == 0xc0000000u);
+    assert(cpu.state().gpr[13] == 0xffffffffu); // signed high word: (-2^31 * 2) >> 32
     assert((cpu.state().cr >> 28) == 9u); // LT | SO
     assert(cpu.step());
     assert(cpu.state().gpr[14] == 1u);
