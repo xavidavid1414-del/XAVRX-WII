@@ -61,6 +61,18 @@ int main() {
     assert(cpu.state().gpr[9] == 0x0fffu);
     assert(cpu.step());
     assert(cpu.state().gpr[10] == 0x0ff0u);
+    memory.write32_be(80, xform(3, 10, 4, 124)); // nor r10,r3,r4
+    memory.write32_be(84, xform(3, 11, 4, 284)); // eqv r11,r3,r4
+    memory.write32_be(88, xform(3, 12, 4, 476)); // nand r12,r3,r4
+    auto logic_extra_state = cpu.state();
+    logic_extra_state.pc = 80;
+    cpu.set_state(logic_extra_state);
+    assert(cpu.step());
+    assert(cpu.state().gpr[10] == 0xfffff000u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[11] == 0xfffff0ffu);
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == 0xfffffff0u);
     // Immediate multiply and XOR.
     memory.write32_be(84, (7u << 26) | (11u << 21) | (3u << 16) | 0xfffeu);
     memory.write32_be(88, (26u << 26) | (3u << 21) | (12u << 16) | 0x00ffu);
