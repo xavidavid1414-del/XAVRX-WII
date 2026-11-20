@@ -312,6 +312,7 @@ bool BroadwayCpu::step() {
         case 235: // mullw: multiply low 32 bits
             state_.gpr[rt] = static_cast<std::uint32_t>(
                 static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         case 491: { // divw: signed word division
             const std::int32_t dividend = static_cast<std::int32_t>(a);
@@ -322,6 +323,7 @@ bool BroadwayCpu::step() {
             } else {
                 state_.gpr[rt] = static_cast<std::uint32_t>(dividend / divisor);
             }
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
         case 459: { // divwu: unsigned word division
@@ -330,6 +332,7 @@ bool BroadwayCpu::step() {
             } else {
                 state_.gpr[rt] = a / b;
             }
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
         case 75: { // mulhw: signed high word of product
@@ -338,12 +341,14 @@ bool BroadwayCpu::step() {
                 static_cast<std::int64_t>(static_cast<std::int32_t>(b));
             state_.gpr[rt] = static_cast<std::uint32_t>(
                 static_cast<std::uint64_t>(product) >> 32);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
         case 11: { // mulhwu: unsigned high word of product
             const std::uint64_t product =
                 static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b);
             state_.gpr[rt] = static_cast<std::uint32_t>(product >> 32);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
         case 40: // subf: RT = RB - RA
