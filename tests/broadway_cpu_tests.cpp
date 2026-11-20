@@ -511,4 +511,45 @@ int main() {
     assert(cpu.state().gpr[14] == 1u);
     assert((cpu.state().cr >> 28) == 5u); // GT | SO
     assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+
+    // Rc variants of shifts and sign-extension instructions update CR0.
+    auto record_shift_state = cpu.state();
+    record_shift_state.pc = 200;
+    record_shift_state.xer |= 1u << 31;
+    record_shift_state.gpr[3] = 0x00f00000u;
+    record_shift_state.gpr[5] = 0x80u;
+    record_shift_state.gpr[6] = 0x8001u;
+    record_shift_state.gpr[7] = 1u;
+    record_shift_state.gpr[8] = 4u;
+    record_shift_state.gpr[9] = 0x80000000u;
+    record_shift_state.gpr[10] = 0xf0000000u;
+    cpu.set_state(record_shift_state);
+    memory.write32_be(200, xform(3, 15, 0, 26) | 1u);  // cntlzw.
+    memory.write32_be(204, xform(5, 16, 0, 954) | 1u); // extsb.
+    memory.write32_be(208, xform(6, 17, 0, 922) | 1u); // extsh.
+    memory.write32_be(212, xform(7, 18, 8, 24) | 1u);  // slw.
+    memory.write32_be(216, xform(9, 19, 8, 536) | 1u); // srw.
+    memory.write32_be(220, xform(10, 20, 8, 792) | 1u); // sraw.
+    memory.write32_be(224, xform(10, 21, 4, 824) | 1u); // srawi.
+    assert(cpu.step());
+    assert(cpu.state().gpr[15] == 8u);
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[16] == 0xffffff80u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[17] == 0xffff8001u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[18] == 16u);
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[19] == 0x08000000u);
+    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[20] == 0xff000000u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+    assert(cpu.step());
+    assert(cpu.state().gpr[21] == 0xff000000u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
 }
