@@ -355,12 +355,12 @@ int main() {
     carry_state.xer = 0x12345678u;
     cpu.set_state(carry_state);
     memory.write32_be(0, xform(3, 5, 4, 10)); // addc r5,r3,r4
-    memory.write32_be(4, xform(4, 6, 3, 8));  // subfc r6,r4,r3
+    memory.write32_be(4, xform(6, 3, 4, 8));  // subfc r6,r3,r4
     assert(cpu.step());
     assert(cpu.state().gpr[5] == 0u);
     assert((cpu.state().xer & (1u << 29)) != 0u);
     assert(cpu.step());
-    assert(cpu.state().gpr[6] == 0xfffffffeu);
+    assert(cpu.state().gpr[6] == 2u);
     assert((cpu.state().xer & (1u << 29)) == 0u);
 
     // mcrf copies a selected CR field; mfcr reads the full CR into a GPR.
