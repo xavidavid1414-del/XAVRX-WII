@@ -275,19 +275,23 @@ bool BroadwayCpu::step() {
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
-        case 8: // subfc: RB - RA and record no-borrow carry in XER[CA]
+        case 8: { // subfc: RB - RA and record no-borrow carry in XER[CA]
             state_.gpr[rt] = b - a;
             state_.xer = (state_.xer & ~(1u << 29)) |
                          (b >= a ? (1u << 29) : 0u);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
+        }
         case 138: { // adde: add registers and XER[CA]
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum = static_cast<std::uint64_t>(a) + b + carry_in;
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
         case 136: { // subfe: RB - RA - 1 + XER[CA]
@@ -297,11 +301,13 @@ bool BroadwayCpu::step() {
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
 
         case 266: // add
             state_.gpr[rt] = a + b;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         case 235: // mullw: multiply low 32 bits
             state_.gpr[rt] = static_cast<std::uint32_t>(
@@ -342,6 +348,7 @@ bool BroadwayCpu::step() {
         }
         case 40: // subf: RT = RB - RA
             state_.gpr[rt] = b - a;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         case 28: // and
             state_.gpr[ra] = state_.gpr[rs] & b;
