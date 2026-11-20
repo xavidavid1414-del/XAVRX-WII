@@ -236,4 +236,22 @@ int main() {
     memory.write32_be(176, xform(12, 2, 0, 16));
     assert(cpu.step());
     assert(cpu.state().pc == 180u);
+
+    // bctr branches to the aligned CTR target when its CR condition matches.
+    auto count_branch_state = cpu.state();
+    count_branch_state.pc = 184;
+    count_branch_state.ctr = 212;
+    count_branch_state.cr = 2u << 28; // CR0 EQ
+    cpu.set_state(count_branch_state);
+    memory.write32_be(184, xform(12, 2, 0, 528)); // bctr if CR0 EQ
+    assert(cpu.step());
+    assert(cpu.state().pc == 212u);
+    assert(cpu.state().ctr == 212u); // bctr does not decrement CTR
+    auto count_branch_false = cpu.state();
+    count_branch_false.pc = 188;
+    count_branch_false.cr = 0;
+    cpu.set_state(count_branch_false);
+    memory.write32_be(188, xform(12, 2, 0, 528));
+    assert(cpu.step());
+    assert(cpu.state().pc == 192u);
 }
