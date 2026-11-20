@@ -193,4 +193,28 @@ int main() {
     assert(cpu.step());
     assert(((cpu.state().cr >> 12) & 0xfu) == 4u); // unsigned max > 1
     assert(cpu.state().gpr[5] == 0xffffffffu);
+
+    // bc branches when the selected CR bit matches BO's expected value.
+    auto branch_state = cpu.state();
+    branch_state.pc = 156;
+    branch_state.cr = 2u << 28; // CR0 EQ bit set
+    branch_state.ctr = 9u;
+    cpu.set_state(branch_state);
+    const auto bc = [](std::uint32_t bo, std::uint32_t bi,
+                       std::uint32_t displacement, bool link = false) {
+        return (16u << 26) | (bo << 21) | (bi << 16) |
+               (displacement & 0xfffcu) | (link ? 1u : 0u);
+    };
+    memory.write32_be(156, bc(12, 2, 8)); // ignore CTR; branch if CR0 EQ
+    memory.write32_be(160, bc(12, 2, 8, true));
+    assert(cpu.step());
+    assert(cpu.state().pc == 164u);
+    assert(cpu.state().ctr == 9u);
+    // The same condition is false when CR0 EQ is clear.
+    auto not_taken_state = cpu.state();
+    not_taken_state.pc = 164;
+    not_taken_state.cr = 0;
+    cpu.set_state(not_taken_state);
+    assert(cpu.step());
+    assert(cpu.state().pc == 168u);
 }
