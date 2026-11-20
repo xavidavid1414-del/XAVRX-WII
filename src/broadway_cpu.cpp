@@ -136,6 +136,34 @@ bool BroadwayCpu::step() {
         memory_.write32_be(base + static_cast<std::uint32_t>(
             sign_extend_16(immediate)), state_.gpr[rt]);
         break;
+    case 16: { // bc: conditional branch
+        const std::uint32_t bo = (instruction >> 21) & 31u;
+        const std::uint32_t bi = (instruction >> 16) & 31u;
+        std::int32_t displacement = static_cast<std::int32_t>(
+            instruction & 0x0000fffcu);
+        if ((displacement & 0x00008000) != 0) {
+            displacement |= static_cast<std::int32_t>(0xffff0000u);
+        }
+        const bool absolute = (instruction & 2u) != 0;
+        const bool link = (instruction & 1u) != 0;
+
+        bool ctr_ok = true;
+        if ((bo & 4u) == 0) {
+            --state_.ctr;
+            ctr_ok = ((state_.ctr != 0) != ((bo & 2u) != 0));
+        }
+        const bool condition = ((state_.cr >> (31u - bi)) & 1u) != 0;
+        const bool condition_ok = (bo & 16u) != 0 ||
+                                  (condition == ((bo & 8u) != 0));
+        if (link) state_.lr = next_pc;
+        if (ctr_ok && condition_ok) {
+            state_.pc = absolute ? static_cast<std::uint32_t>(displacement)
+                                 : state_.pc + static_cast<std::uint32_t>(displacement);
+        } else {
+            state_.pc = next_pc;
+        }
+        return true;
+    }
     case 18: { // b
         std::int32_t displacement = static_cast<std::int32_t>(
             instruction & 0x03fffffcu);
