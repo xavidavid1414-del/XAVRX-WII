@@ -240,6 +240,20 @@ bool BroadwayCpu::step() {
             state_.gpr[rt] = static_cast<std::uint32_t>(
                 static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
             break;
+        case 75: { // mulhw: signed high word of product
+            const std::int64_t product =
+                static_cast<std::int64_t>(static_cast<std::int32_t>(a)) *
+                static_cast<std::int64_t>(static_cast<std::int32_t>(b));
+            state_.gpr[rt] = static_cast<std::uint32_t>(
+                static_cast<std::uint64_t>(product) >> 32);
+            break;
+        }
+        case 11: { // mulhwu: unsigned high word of product
+            const std::uint64_t product =
+                static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b);
+            state_.gpr[rt] = static_cast<std::uint32_t>(product >> 32);
+            break;
+        }
         case 40: // subf: RT = RB - RA
             state_.gpr[rt] = b - a;
             break;
