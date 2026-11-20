@@ -863,6 +863,48 @@ int main() {
     assert(cpu.state().pc == 440u);
     assert(cpu.state().gpr[5] == 0xfeedbeefu);
 
+    // Byte and halfword loads/stores, sign extension, update forms and alignment.
+    auto narrow_memory_state = cpu.state();
+    narrow_memory_state.pc = 448;
+    narrow_memory_state.gpr[3] = 500u;
+    narrow_memory_state.gpr[4] = 0x89abcdefu;
+    cpu.set_state(narrow_memory_state);
+    memory.write8(500, 0x80u);
+    memory.write16_be(502, 0x8001u);
+    memory.write32_be(448, (34u << 26) | (10u << 21) | (3u << 16)); // lbz r10,0(r3)
+    memory.write32_be(452, (42u << 26) | (11u << 21) | (3u << 16) | 2u); // lha r11,2(r3)
+    memory.write32_be(456, (40u << 26) | (12u << 21) | (3u << 16) | 2u); // lhz r12,2(r3)
+    memory.write32_be(460, (35u << 26) | (13u << 21) | (3u << 16) | 4u); // lbzu r13,4(r3)
+    memory.write32_be(464, (38u << 26) | (4u << 21) | (3u << 16) | 8u); // stb r4,8(r3)
+    memory.write32_be(468, (44u << 26) | (4u << 21) | (3u << 16) | 10u); // sth r4,10(r3)
+    memory.write32_be(472, (39u << 26) | (4u << 21) | (3u << 16) | 12u); // stbu r4,12(r3)
+    assert(cpu.step());
+    assert(cpu.state().gpr[10] == 0x80u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[11] == 0xffff8001u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == 0x8001u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[13] == 0x80u);
+    assert(cpu.state().gpr[3] == 504u);
+    assert(cpu.step());
+    assert(memory.read8(512) == 0xefu);
+    assert(cpu.step());
+    assert(memory.read16_be(514) == 0xcdefu);
+    assert(cpu.step());
+    assert(memory.read8(516) == 0xefu);
+    assert(cpu.state().gpr[3] == 516u);
+
+    // Update-form stores reject RA=0 and RA=RS without changing CPU state.
+    auto invalid_narrow_update = cpu.state();
+    invalid_narrow_update.pc = 476;
+    invalid_narrow_update.gpr[3] = 520u;
+    cpu.set_state(invalid_narrow_update);
+    memory.write32_be(476, (39u << 26) | (3u << 21) | (3u << 16) | 4u);
+    assert(!cpu.step());
+    assert(cpu.state().pc == 476u);
+    assert(cpu.state().gpr[3] == 520u);
+
     // Structured CPU exceptions: fetch, illegal instruction and data faults.
     auto exception_state = cpu.state();
     exception_state.pc = 401u;
