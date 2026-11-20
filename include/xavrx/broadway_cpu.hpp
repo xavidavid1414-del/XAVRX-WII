@@ -11,6 +11,9 @@ class BroadwayCpu {
 public:
     struct State {
         std::array<std::uint32_t, 32> gpr{};
+        // FPRs are stored as IEEE-754 binary64 bit patterns.
+        std::array<std::uint64_t, 32> fpr{};
+        std::uint32_t fpscr{0};
         std::uint32_t pc{0};
         std::uint32_t lr{0};
         std::uint32_t ctr{0};
