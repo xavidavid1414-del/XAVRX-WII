@@ -259,10 +259,67 @@ bool BroadwayCpu::execute_one() {
         if (update) state_.gpr[ra] = address;
         break;
     }
+    case 34: // lbz
+    case 35: // lbzu
+    case 40: // lhz
+    case 41: // lhzu
+    case 42: // lha
+    case 43: { // lhau
+        const bool update = opcode == 35u || opcode == 41u || opcode == 43u;
+        if (update && ra == 0u) return false;
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        if ((opcode >= 40u) && (address & 1u) != 0u) {
+            throw std::invalid_argument("unaligned halfword load");
+        }
+        std::uint32_t value = 0;
+        if (opcode == 34u || opcode == 35u) {
+            value = memory_.read8(address);
+        } else {
+            const std::uint16_t half = memory_.read16_be(address);
+            value = (opcode == 42u || opcode == 43u)
+                ? static_cast<std::uint32_t>(static_cast<std::int32_t>(
+                    static_cast<std::int16_t>(half)))
+                : static_cast<std::uint32_t>(half);
+        }
+        state_.gpr[rt] = value;
+        if (update) state_.gpr[ra] = address;
+        break;
+    }
+    case 32: // lwz
+    case 33: { // lwzu: load word and update RA
+        const bool update = opcode == 33u;
+        if (update && ra == 0u) return false;
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        if ((address & 3u) != 0u) throw std::invalid_argument("unaligned lwz");
+        const std::uint32_t value = memory_.read32_be(address);
+        state_.gpr[rt] = value;
+        if (update) state_.gpr[ra] = address;
+        break;
+    }
+    case 38: // stb
+    case 39: // stbu
+    case 44: // sth
+    case 45: { // sthu
+        const bool update = opcode == 39u || opcode == 45u;
+        if (update && (ra == 0u || ra == rt)) return false;
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        const bool halfword = opcode == 44u || opcode == 45u;
+        if (halfword && (address & 1u) != 0u) {
+            throw std::invalid_argument("unaligned halfword store");
+        }
+        if (halfword) memory_.write16_be(address,
+            static_cast<std::uint16_t>(state_.gpr[rt]));
+        else memory_.write8(address, static_cast<std::uint8_t>(state_.gpr[rt]));
+        if (update) state_.gpr[ra] = address;
+        break;
+    }
     case 36: // stw
     case 37: { // stwu: store word and update RA
         const bool update = opcode == 37u;
-        if (update && ra == 0u) return false;
+        if (update && (ra == 0u || ra == rt)) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) throw std::invalid_argument("unaligned stw");
