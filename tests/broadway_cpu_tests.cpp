@@ -619,5 +619,18 @@ int main() {
         assert(actual == cr_expected[i]);
     }
 
+    // mcrxr transfers XER[SO,OV,CA] into the selected CR field and clears them.
+    auto mcrxr_state = cpu.state();
+    mcrxr_state.pc = 288;
+    mcrxr_state.xer = 0xe0001234u;
+    mcrxr_state.cr = 0x12345678u;
+    cpu.set_state(mcrxr_state);
+    memory.write32_be(288, (31u << 26) | (3u << 23) | (512u << 1));
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 16) & 0xfu) == 0xeu);
+    assert((cpu.state().cr & 0xfff0ffffu) == (0x12345678u & 0xfff0ffffu));
+    assert(cpu.state().xer == 0x00001234u);
+    assert(cpu.state().pc == 292u);
+
     return 0;
 }
