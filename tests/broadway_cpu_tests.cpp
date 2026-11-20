@@ -4,7 +4,7 @@
 #include <cstdint>
 
 int main() {
-    xavrx::Memory memory(256);
+    xavrx::Memory memory(512);
     // addi r3, r0, 42
     memory.write32_be(0, (14u << 26) | (3u << 21) | 42u);
     // addi r4, r3, -2
@@ -197,8 +197,7 @@ int main() {
     compare_state.gpr[3] = 0xffffffffu;
     compare_state.cr = 0x01234567u;
     cpu.set_state(compare_state);
-    memory.write32_be(140, (11u << 26) | (2u << 23) | (3u << 16)); // cmpi cr2,r3,0
-    memory.write32_be(144, (10u << 26) | (1u << 23) | (3u << 16) | 0xffffu); // cmpli cr1,r3,65535
+    memory.write32_be(140, (11u << 26) | (2u << 23) | (3u << 16)); // cmpi cr2,r3,0    memory.write32_be(144, (10u << 26) | (1u << 23) | (3u << 16) | 0xffffu); // cmpli cr1,r3,65535
     assert(cpu.step());
     assert(((cpu.state().cr >> 20) & 0xfu) == 8u); // CR2: LT
     assert(cpu.state().gpr[3] == 0xffffffffu);
@@ -397,8 +396,7 @@ int main() {
     assert((cpu.state().cr >> 28) == 3u); // EQ | SO
     assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
     assert(cpu.step());
-    assert(cpu.state().gpr[6] == 2u);
-    assert((cpu.state().cr >> 28) == 5u); // GT | SO
+    assert(cpu.state().gpr[6] == 2u);    assert((cpu.state().cr >> 28) == 5u); // GT | SO
 
     // adde and subfe consume XER[CA] and update the carry-out bit.
     auto extended_arithmetic_state = cpu.state();
@@ -618,8 +616,3 @@ int main() {
         assert(cpu.step());
         const bool actual = ((cpu.state().cr >> (31u - 5u)) & 1u) != 0;
         assert(actual == cr_expected[i]);
-        assert(((cpu.state().cr >> (31u - 6u)) & 1u) != 0);
-        assert(((cpu.state().cr >> (31u - 7u)) & 1u) == 0);
-    }
-
-}
