@@ -306,4 +306,16 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[11] == 2u);
 
+
+    // rlwnm rotates by the amount held in RB, then applies the MSB-numbered mask.
+    auto variable_rotate_state = cpu.state();
+    variable_rotate_state.pc = 228;
+    variable_rotate_state.gpr[3] = 0x12345678u;
+    variable_rotate_state.gpr[4] = 8u;
+    cpu.set_state(variable_rotate_state);
+    memory.write32_be(228, (23u << 26) | (3u << 21) | (12u << 16) |
+                      (4u << 11) | (8u << 6) | (23u << 1)); // rlwnm r12,r3,r4,8,23
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == 0x00567800u);
+
 }
