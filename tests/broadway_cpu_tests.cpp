@@ -266,4 +266,21 @@ int main() {
     memory.write32_be(188, xform(12, 2, 0, 528));
     assert(cpu.step());
     assert(cpu.state().pc == 192u);
+    // cntlzw counts leading zeroes; extsb/extsh preserve signed values.
+    auto extend_state = cpu.state();
+    extend_state.pc = 204;
+    extend_state.gpr[3] = 0x00100000u;
+    extend_state.gpr[4] = 0x00000080u;
+    extend_state.gpr[5] = 0x00008001u;
+    cpu.set_state(extend_state);
+    memory.write32_be(204, xform(3, 6, 0, 26));   // cntlzw r6,r3
+    memory.write32_be(208, xform(4, 7, 0, 954));  // extsb r7,r4
+    memory.write32_be(212, xform(5, 8, 0, 922));  // extsh r8,r5
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 11u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[7] == 0xffffff80u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[8] == 0xffff8001u);
+
 }
