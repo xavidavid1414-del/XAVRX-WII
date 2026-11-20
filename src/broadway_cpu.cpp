@@ -66,6 +66,33 @@ bool BroadwayCpu::step() {
                              : state_.pc + static_cast<std::uint32_t>(displacement);
         return true;
     }
+    case 31: { // X-form integer instructions
+        const std::uint32_t rs = rt;
+        const std::uint32_t rb = (instruction >> 11) & 31u;
+        const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
+        const std::uint32_t a = state_.gpr[ra];
+        const std::uint32_t b = state_.gpr[rb];
+        switch (xo) {
+        case 266: // add
+            state_.gpr[rt] = a + b;
+            break;
+        case 40: // subf: RT = RB - RA
+            state_.gpr[rt] = b - a;
+            break;
+        case 28: // and
+            state_.gpr[ra] = state_.gpr[rs] & b;
+            break;
+        case 444: // or
+            state_.gpr[ra] = state_.gpr[rs] | b;
+            break;
+        case 316: // xor
+            state_.gpr[ra] = state_.gpr[rs] ^ b;
+            break;
+        default:
+            return false;
+        }
+        break;
+    }
     default:
         return false;
     }
