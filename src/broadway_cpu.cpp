@@ -13,6 +13,12 @@ std::uint32_t rotate_left_32(std::uint32_t value, std::uint32_t amount) noexcept
     return amount == 0 ? value : (value << amount) | (value >> (32u - amount));
 }
 
+void update_cr0(BroadwayCpu::State& state, std::uint32_t value) noexcept {
+    const std::uint32_t field = (value & 0x80000000u) != 0 ? 8u
+        : value == 0 ? 2u : 4u;
+    state.cr = (state.cr & 0x0fffffffu) | (field << 28);
+}
+
 std::uint32_t ppc_mask(std::uint32_t begin, std::uint32_t end) noexcept {
     std::uint32_t mask = 0;
     for (std::uint32_t bit = 0; bit < 32; ++bit) {
@@ -85,6 +91,18 @@ bool BroadwayCpu::step() {
     case 27: // xoris
         state_.gpr[ra] = state_.gpr[rt] ^ (immediate << 16);
         break;
+    case 28: { // andi.: AND immediate and record CR0
+        const std::uint32_t result = state_.gpr[rt] & immediate;
+        state_.gpr[ra] = result;
+        update_cr0(state_, result);
+        break;
+    }
+    case 29: { // andis.: AND shifted immediate and record CR0
+        const std::uint32_t result = state_.gpr[rt] & (immediate << 16);
+        state_.gpr[ra] = result;
+        update_cr0(state_, result);
+        break;
+    }
     case 25: // oris
         state_.gpr[ra] = state_.gpr[rt] | (immediate << 16);
         break;
