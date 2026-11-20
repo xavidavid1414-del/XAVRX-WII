@@ -91,6 +91,7 @@ int main() {
     memory.write32_be(84, (7u << 26) | (11u << 21) | (3u << 16) | 0xfffeu);
     memory.write32_be(88, (26u << 26) | (3u << 21) | (12u << 16) | 0x00ffu);
     auto immediate_state = cpu.state();
+    immediate_state.gpr[3] = 0x0f0fu;
     immediate_state.pc = 84;
     cpu.set_state(immediate_state);
     assert(cpu.step());
