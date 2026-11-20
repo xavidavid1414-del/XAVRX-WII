@@ -266,6 +266,18 @@ bool BroadwayCpu::step() {
             state_.cr = (state_.cr & ~mask) | (result << shift);
             break;
         }
+        case 10: { // addc: add and record carry in XER[CA]
+            const std::uint64_t sum = static_cast<std::uint64_t>(a) + b;
+            state_.gpr[rt] = static_cast<std::uint32_t>(sum);
+            state_.xer = (state_.xer & ~(1u << 29)) |
+                         ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            break;
+        }
+        case 8: // subfc: RB - RA and record no-borrow carry in XER[CA]
+            state_.gpr[rt] = b - a;
+            state_.xer = (state_.xer & ~(1u << 29)) |
+                         (b >= a ? (1u << 29) : 0u);
+            break;
         case 266: // add
             state_.gpr[rt] = a + b;
             break;
