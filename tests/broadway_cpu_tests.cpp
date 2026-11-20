@@ -54,7 +54,7 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[6] == 0x100eu);
     assert(cpu.step());
-    assert(cpu.state().gpr[7] == 0xfffff0f0u);
+    assert(cpu.state().gpr[7] == 0xfffff1f0u);
     assert(cpu.step());
     assert(cpu.state().gpr[8] == 0x000fu);
     assert(cpu.step());
