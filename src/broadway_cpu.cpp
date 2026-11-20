@@ -3,6 +3,7 @@
 #include <bit>
 #include <cmath>
 #include <cstdint>
+#include <stdexcept>
 
 namespace xavrx {
 namespace {
@@ -49,6 +50,29 @@ void BroadwayCpu::set_state(const State& state) noexcept {
 }
 
 bool BroadwayCpu::step() {
+    state_.exception = Exception::None;
+    if ((state_.pc & 3u) != 0u) {
+        state_.exception = Exception::Alignment;
+        return false;
+    }
+    if (!memory_.contains(state_.pc, 4)) {
+        state_.exception = Exception::InstructionStorage;
+        return false;
+    }
+    try {
+        if (execute_one()) return true;
+        state_.exception = Exception::IllegalInstruction;
+        return false;
+    } catch (const std::invalid_argument&) {
+        state_.exception = Exception::Alignment;
+        return false;
+    } catch (const std::out_of_range&) {
+        state_.exception = Exception::DataStorage;
+        return false;
+    }
+}
+
+bool BroadwayCpu::execute_one() {
     const std::uint32_t instruction = memory_.read32_be(state_.pc);
     const std::uint32_t opcode = instruction >> 26;
     const std::uint32_t rt = (instruction >> 21) & 31u;
@@ -63,6 +87,10 @@ bool BroadwayCpu::step() {
         const std::uint32_t frt = rt;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
+        const std::uint32_t alignment = opcode == 50 ? 8u : 4u;
+        if ((address & (alignment - 1u)) != 0u) {
+            throw std::invalid_argument("unaligned floating-point load");
+        }
         if (opcode == 48) {
             const float value = std::bit_cast<float>(memory_.read32_be(address));
             state_.fpr[frt] = std::bit_cast<std::uint64_t>(static_cast<double>(value));
@@ -76,6 +104,10 @@ bool BroadwayCpu::step() {
         const std::uint32_t frs = rt;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
+        const std::uint32_t alignment = opcode == 54 ? 8u : 4u;
+        if ((address & (alignment - 1u)) != 0u) {
+            throw std::invalid_argument("unaligned floating-point store");
+        }
         const double value = std::bit_cast<double>(state_.fpr[frs]);
         if (opcode == 52) {
             memory_.write32_be(address, std::bit_cast<std::uint32_t>(
@@ -203,14 +235,20 @@ bool BroadwayCpu::step() {
     case 25: // oris
         state_.gpr[ra] = state_.gpr[rt] | (immediate << 16);
         break;
-    case 32: // lwz
-        state_.gpr[rt] = memory_.read32_be(base + static_cast<std::uint32_t>(
-            sign_extend_16(immediate)));
+    case 32: { // lwz
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        if ((address & 3u) != 0u) throw std::invalid_argument("unaligned lwz");
+        state_.gpr[rt] = memory_.read32_be(address);
         break;
-    case 36: // stw
-        memory_.write32_be(base + static_cast<std::uint32_t>(
-            sign_extend_16(immediate)), state_.gpr[rt]);
+    }
+    case 36: { // stw
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        if ((address & 3u) != 0u) throw std::invalid_argument("unaligned stw");
+        memory_.write32_be(address, state_.gpr[rt]);
         break;
+    }
     case 16: { // bc: conditional branch
         const std::uint32_t bo = (instruction >> 21) & 31u;
         const std::uint32_t bi = (instruction >> 16) & 31u;
