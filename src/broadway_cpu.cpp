@@ -363,6 +363,12 @@ bool BroadwayCpu::step() {
             state_.gpr[rt] = 0u - a;
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
+        case 202: { // addze: RA + XER[CA]
+            const std::uint32_t carry_in = (state_.xer >> 29) & 1u;
+            state_.gpr[rt] = a + carry_in;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
+            break;
+        }
         case 266: // add
             state_.gpr[rt] = a + b;
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
