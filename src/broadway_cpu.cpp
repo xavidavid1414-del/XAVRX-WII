@@ -94,6 +94,12 @@ bool BroadwayCpu::step() {
         case 316: // xor
             state_.gpr[ra] = state_.gpr[rs] ^ b;
             break;
+        case 24: // slw: shift left word
+            state_.gpr[ra] = (b & 0x20u) != 0 ? 0u : state_.gpr[rs] << (b & 0x3fu);
+            break;
+        case 536: // srw: shift right word
+            state_.gpr[ra] = (b & 0x20u) != 0 ? 0u : state_.gpr[rs] >> (b & 0x3fu);
+            break;
         default:
             return false;
         }
