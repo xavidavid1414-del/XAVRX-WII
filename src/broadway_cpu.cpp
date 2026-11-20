@@ -387,21 +387,26 @@ bool BroadwayCpu::step() {
                 value <<= 1;
             }
             state_.gpr[ra] = count;
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         }
         case 954: // extsb: sign-extend byte
             state_.gpr[ra] = static_cast<std::uint32_t>(
                 static_cast<std::int32_t>(static_cast<std::int8_t>(state_.gpr[rs])));
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 922: // extsh: sign-extend halfword
             state_.gpr[ra] = static_cast<std::uint32_t>(
                 static_cast<std::int32_t>(static_cast<std::int16_t>(state_.gpr[rs])));
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 24: // slw: shift left word
             state_.gpr[ra] = (b & 0x20u) != 0 ? 0u : state_.gpr[rs] << (b & 0x3fu);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 536: // srw: shift right word
             state_.gpr[ra] = (b & 0x20u) != 0 ? 0u : state_.gpr[rs] >> (b & 0x3fu);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         case 792: { // sraw: arithmetic shift right word
             const std::uint32_t value = state_.gpr[rs];
@@ -420,6 +425,7 @@ bool BroadwayCpu::step() {
                 : shift != 0u && (value & ((1u << shift) - 1u)) != 0u;
             state_.xer = (state_.xer & ~(1u << 29)) |
                          (shifted_out_ones ? (1u << 29) : 0u);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         }
         case 824: { // srawi: arithmetic shift right word immediate
@@ -436,6 +442,7 @@ bool BroadwayCpu::step() {
                 shift != 0u && (value & ((1u << shift) - 1u)) != 0u;
             state_.xer = (state_.xer & ~(1u << 29)) |
                          (shifted_out_ones ? (1u << 29) : 0u);
+            if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
             break;
         }
         default:
