@@ -432,7 +432,7 @@ int main() {
     assert(cpu.state().gpr[11] == 42u);
     assert(cpu.state().cr == 0x01234567u);
     assert(cpu.step());
-    assert(cpu.state().gpr[12] == 42u);
+    assert(cpu.state().gpr[12] == 41u); // First addze cleared CA because no carry-out.
     assert((cpu.state().cr >> 28) == 5u); // GT | SO
     assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
 
