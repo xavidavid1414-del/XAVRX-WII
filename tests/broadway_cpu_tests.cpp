@@ -318,4 +318,33 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[12] == 0x00567800u);
 
+
+    // divw: signed division, including divide-by-zero handling.
+    auto divide_state = cpu.state();
+    divide_state.pc = 232;
+    divide_state.gpr[3] = static_cast<std::uint32_t>(-21);
+    divide_state.gpr[4] = 4u;
+    cpu.set_state(divide_state);
+    memory.write32_be(232, xform(3, 12, 4, 491)); // divw r12,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == static_cast<std::uint32_t>(-5));
+
+    auto divide_zero_state = cpu.state();
+    divide_zero_state.pc = 236;
+    divide_zero_state.gpr[4] = 0u;
+    cpu.set_state(divide_zero_state);
+    memory.write32_be(236, xform(3, 12, 4, 491));
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == 0u);
+
+    // divwu performs unsigned division.
+    auto unsigned_divide_state = cpu.state();
+    unsigned_divide_state.pc = 240;
+    unsigned_divide_state.gpr[3] = 100u;
+    unsigned_divide_state.gpr[4] = 9u;
+    cpu.set_state(unsigned_divide_state);
+    memory.write32_be(240, xform(3, 13, 4, 459)); // divwu r13,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[13] == 11u);
+
 }
