@@ -184,6 +184,18 @@ bool BroadwayCpu::step() {
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
         switch (xo) {
+        case 528: { // bctr: conditional branch to CTR
+            const std::uint32_t bo = rt;
+            const std::uint32_t bi = ra;
+            if ((bo & 4u) == 0) return false; // bctr does not decrement CTR
+            const std::uint32_t target = state_.ctr & ~3u;
+            const bool condition = ((state_.cr >> (31u - bi)) & 1u) != 0;
+            const bool condition_ok = (bo & 16u) != 0 ||
+                                      (condition == ((bo & 8u) != 0));
+            if ((instruction & 1u) != 0) state_.lr = next_pc;
+            state_.pc = condition_ok ? target : next_pc;
+            return true;
+        }
         case 16: { // bclr: conditional branch to LR
             const std::uint32_t bo = rt;
             const std::uint32_t bi = ra;
