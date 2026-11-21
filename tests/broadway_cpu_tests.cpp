@@ -1200,6 +1200,7 @@ int main() {
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
     assert(cpu.state().pc == 388u);
     assert(cpu.state().dar == 2048u);
+    assert(cpu.state().dsisr == 0u); // failed load: Store bit clear
 
     // A failed store records its effective address in DAR as well.
     exception_state = cpu.state();
@@ -1210,6 +1211,7 @@ int main() {
     assert(!cpu.step());
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
     assert(cpu.state().dar == 2048u);
+    assert(cpu.state().dsisr == (1u << (31u - 25u))); // DSISR[Store]
 
     exception_state = cpu.state();
     exception_state.pc = 392u;
