@@ -592,8 +592,15 @@ bool BroadwayCpu::execute_one() {
             const double source = b;
             std::int32_t converted = std::numeric_limits<std::int32_t>::min();
             if (std::isfinite(source)) {
-                const double rounded = xo == 14u ? std::nearbyint(source)
-                                                  : std::trunc(source);
+                double rounded = std::trunc(source);
+                if (xo == 14u) {
+                    switch (state_.fpscr & 3u) {
+                    case 0u: rounded = std::nearbyint(source); break; // nearest
+                    case 1u: rounded = std::trunc(source); break;    // toward zero
+                    case 2u: rounded = std::ceil(source); break;     // toward +infinity
+                    case 3u: rounded = std::floor(source); break;    // toward -infinity
+                    }
+                }
                 if (rounded >= static_cast<double>(std::numeric_limits<std::int32_t>::min()) &&
                     rounded <= static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
                     converted = static_cast<std::int32_t>(rounded);
