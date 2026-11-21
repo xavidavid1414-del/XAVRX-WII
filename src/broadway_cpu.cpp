@@ -335,6 +335,7 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t mask = ppc_mask(mb, me);
         const std::uint32_t rotated = rotate_left_32(state_.gpr[rs], shift);
         state_.gpr[ra] = (state_.gpr[ra] & ~mask) | (rotated & mask);
+        if ((instruction & 1u) != 0u) update_cr0(state_, state_.gpr[ra]);
         break;
     }
     case 21: { // rlwinm: rotate left word immediate then AND with mask
@@ -343,6 +344,7 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t mb = (instruction >> 6) & 31u;
         const std::uint32_t me = (instruction >> 1) & 31u;
         state_.gpr[ra] = rotate_left_32(state_.gpr[rs], shift) & ppc_mask(mb, me);
+        if ((instruction & 1u) != 0u) update_cr0(state_, state_.gpr[ra]);
         break;
     }
     case 23: { // rlwnm: rotate left word using shift amount from RB, then mask
@@ -352,6 +354,7 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t mb = (instruction >> 6) & 31u;
         const std::uint32_t me = (instruction >> 1) & 31u;
         state_.gpr[ra] = rotate_left_32(state_.gpr[rs], shift) & ppc_mask(mb, me);
+        if ((instruction & 1u) != 0u) update_cr0(state_, state_.gpr[ra]);
         break;
     }
     case 10: // cmpli: compare logical immediate (32-bit)
