@@ -73,6 +73,7 @@ bool BroadwayCpu::enter_exception() noexcept {
     case Exception::PrivilegedInstruction: vector = 0x0700u; break;
     case Exception::SystemCall:           vector = 0x0c00u; break;
     case Exception::FloatingPointUnavailable: vector = 0x0800u; break;
+    case Exception::Program:             vector = 0x0700u; break;
     case Exception::None: return false;
     }
 
@@ -200,6 +201,23 @@ bool BroadwayCpu::execute_one() {
     };
 
     switch (opcode) {
+    case 3: { // twi: trap word immediate
+        const std::uint32_t to = rt;
+        const std::uint32_t lhs = state_.gpr[ra];
+        const std::uint32_t rhs = static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        const bool trap =
+            ((to & 0x10u) != 0u && static_cast<std::int32_t>(lhs) < static_cast<std::int32_t>(rhs)) ||
+            ((to & 0x08u) != 0u && static_cast<std::int32_t>(lhs) > static_cast<std::int32_t>(rhs)) ||
+            ((to & 0x04u) != 0u && lhs == rhs) ||
+            ((to & 0x02u) != 0u && lhs < rhs) ||
+            ((to & 0x01u) != 0u && lhs > rhs);
+        if (trap) {
+            state_.exception = Exception::Program;
+            return false;
+        }
+        break;
+    }
     case 17: { // sc: system call
         if (instruction != 0x44000002u) return false;
         state_.pc = next_pc;
@@ -863,6 +881,21 @@ bool BroadwayCpu::execute_one() {
             if (overflow) state_.xer |= 1u << 31;
         };
         switch (xo) {
+        case 4: { // tw: trap word
+            if ((instruction & 1u) != 0u) return false;
+            const std::uint32_t to = rt;
+            const bool trap =
+                ((to & 0x10u) != 0u && static_cast<std::int32_t>(a) < static_cast<std::int32_t>(b)) ||
+                ((to & 0x08u) != 0u && static_cast<std::int32_t>(a) > static_cast<std::int32_t>(b)) ||
+                ((to & 0x04u) != 0u && a == b) ||
+                ((to & 0x02u) != 0u && a < b) ||
+                ((to & 0x01u) != 0u && a > b);
+            if (trap) {
+                state_.exception = Exception::Program;
+                return false;
+            }
+            break;
+        }
         case 535: case 567: case 599: case 631:
         case 663: case 695: case 727: case 759: { // Indexed floating-point loads/stores
             const bool load = xo == 535u || xo == 567u ||
