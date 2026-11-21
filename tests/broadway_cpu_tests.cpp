@@ -1548,5 +1548,15 @@ int main() {
     assert(cpu.state().fpscr == 0x01a34567u);
     assert(((cpu.state().cr >> 24) & 0xfu) == 0x1u);
 
+    // mcrfs copies the selected FPSCR nibble into the requested CR field.
+    auto mcrfs_state = cpu.state();
+    mcrfs_state.pc = 916u;
+    mcrfs_state.fpscr = 0x12345678u;
+    mcrfs_state.cr = 0x00000000u;
+    cpu.set_state(mcrfs_state);
+    memory.write32_be(916u, (63u << 26) | (3u << 23) | (5u << 18) | (64u << 1));
+    assert(cpu.step());
+    assert(((cpu.state().cr >> 16) & 0xfu) == 6u);
+
     return 0;
 }
