@@ -1503,5 +1503,18 @@ int main() {
     assert(cpu.step());
     assert(static_cast<std::uint32_t>(cpu.state().fpr[6]) == 0x80000000u);
 
+    // mffs/mtfsf transfer selected FPSCR fields.
+    auto fpscr_state = cpu.state();
+    fpscr_state.pc = 892u;
+    fpscr_state.fpscr = 0x12345678u;
+    fpscr_state.fpr[7] = 0xfff80000abcdef01ull;
+    cpu.set_state(fpscr_state);
+    memory.write32_be(892u, (63u << 26) | (8u << 21) | (583u << 1)); // mffs f8
+    memory.write32_be(896u, (63u << 26) | (0xffu << 17) | (7u << 11) | (711u << 1)); // mtfsf 0xff,f7
+    assert(cpu.step());
+    assert(static_cast<std::uint32_t>(cpu.state().fpr[8]) == 0x12345678u);
+    assert(cpu.step());
+    assert(cpu.state().fpscr == 0xabcdef01u);
+
     return 0;
 }
