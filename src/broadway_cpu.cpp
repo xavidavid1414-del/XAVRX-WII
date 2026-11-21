@@ -475,11 +475,11 @@ bool BroadwayCpu::execute_one() {
             if (invalid) state_.fpscr |= fpscr_vx;
             else state_.fpscr &= ~fpscr_vx;
 
-            constexpr std::uint32_t ve = 1u << 7;
-            constexpr std::uint32_t oe = 1u << 8;
-            constexpr std::uint32_t ue = 1u << 9;
-            constexpr std::uint32_t ze = 1u << 10;
-            constexpr std::uint32_t xe = 1u << 11;
+            constexpr std::uint32_t ve = 1u << 8;
+            constexpr std::uint32_t oe = 1u << 7;
+            constexpr std::uint32_t ue = 1u << 6;
+            constexpr std::uint32_t ze = 1u << 5;
+            constexpr std::uint32_t xe = 1u << 4;
             const bool enabled =
                 (invalid && (state_.fpscr & ve) != 0u) ||
                 ((state_.fpscr & fpscr_ox) != 0u && (state_.fpscr & oe) != 0u) ||
@@ -696,7 +696,7 @@ bool BroadwayCpu::execute_one() {
                     invalid_conversion = true;
                 }
             }
-            if (invalid_conversion) raise_fpscr_exception(1u << 8); // VXCVI
+            if (invalid_conversion) raise_fpscr_exception(1u << 9); // VXCVI
             state_.fpr[frt] = 0xfff8000000000000ull |
                 static_cast<std::uint32_t>(converted);
             break;
