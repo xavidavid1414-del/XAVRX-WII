@@ -1457,5 +1457,23 @@ int main() {
     assert(cpu.state().pc == 864u);
     assert(cpu.state().gpr[3] == 272u);
 
+    // Indexed floating-point store-update forms.
+    auto indexed_store_update = cpu.state();
+    indexed_store_update.pc = 868u;
+    indexed_store_update.gpr[3] = 256u;
+    indexed_store_update.gpr[4] = 8u;
+    indexed_store_update.gpr[5] = 0u;
+    indexed_store_update.fpr[8] = std::bit_cast<std::uint64_t>(5.5);
+    indexed_store_update.fpr[9] = std::bit_cast<std::uint64_t>(6.75);
+    cpu.set_state(indexed_store_update);
+    memory.write32_be(868u, xform_fp(8, 3, 4, 695)); // stfsux f8,r3,r4
+    memory.write32_be(872u, xform_fp(9, 3, 5, 759)); // stfdux f9,r3,r5
+    assert(cpu.step());
+    assert(cpu.state().gpr[3] == 264u);
+    assert(memory.read32_be(264u) == std::bit_cast<std::uint32_t>(5.5f));
+    assert(cpu.step());
+    assert(cpu.state().gpr[3] == 264u);
+    assert(memory.read64_be(264u) == std::bit_cast<std::uint64_t>(6.75));
+
     return 0;
 }
