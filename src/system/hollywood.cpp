@@ -38,6 +38,7 @@ bool HollywoodIpc::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value)
  case ppc_msg:ppc_message_=value;return true;
  case arm_msg:arm_message_=value;return true;
  case ppc_ctrl:
+  if(cpu!=HollywoodCpu::Broadway)return false;
   x1_=static_cast<std::uint8_t>(value&1U);x2_=static_cast<std::uint8_t>((value>>3U)&1U);
   if((value&2U)!=0U)y2_=0;if((value&4U)!=0U)y1_=0;
   iy1_=static_cast<std::uint8_t>((value>>4U)&1U);iy2_=static_cast<std::uint8_t>((value>>5U)&1U);
@@ -85,7 +86,7 @@ bool HollywoodGpio::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value
    case 0xc0:output_=(output_&~allowed)|(value&allowed);break;
    case 0xc4:direction_=(direction_&~allowed)|(value&allowed);break;
    case 0xcc:interrupt_level_=(interrupt_level_&~allowed)|(value&allowed);break;
-   case 0xd0:{const auto idle=(~(input_^interrupt_level_))^pins;const auto clear_bits=value&allowed&idle;interrupt_flags_&=~clear_bits;break;}
+   case 0xd0:{const auto idle=(input_^interrupt_level_)&pins;const auto clear_bits=value&allowed&idle;interrupt_flags_&=~clear_bits;break;}
    case 0xd4:interrupt_mask_=(interrupt_mask_&~allowed)|(value&allowed);break;
    default:return false;
   }
@@ -111,10 +112,10 @@ void HollywoodGpio::set_inputs(std::uint32_t levels)noexcept{input_=levels&pins;
 void HollywoodGpio::refresh_interrupts()noexcept{
  const auto active=(~(input_^interrupt_level_))&enable_&pins;
  interrupt_flags_|=active;
- if((interrupt_flags_&interrupt_mask_&owner_)!=0U)irq_.raise(10,IrqRoute::Both);else{irq_.clear(HollywoodCpu::Broadway,bit(10));irq_.clear(HollywoodCpu::Starlet,bit(10));}
- if((interrupt_flags_&interrupt_mask_&~owner_&pins)!=0U)irq_.raise(11,IrqRoute::Both);else{irq_.clear(HollywoodCpu::Broadway,bit(11));irq_.clear(HollywoodCpu::Starlet,bit(11));}
+ if((interrupt_flags_&interrupt_mask_&owner_)!=0U)irq_.raise(10,IrqRoute::Broadway);else irq_.clear(HollywoodCpu::Broadway,bit(10));
+ if((interrupt_flags_&interrupt_mask_&~owner_&pins)!=0U)irq_.raise(11,IrqRoute::Starlet);else irq_.clear(HollywoodCpu::Starlet,bit(11));
 }
-void HollywoodGpio::reset()noexcept{input_=straps_=owner_=output_=direction_=interrupt_level_=interrupt_flags_=interrupt_mask_=0;enable_=pins;refresh_interrupts();}
+void HollywoodGpio::reset()noexcept{input_=straps_=owner_=output_=direction_=interrupt_level_=interrupt_flags_=interrupt_mask_=0;enable_=pins;}
 
 bool HollywoodHardware::CpuBusView::read(std::uint32_t off,std::uint8_t width,std::uint64_t& value)noexcept{return hardware_.read_as(cpu_,off,width,value);}
 bool HollywoodHardware::CpuBusView::write(std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{return hardware_.write_as(cpu_,off,width,value);}
