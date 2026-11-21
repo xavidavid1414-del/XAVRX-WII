@@ -1442,7 +1442,7 @@ int main() {
     assert(cpu.state().gpr[3] == 256u);
     assert(std::bit_cast<double>(cpu.state().fpr[12]) == 1.5);
     assert(cpu.step());
-    assert(cpu.state().gpr[3] == 256u);
+    assert(cpu.state().gpr[3] == 264u);
     assert(std::bit_cast<double>(cpu.state().fpr[13]) == 2.25);
 
     // Indexed floating-point update forms reject RA=0 and load overlap.
