@@ -1486,5 +1486,22 @@ int main() {
     assert(cpu.step());
     assert(memory.read32_be(280u) == 0x55667788u);
 
+    // fctiw rounds to nearest according to the host's default mode; fctiwz truncates.
+    auto fp_convert_state = cpu.state();
+    fp_convert_state.pc = 880u;
+    fp_convert_state.fpr[1] = std::bit_cast<std::uint64_t>(3.75);
+    fp_convert_state.fpr[2] = std::bit_cast<std::uint64_t>(-3.75);
+    fp_convert_state.fpr[3] = std::bit_cast<std::uint64_t>(2147483648.0);
+    cpu.set_state(fp_convert_state);
+    memory.write32_be(880u, (63u << 26) | (4u << 21) | (1u << 11) | (14u << 1)); // fctiw f4,f1
+    memory.write32_be(884u, (63u << 26) | (5u << 21) | (2u << 11) | (15u << 1)); // fctiwz f5,f2
+    memory.write32_be(888u, (63u << 26) | (6u << 21) | (3u << 11) | (14u << 1)); // out of range
+    assert(cpu.step());
+    assert(static_cast<std::uint32_t>(cpu.state().fpr[4]) == 4u);
+    assert(cpu.step());
+    assert(static_cast<std::uint32_t>(cpu.state().fpr[5]) == 0xfffffffdu);
+    assert(cpu.step());
+    assert(static_cast<std::uint32_t>(cpu.state().fpr[6]) == 0x80000000u);
+
     return 0;
 }
