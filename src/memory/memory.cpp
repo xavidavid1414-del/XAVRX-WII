@@ -18,7 +18,8 @@ bool Memory::map_device(std::uint32_t base,std::uint32_t size,MemoryMappedDevice
  try{devices_.push_back({base,size,&device});}catch(...){return false;}return true;
 }
 AccessResult Memory::read(std::uint32_t a,std::uint8_t w,std::uint64_t& v)noexcept{
- if(!valid_)return AccessResult::InvalidConfiguration;if(!supported_width(w))return AccessResult::InvalidWidth;
+ if(!valid_)return AccessResult::InvalidConfiguration;
+ if(!supported_width(w))return AccessResult::InvalidWidth;
  if((a&(static_cast<std::uint32_t>(w)-1U))!=0U)return AccessResult::Misaligned;
  const auto end=static_cast<std::uint64_t>(ram_base_)+ram_.size();
  if(a>=ram_base_&&static_cast<std::uint64_t>(a)+w<=end){const auto off=static_cast<std::size_t>(a-ram_base_);std::uint64_t x=0;for(std::uint8_t i=0;i<w;++i)x=(x<<8U)|ram_[off+i];v=x;return AccessResult::Success;}
