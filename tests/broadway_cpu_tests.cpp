@@ -1220,6 +1220,24 @@ int main() {
     assert(cpu.state().pc == 392u);
     assert(cpu.state().dar == 321u);
 
+    exception_state = cpu.state();
+    exception_state.pc = 400u;
+    exception_state.gpr[3] = 323u;
+    cpu.set_state(exception_state);
+    memory.write32_be(400, (40u << 26) | (10u << 21) | (3u << 16)); // lhz r10,0(r3)
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().dar == 323u);
+
+    exception_state = cpu.state();
+    exception_state.pc = 404u;
+    exception_state.gpr[3] = 325u;
+    cpu.set_state(exception_state);
+    memory.write32_be(404, (44u << 26) | (10u << 21) | (3u << 16)); // sth r10,0(r3)
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().dar == 325u);
+
     // PowerPC synchronization instructions retire without altering CPU state.
     auto barrier_state = cpu.state();
     barrier_state.pc = 600;
