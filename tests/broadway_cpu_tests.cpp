@@ -1321,6 +1321,7 @@ int main() {
     tlbie_state = cpu.state();
     tlbie_state.pc = 628u;
     tlbie_state.msr = 0u;
+    tlbie_state.exception = xavrx::BroadwayCpu::Exception::None;
     cpu.set_state(tlbie_state);
     memory.write32_be(628u, xform(1u, 0u, 3u, 306u)); // reserved RT field
     assert(!cpu.step());
