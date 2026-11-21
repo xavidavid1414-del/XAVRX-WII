@@ -1740,15 +1740,16 @@ int main() {
     assert(cpu.state().fpscr == 0x20a00000u);
     assert(((cpu.state().cr >> 24) & 0xfu) == 0x2u);
 
-    // mcrfs copies the selected FPSCR nibble into the requested CR field.
+    // mcrfs copies a field and clears the exception bits in that field.
     auto mcrfs_state = cpu.state();
     mcrfs_state.pc = 916u;
-    mcrfs_state.fpscr = 0x12345678u;
+    mcrfs_state.fpscr = 0x00000700u; // VXSOFT, VXSQRT and VXCVI
     mcrfs_state.cr = 0x00000000u;
     cpu.set_state(mcrfs_state);
     memory.write32_be(916u, (63u << 26) | (3u << 23) | (5u << 18) | (64u << 1));
     assert(cpu.step());
-    assert(((cpu.state().cr >> 16) & 0xfu) == 6u);
+    assert(((cpu.state().cr >> 16) & 0xfu) == 7u);
+    assert((cpu.state().fpscr & 0x00000700u) == 0u);
 
     // Reciprocal and reciprocal-square-root estimates are deterministic
     // approximations in this interpreter and preserve binary32 for fres.
