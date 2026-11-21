@@ -2229,5 +2229,30 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().pc == 1092u);
 
+
+    // XER exposes only SO, OV, CA and the seven-bit byte count.
+    auto xer_state = cpu.state();
+    xer_state.pc = 1092u;
+    xer_state.gpr[3] = 0xffffffffu;
+    cpu.set_state(xer_state);
+    memory.write32_be(1092u, xform(3u, 1u, 0u, 467u)); // mtxer r3
+    assert(cpu.step());
+    assert(cpu.state().xer == 0xe000007fu);
+
+    xer_state = cpu.state();
+    xer_state.pc = 1096u;
+    cpu.set_state(xer_state);
+    memory.write32_be(1096u, xform(4u, 1u, 0u, 339u)); // mfxer r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[4] == 0xe000007fu);
+
+    xer_state = cpu.state();
+    xer_state.pc = 1100u;
+    xer_state.gpr[3] = 0x1fffffffu;
+    cpu.set_state(xer_state);
+    memory.write32_be(1100u, xform(3u, 1u, 0u, 467u)); // mtxer reserved bits
+    assert(cpu.step());
+    assert(cpu.state().xer == 0x0000007fu);
+
     return 0;
 }
