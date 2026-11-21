@@ -521,11 +521,21 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t field = (instruction >> 23) & 7u;
             const double lhs = a;
             const double rhs = b;
-            const std::uint32_t result = std::isnan(lhs) || std::isnan(rhs)
+            const bool unordered = std::isnan(lhs) || std::isnan(rhs);
+            const std::uint32_t result = unordered
                 ? 1u : lhs < rhs ? 8u : lhs > rhs ? 4u : 2u;
             const std::uint32_t shift = 28u - field * 4u;
             const std::uint32_t mask = 0xfu << shift;
             state_.cr = (state_.cr & ~mask) | (result << shift);
+
+            // FPCC (FPSCR[12:15]) mirrors the comparison classification.
+            state_.fpscr = (state_.fpscr & ~0x0000f000u) | (result << 12);
+            if (unordered && xo == 32u) { // Ordered compare signals invalid on NaN.
+                constexpr std::uint32_t fx = 1u << 31;
+                constexpr std::uint32_t vx = 1u << 29;
+                constexpr std::uint32_t vxvc = 1u << 19;
+                state_.fpscr |= fx | vx | vxvc;
+            }
             break;
         }
         case 64: { // mcrfs: move an FPSCR field to a CR field
