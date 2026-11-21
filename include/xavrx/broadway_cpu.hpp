@@ -16,7 +16,8 @@ public:
         DataStorage,
         IllegalInstruction,
         PrivilegedInstruction,
-        SystemCall
+        SystemCall,
+        FloatingPointUnavailable
     };
 
     struct State {
