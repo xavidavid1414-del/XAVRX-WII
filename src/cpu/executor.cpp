@@ -54,7 +54,7 @@ ExecutionResult IntegerExecutor::execute(std::uint32_t word,CpuState& s) noexcep
    const auto a=std::bit_cast<std::int32_t>(s.gpr(ra));
    const auto b=std::bit_cast<std::int32_t>(s.gpr(rb));
    const std::uint8_t flags=static_cast<std::uint8_t>((a<b?8U:0U)|(a>b?4U:0U)|(a==b?2U:0U)|((s.xer()>>31U)&1U));
-   const auto bf=field(word,23U);
+   const auto bf=(word>>23U)&7U;
    s.set_condition_field(bf,flags);break;
  }
  default:return ExecutionResult::UnsupportedEncoding;
