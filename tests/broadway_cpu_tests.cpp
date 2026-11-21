@@ -1820,5 +1820,35 @@ int main() {
         safe_pc += 4u;
     }
 
+
+    // Update-form integer loads must reject RT=RA (architecturally invalid).
+    struct InvalidLoadUpdate {
+        std::uint32_t opcode;
+        std::uint32_t register_index;
+        std::uint32_t displacement;
+    };
+    const InvalidLoadUpdate invalid_load_updates[] = {
+        {33u, 6u, 4u},  // lwzu r6,4(r6)
+        {35u, 7u, 1u},  // lbzu r7,1(r7)
+        {41u, 8u, 2u},  // lhzu r8,2(r8)
+        {43u, 9u, 2u}   // lhau r9,2(r9)
+    };
+    std::uint32_t invalid_load_pc = safe_pc;
+    for (const auto& test : invalid_load_updates) {
+        auto invalid_state = cpu.state();
+        invalid_state.pc = invalid_load_pc;
+        invalid_state.gpr[test.register_index] = 256u;
+        cpu.set_state(invalid_state);
+        memory.write32_be(invalid_load_pc,
+            (test.opcode << 26) | (test.register_index << 21) |
+            (test.register_index << 16) | test.displacement);
+        assert(!cpu.step());
+        assert(cpu.state().exception ==
+               xavrx::BroadwayCpu::Exception::IllegalInstruction);
+        assert(cpu.state().pc == invalid_load_pc);
+        assert(cpu.state().gpr[test.register_index] == 256u);
+        invalid_load_pc += 4u;
+    }
+
     return 0;
 }
