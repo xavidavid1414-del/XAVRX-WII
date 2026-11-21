@@ -213,6 +213,23 @@ bool BroadwayCpu::execute_one() {
         state_.cr = (state_.cr & ~mask) | (result << shift);
         break;
     }
+    case 8: { // subfic: subtract RA from sign-extended immediate
+        const std::uint32_t rhs = static_cast<std::uint32_t>(sign_extend_16(immediate));
+        state_.gpr[rt] = rhs - state_.gpr[ra];
+        state_.xer = (state_.xer & ~(1u << 29)) |
+                     (rhs >= state_.gpr[ra] ? (1u << 29) : 0u);
+        break;
+    }
+    case 12: // addic: add immediate and record carry
+    case 13: { // addic.: add immediate, record carry and CR0
+        const std::uint32_t rhs = static_cast<std::uint32_t>(sign_extend_16(immediate));
+        const std::uint64_t sum = static_cast<std::uint64_t>(state_.gpr[ra]) + rhs;
+        state_.gpr[rt] = static_cast<std::uint32_t>(sum);
+        state_.xer = (state_.xer & ~(1u << 29)) |
+                     ((sum >> 32) != 0 ? (1u << 29) : 0u);
+        if (opcode == 13u) update_cr0(state_, state_.gpr[rt]);
+        break;
+    }
     case 7: // mulli
         state_.gpr[rt] = base * static_cast<std::uint32_t>(sign_extend_16(immediate));
         break;
