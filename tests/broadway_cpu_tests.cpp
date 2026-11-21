@@ -1693,5 +1693,59 @@ int main() {
     assert(cpu.step());
     assert((cpu.state().fpscr & (1u << 30)) == 0u); // FEX cleared immediately
 
+    // OE forms update XER[OV] and sticky XER[SO] on signed overflow.
+    auto overflow_add_state = cpu.state();
+    overflow_add_state.pc = 940u;
+    overflow_add_state.gpr[3] = 0x7fffffffu;
+    overflow_add_state.gpr[4] = 1u;
+    overflow_add_state.xer = 0u;
+    cpu.set_state(overflow_add_state);
+    memory.write32_be(940u, xform(5, 3, 4, 778)); // addo r5,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == 0x80000000u);
+    assert((cpu.state().xer & (1u << 30)) != 0u);
+    assert((cpu.state().xer & (1u << 31)) != 0u);
+
+    auto overflow_sub_state = cpu.state();
+    overflow_sub_state.pc = 944u;
+    overflow_sub_state.gpr[3] = 1u;
+    overflow_sub_state.gpr[4] = 0x80000000u;
+    cpu.set_state(overflow_sub_state);
+    memory.write32_be(944u, xform(6, 3, 4, 552)); // subfo r6,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0x7fffffffu);
+    assert((cpu.state().xer & (1u << 30)) != 0u);
+    assert((cpu.state().xer & (1u << 31)) != 0u);
+
+    auto overflow_mul_state = cpu.state();
+    overflow_mul_state.pc = 948u;
+    overflow_mul_state.gpr[3] = 0x40000000u;
+    overflow_mul_state.gpr[4] = 4u;
+    cpu.set_state(overflow_mul_state);
+    memory.write32_be(948u, xform(7, 3, 4, 747)); // mullwo r7,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[7] == 0u);
+    assert((cpu.state().xer & (1u << 30)) != 0u);
+
+    auto overflow_div_state = cpu.state();
+    overflow_div_state.pc = 952u;
+    overflow_div_state.gpr[3] = 0x80000000u;
+    overflow_div_state.gpr[4] = 0xffffffffu;
+    cpu.set_state(overflow_div_state);
+    memory.write32_be(952u, xform(8, 3, 4, 1003)); // divwo r8,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[8] == 0u);
+    assert((cpu.state().xer & (1u << 30)) != 0u);
+
+    auto overflow_neg_state = cpu.state();
+    overflow_neg_state.pc = 956u;
+    overflow_neg_state.gpr[3] = 0x80000000u;
+    cpu.set_state(overflow_neg_state);
+    memory.write32_be(956u, xform(9, 3, 0, 616)); // nego r9,r3
+    assert(cpu.step());
+    assert(cpu.state().gpr[9] == 0x80000000u);
+    assert((cpu.state().xer & (1u << 30)) != 0u);
+    assert((cpu.state().xer & (1u << 31)) != 0u);
+
     return 0;
 }
