@@ -666,6 +666,9 @@ bool BroadwayCpu::execute_one() {
             case 9: state_.gpr[rt] = state_.ctr; break; // CTR
             case 18: state_.gpr[rt] = state_.dsisr; break; // DSISR
             case 19: state_.gpr[rt] = state_.dar; break; // DAR
+            case 22: state_.gpr[rt] = state_.dec; break; // DEC
+            case 25: state_.gpr[rt] = state_.sdr1; break; // SDR1
+            case 282: state_.gpr[rt] = state_.ear; break; // EAR
             case 26: state_.gpr[rt] = state_.srr0; break; // SRR0
             case 27: state_.gpr[rt] = state_.srr1; break; // SRR1
             case 272: case 273: case 274: case 275:
@@ -694,6 +697,9 @@ bool BroadwayCpu::execute_one() {
             case 9: state_.ctr = value; break; // CTR
             case 18: state_.dsisr = value; break; // DSISR
             case 19: state_.dar = value; break; // DAR
+            case 22: state_.dec = value; break; // DEC
+            case 25: state_.sdr1 = value; break; // SDR1
+            case 282: state_.ear = value; break; // EAR
             case 26: state_.srr0 = value; break; // SRR0
             case 27: state_.srr1 = value; break; // SRR1
             case 272: case 273: case 274: case 275:
