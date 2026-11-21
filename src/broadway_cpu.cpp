@@ -71,6 +71,7 @@ bool BroadwayCpu::enter_exception() noexcept {
     case Exception::DataStorage:          vector = 0x0300u; break;
     case Exception::IllegalInstruction:
     case Exception::PrivilegedInstruction: vector = 0x0700u; break;
+    case Exception::SystemCall:           vector = 0x0c00u; break;
     case Exception::None: return false;
     }
 
@@ -182,6 +183,12 @@ bool BroadwayCpu::execute_one() {
     };
 
     switch (opcode) {
+    case 17: { // sc: system call
+        if (instruction != 0x44000002u) return false;
+        state_.pc = next_pc;
+        state_.exception = Exception::SystemCall;
+        return false;
+    }
     case 48: // lfs
     case 49: // lfsu
     case 50: // lfd
