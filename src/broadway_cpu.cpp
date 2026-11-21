@@ -650,6 +650,14 @@ bool BroadwayCpu::execute_one() {
             }
             break;
         }
+        case 83: { // mfmsr: move machine-state register to GPR
+            state_.gpr[rt] = state_.msr;
+            break;
+        }
+        case 146: { // mtmsr: move GPR to machine-state register
+            state_.msr = state_.gpr[rs];
+            break;
+        }
         case 339: { // mfspr: move supported special-purpose register to GPR
             const std::uint32_t spr = ra | (rb << 5);
             switch (spr) {
