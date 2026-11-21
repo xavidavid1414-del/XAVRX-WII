@@ -5,7 +5,7 @@ A phase is complete only after implementation, automated checks, correction of d
 2. **CPU foundation** — COMPLETE. Gekko register model, CPU architectural state, condition-register access, and an initial instruction decode framework with focused tests.
 3. **PowerPC integer execution** — COMPLETE. Implemented and tested ADDI/ADDIS, immediate logical operations, ADD/SUBF, AND/OR/XOR, signed register CMP, CR updates, PC advancement, and safe rejection of unsupported encodings.
 4. **CPU control flow and exceptions** — COMPLETE. Implemented relative/absolute and conditional branches, LR/CTR indirect branches, TWI/TW traps, system-call/program/external exception entry, interrupt masking, SRR save/restore, and RFI with automated tests.
-5. **Memory subsystem** — address space, access widths, alignment, and memory-mapped I/O contracts.
+5. **Memory subsystem** — COMPLETE. Added configurable 32-bit RAM range, big-endian 8/16/32/64-bit accessors, natural-alignment and bounds checks, explicit access results, non-overlapping memory-mapped device regions, and callback error propagation with automated tests.
 6. **System hardware model** — clocks, timers, interrupt controller, and boot-state model.
 7. **Boot and firmware interfaces** — documented boot flow and replaceable firmware/system interfaces.
 8. **Hollywood/GX command foundation** — command processor and validated command stream.
