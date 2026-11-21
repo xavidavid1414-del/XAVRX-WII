@@ -585,6 +585,16 @@ bool BroadwayCpu::execute_one() {
             if (update) state_.gpr[ra] = address;
             break;
         }
+        case 983: { // stfiwx: store the low-order word of an FPR
+            const std::uint32_t address = (ra == 0u ? 0u : a) + b;
+            if ((address & 3u) != 0u) {
+                throw std::invalid_argument("unaligned stfiwx");
+            }
+            invalidate_reservation(address, 4u);
+            memory_.write32_be(address,
+                static_cast<std::uint32_t>(state_.fpr[rs]));
+            break;
+        }
         case 20: { // lwarx: load word and establish a reservation
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             if ((address & 3u) != 0u) {
