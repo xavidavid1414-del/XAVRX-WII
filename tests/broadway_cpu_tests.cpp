@@ -1218,6 +1218,7 @@ int main() {
     assert(!cpu.step());
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
     assert(cpu.state().pc == 392u);
+    assert(cpu.state().dar == 321u);
 
     // PowerPC synchronization instructions retire without altering CPU state.
     auto barrier_state = cpu.state();
