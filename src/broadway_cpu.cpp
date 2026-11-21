@@ -431,7 +431,7 @@ bool BroadwayCpu::execute_one() {
     case 44: // sth
     case 45: { // sthu
         const bool update = opcode == 39u || opcode == 45u;
-        if (update && (ra == 0u || ra == rt)) return false;
+        if (update && ra == 0u) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         const bool halfword = opcode == 44u || opcode == 45u;
@@ -478,7 +478,7 @@ bool BroadwayCpu::execute_one() {
     case 36: // stw
     case 37: { // stwu: store word and update RA
         const bool update = opcode == 37u;
-        if (update && (ra == 0u || ra == rt)) return false;
+        if (update && ra == 0u) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) { state_.dar = address; throw std::invalid_argument("unaligned stw"); }
@@ -925,7 +925,7 @@ bool BroadwayCpu::execute_one() {
             const bool load = xo == 23u || xo == 55u || xo == 87u ||
                 xo == 119u || xo == 279u || xo == 311u || xo == 343u ||
                 xo == 375u || xo == 534u || xo == 790u;
-            if (update && (ra == 0u || (load ? ra == rt : ra == rs))) return false;
+            if (update && (ra == 0u || (load && ra == rt))) return false;
             const std::uint32_t address = (ra == 0u ? 0u : state_.gpr[ra]) + b;
             const bool byte_access = xo == 87u || xo == 119u ||
                                      xo == 215u || xo == 247u;
