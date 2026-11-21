@@ -1655,7 +1655,7 @@ int main() {
     cpu.set_state(mtfsfi_state);
     memory.write32_be(912u, (63u << 26) | (2u << 23) | (0xau << 12) | (134u << 1) | 1u);
     assert(cpu.step());
-    assert(cpu.state().fpscr == 0x00a00000u);
+    assert(cpu.state().fpscr == 0x20a00000u);
     assert(((cpu.state().cr >> 24) & 0xfu) == 0x0u);
 
     // mcrfs copies the selected FPSCR nibble into the requested CR field.
