@@ -1,13 +1,13 @@
 #include "xavrx/system/wii_memory.hpp"
 namespace xavrx::system {
 WiiMemory::WiiMemory():mem1_(mem1_size),mem2_(mem2_size){}
-bool WiiMemory::translate(std::uint32_t address,std::uint8_t width,std::vector<std::uint8_t>& bank,std::size_t& offset)noexcept{
+bool WiiMemory::translate(std::uint32_t address,std::uint8_t width,std::vector<std::uint8_t>*& bank,std::size_t& offset)noexcept{
  if(width!=1U&&width!=2U&&width!=4U&&width!=8U)return false;
  if((address&(static_cast<std::uint32_t>(width)-1U))!=0U)return false;
  const auto a=static_cast<std::uint64_t>(address),w=static_cast<std::uint64_t>(width);
  const auto map=[&](std::uint32_t base,std::size_t size,std::vector<std::uint8_t>& target)->bool{
   if(a<base||a+w>static_cast<std::uint64_t>(base)+size)return false;
-  bank=target;offset=static_cast<std::size_t>(a-base);return true;
+  bank=&target;offset=static_cast<std::size_t>(a-base);return true;
  };
  return map(mem1_cached,mem1_size,mem1_)||map(mem1_uncached,mem1_size,mem1_)||
         map(mem1_physical,mem1_size,mem1_)||map(mem2_cached,mem2_size,mem2_)||
@@ -17,30 +17,14 @@ memory::AccessResult WiiMemory::read(std::uint32_t address,std::uint8_t width,st
  if(width!=1U&&width!=2U&&width!=4U&&width!=8U)return memory::AccessResult::InvalidWidth;
  if((address&(static_cast<std::uint32_t>(width)-1U))!=0U)return memory::AccessResult::Misaligned;
  std::vector<std::uint8_t>* bank=nullptr;std::size_t offset=0;
- if(!translate(address,width,*reinterpret_cast<std::vector<std::uint8_t>*>(nullptr),offset)){
-  const auto a=static_cast<std::uint64_t>(address),w=static_cast<std::uint64_t>(width);
-  if(a>=mem1_cached&&a+w<=static_cast<std::uint64_t>(mem1_cached)+mem1_size){bank=&mem1_;offset=static_cast<std::size_t>(a-mem1_cached);}
-  else if(a>=mem1_uncached&&a+w<=static_cast<std::uint64_t>(mem1_uncached)+mem1_size){bank=&mem1_;offset=static_cast<std::size_t>(a-mem1_uncached);}
-  else if(a<mem1_size&&a+w<=mem1_size){bank=&mem1_;offset=static_cast<std::size_t>(a);}
-  else if(a>=mem2_cached&&a+w<=static_cast<std::uint64_t>(mem2_cached)+mem2_size){bank=&mem2_;offset=static_cast<std::size_t>(a-mem2_cached);}
-  else if(a>=mem2_uncached&&a+w<=static_cast<std::uint64_t>(mem2_uncached)+mem2_size){bank=&mem2_;offset=static_cast<std::size_t>(a-mem2_uncached);}
-  else if(a>=mem2_physical&&a+w<=static_cast<std::uint64_t>(mem2_physical)+mem2_size){bank=&mem2_;offset=static_cast<std::size_t>(a-mem2_physical);}
-  else return memory::AccessResult::Unmapped;
- }else return memory::AccessResult::Unmapped;
+ if(!translate(address,width,bank,offset))return memory::AccessResult::Unmapped;
  std::uint64_t result=0;for(std::uint8_t i=0;i<width;++i)result=(result<<8U)|(*bank)[offset+i];value=result;return memory::AccessResult::Success;
 }
 memory::AccessResult WiiMemory::write(std::uint32_t address,std::uint8_t width,std::uint64_t value)noexcept{
  if(width!=1U&&width!=2U&&width!=4U&&width!=8U)return memory::AccessResult::InvalidWidth;
  if((address&(static_cast<std::uint32_t>(width)-1U))!=0U)return memory::AccessResult::Misaligned;
- const auto a=static_cast<std::uint64_t>(address),w=static_cast<std::uint64_t>(width);
  std::vector<std::uint8_t>* bank=nullptr;std::size_t offset=0;
- if(a>=mem1_cached&&a+w<=static_cast<std::uint64_t>(mem1_cached)+mem1_size){bank=&mem1_;offset=static_cast<std::size_t>(a-mem1_cached);}
- else if(a>=mem1_uncached&&a+w<=static_cast<std::uint64_t>(mem1_uncached)+mem1_size){bank=&mem1_;offset=static_cast<std::size_t>(a-mem1_uncached);}
- else if(a<mem1_size&&a+w<=mem1_size){bank=&mem1_;offset=static_cast<std::size_t>(a);}
- else if(a>=mem2_cached&&a+w<=static_cast<std::uint64_t>(mem2_cached)+mem2_size){bank=&mem2_;offset=static_cast<std::size_t>(a-mem2_cached);}
- else if(a>=mem2_uncached&&a+w<=static_cast<std::uint64_t>(mem2_uncached)+mem2_size){bank=&mem2_;offset=static_cast<std::size_t>(a-mem2_uncached);}
- else if(a>=mem2_physical&&a+w<=static_cast<std::uint64_t>(mem2_physical)+mem2_size){bank=&mem2_;offset=static_cast<std::size_t>(a-mem2_physical);}
- else return memory::AccessResult::Unmapped;
+ if(!translate(address,width,bank,offset))return memory::AccessResult::Unmapped;
  for(std::uint8_t i=0;i<width;++i){const auto shift=static_cast<unsigned>((width-1U-i)*8U);(*bank)[offset+i]=static_cast<std::uint8_t>(value>>shift);}
  return memory::AccessResult::Success;
 }
