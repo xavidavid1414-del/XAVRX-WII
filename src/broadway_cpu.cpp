@@ -530,11 +530,44 @@ bool BroadwayCpu::execute_one() {
 
             // FPCC (FPSCR[12:15]) mirrors the comparison classification.
             state_.fpscr = (state_.fpscr & ~0x0000f000u) | (result << 12);
-            if (unordered && xo == 32u) { // Ordered compare signals invalid on NaN.
+            const bool lhs_snan = std::isnan(lhs) &&
+                (state_.fpr[fra] & (1ull << 51)) == 0u;
+            const bool rhs_snan = std::isnan(rhs) &&
+                (state_.fpr[frb] & (1ull << 51)) == 0u;
+            const bool signaling_nan = lhs_snan || rhs_snan;
+            const bool invalid_ordered_compare = unordered && xo == 32u;
+            if (signaling_nan || invalid_ordered_compare) {
                 constexpr std::uint32_t fx = 1u << 31;
+                constexpr std::uint32_t fex = 1u << 30;
                 constexpr std::uint32_t vx = 1u << 29;
+                constexpr std::uint32_t vxsnan = 1u << 24;
                 constexpr std::uint32_t vxvc = 1u << 19;
-                state_.fpscr |= fx | vx | vxvc;
+                constexpr std::uint32_t invalid_causes =
+                    (1u << 24) | (1u << 23) | (1u << 22) |
+                    (1u << 21) | (1u << 20) | (1u << 19) |
+                    (1u << 10) | (1u << 9) | (1u << 8);
+                const std::uint32_t old_causes = state_.fpscr & invalid_causes;
+                if (signaling_nan) state_.fpscr |= vxsnan;
+                if (invalid_ordered_compare) state_.fpscr |= vxvc;
+                const std::uint32_t new_causes = state_.fpscr & invalid_causes;
+                if (new_causes != old_causes) state_.fpscr |= fx;
+                state_.fpscr = (state_.fpscr & ~vx) |
+                    (new_causes != 0u ? vx : 0u);
+
+                // FEX is the summary of exception classes enabled by FPSCR.
+                constexpr std::uint32_t ve = 1u << 7;
+                constexpr std::uint32_t oe = 1u << 8;
+                constexpr std::uint32_t ue = 1u << 9;
+                constexpr std::uint32_t ze = 1u << 10;
+                constexpr std::uint32_t xe = 1u << 11;
+                const bool enabled =
+                    ((state_.fpscr & vx) != 0u && (state_.fpscr & ve) != 0u) ||
+                    ((state_.fpscr & (1u << 28)) != 0u && (state_.fpscr & oe) != 0u) ||
+                    ((state_.fpscr & (1u << 27)) != 0u && (state_.fpscr & ue) != 0u) ||
+                    ((state_.fpscr & (1u << 26)) != 0u && (state_.fpscr & ze) != 0u) ||
+                    ((state_.fpscr & (1u << 25)) != 0u && (state_.fpscr & xe) != 0u);
+                if (enabled) state_.fpscr |= fex;
+                else state_.fpscr &= ~fex;
             }
             break;
         }
