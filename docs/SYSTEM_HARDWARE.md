@@ -1,7 +1,7 @@
 # XAVRX-WII System Hardware Foundation
 
 ## Clock domains
-The initial clock tree exposes CPU (729 MHz), GPU (243 MHz), bus (162 MHz), and DSP (81 MHz) reference frequencies. A caller may provide alternate non-zero frequencies for deterministic tests. Cycle-to-nanosecond conversion is provided for scheduler integration. These are model reference rates, not a claim that every Wii timing relationship or PLL mode is reproduced.
+The initial clock tree exposes CPU (729 MHz), GPU (243 MHz), bus (162 MHz), and DSP (121.5 MHz), Starlet ARM (243 MHz) reference frequencies. A caller may provide alternate non-zero frequencies for deterministic tests. Cycle-to-nanosecond conversion is provided for scheduler integration. These are model reference rates, not a claim that every Wii timing relationship or PLL mode is reproduced.
 
 ## Interrupt controller
 The controller tracks 32 pending and enabled interrupt lines independently. Raising an interrupt sets its pending bit; enabling a line allows it to appear in the active mask. Claiming selects the lowest-numbered active line and acknowledges only that line. Out-of-range line operations are ignored.
