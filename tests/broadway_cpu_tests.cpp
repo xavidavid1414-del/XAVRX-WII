@@ -801,13 +801,27 @@ int main() {
     fcmp_nan_state.pc = 396;
     fcmp_nan_state.fpr[1] = 0x7ff8000000000000ull; // quiet NaN
     fcmp_nan_state.fpr[2] = std::bit_cast<std::uint64_t>(1.0);
-    fcmp_nan_state.fpscr = 0u;
+    fcmp_nan_state.fpscr = (1u << 7); // VE enables invalid-operation reporting
     cpu.set_state(fcmp_nan_state);
     memory.write32_be(396, fform(0, 1, 2, 32)); // fcmpo cr0,f1,f2
     assert(cpu.step());
     assert((cpu.state().fpscr & 0x0000f000u) == 0x00001000u);
-    assert((cpu.state().fpscr & ((1u << 31) | (1u << 29) | (1u << 19))) ==
-           ((1u << 31) | (1u << 29) | (1u << 19)));
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 30) |
+                                (1u << 29) | (1u << 19))) ==
+           ((1u << 31) | (1u << 30) | (1u << 29) | (1u << 19)));
+
+    // fcmpu accepts a quiet NaN but signals an invalid operation for SNaN.
+    auto fcmp_snan_state = cpu.state();
+    fcmp_snan_state.pc = 400;
+    fcmp_snan_state.fpr[1] = 0x7ff0000000000001ull; // signaling NaN
+    fcmp_snan_state.fpr[2] = std::bit_cast<std::uint64_t>(1.0);
+    fcmp_snan_state.fpscr = 0u;
+    cpu.set_state(fcmp_snan_state);
+    memory.write32_be(400, fform(0, 1, 2, 0)); // fcmpu cr0,f1,f2
+    assert(cpu.step());
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 29) | (1u << 24))) ==
+           ((1u << 31) | (1u << 29) | (1u << 24)));
+    assert((cpu.state().fpscr & (1u << 19)) == 0u);
 
     // Floating-point record forms copy FPSCR[0:3] into CR1.
     auto fpu_record_state = cpu.state();
