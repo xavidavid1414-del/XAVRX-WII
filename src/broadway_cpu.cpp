@@ -194,6 +194,7 @@ bool BroadwayCpu::execute_one() {
         const bool is_double = opcode == 50u || opcode == 51u;
         const std::uint32_t alignment = is_double ? 8u : 4u;
         if ((address & (alignment - 1u)) != 0u) {
+            state_.dar = address;
             throw std::invalid_argument("unaligned floating-point load");
         }
         if (is_double) {
@@ -217,6 +218,7 @@ bool BroadwayCpu::execute_one() {
         const bool is_double = opcode == 54u || opcode == 55u;
         const std::uint32_t alignment = is_double ? 8u : 4u;
         if ((address & (alignment - 1u)) != 0u) {
+            state_.dar = address;
             throw std::invalid_argument("unaligned floating-point store");
         }
         const double value = std::bit_cast<double>(state_.fpr[frs]);
@@ -390,7 +392,7 @@ bool BroadwayCpu::execute_one() {
         if (update && (ra == 0u || ra == rt)) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
-        if ((address & 3u) != 0u) throw std::invalid_argument("unaligned lwz");
+        if ((address & 3u) != 0u) { state_.dar = address; throw std::invalid_argument("unaligned lwz"); }
         const std::uint32_t value = read32(address);
         state_.gpr[rt] = value;
         if (update) state_.gpr[ra] = address;
@@ -407,6 +409,7 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((opcode >= 40u) && (address & 1u) != 0u) {
+            state_.dar = address;
             throw std::invalid_argument("unaligned halfword load");
         }
         std::uint32_t value = 0;
@@ -433,6 +436,7 @@ bool BroadwayCpu::execute_one() {
             sign_extend_16(immediate));
         const bool halfword = opcode == 44u || opcode == 45u;
         if (halfword && (address & 1u) != 0u) {
+            state_.dar = address;
             throw std::invalid_argument("unaligned halfword store");
         }
         invalidate_reservation(address, halfword ? 2u : 1u);
@@ -447,6 +451,7 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) {
+            state_.dar = address;
             throw std::invalid_argument("unaligned multiple-word access");
         }
         // Validate the complete range before changing registers or memory.
@@ -476,7 +481,7 @@ bool BroadwayCpu::execute_one() {
         if (update && (ra == 0u || ra == rt)) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
-        if ((address & 3u) != 0u) throw std::invalid_argument("unaligned stw");
+        if ((address & 3u) != 0u) { state_.dar = address; throw std::invalid_argument("unaligned stw"); }
         invalidate_reservation(address, 4u);
         write32(address, state_.gpr[rt]);
         if (update) state_.gpr[ra] = address;
@@ -846,6 +851,7 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             const std::uint32_t alignment = is_double ? 8u : 4u;
             if ((address & (alignment - 1u)) != 0u) {
+                state_.dar = address;
                 throw std::invalid_argument("unaligned indexed floating-point access");
             }
             if (load) {
@@ -872,6 +878,7 @@ bool BroadwayCpu::execute_one() {
         case 983: { // stfiwx: store the low-order word of an FPR
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             if ((address & 3u) != 0u) {
+                state_.dar = address;
                 throw std::invalid_argument("unaligned stfiwx");
             }
             invalidate_reservation(address, 4u);
@@ -882,6 +889,7 @@ bool BroadwayCpu::execute_one() {
         case 20: { // lwarx: load word and establish a reservation
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             if ((address & 3u) != 0u) {
+                state_.dar = address;
                 throw std::invalid_argument("unaligned lwarx");
             }
             state_.gpr[rt] = read32(address);
@@ -893,6 +901,7 @@ bool BroadwayCpu::execute_one() {
             if ((instruction & 1u) == 0u) return false; // Rc must be set.
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             if ((address & 3u) != 0u) {
+                state_.dar = address;
                 throw std::invalid_argument("unaligned stwcx.");
             }
             const bool success = state_.reservation_valid &&
@@ -927,6 +936,7 @@ bool BroadwayCpu::execute_one() {
                                  xo == 790u || xo == 918u;
             const std::uint32_t alignment = byte_access ? 1u : half_access ? 2u : 4u;
             if ((address & (alignment - 1u)) != 0u) {
+                state_.dar = address;
                 throw std::invalid_argument("unaligned indexed memory access");
             }
             if (load) {
