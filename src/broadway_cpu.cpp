@@ -453,6 +453,12 @@ bool BroadwayCpu::execute_one() {
         auto write_fpr = [&](double value) {
             state_.fpr[frt] = std::bit_cast<std::uint64_t>(value);
         };
+        auto update_fpu_cr1 = [&]() {
+            if ((instruction & 1u) != 0u) {
+                const std::uint32_t cr1 = (state_.fpscr >> 28) & 0xfu;
+                state_.cr = (state_.cr & 0x00ffffffu) | (cr1 << 24);
+            }
+        };
         // fsel is an A-form instruction: its low five XO bits must be
         // decoded separately because FRB/FRC share the upper XO bits.
         if (opcode == 63u && a_xo == 23u) {
@@ -498,12 +504,14 @@ bool BroadwayCpu::execute_one() {
                 }
                 write_fpr(result);
             }
+            update_fpu_cr1();
             break;
         }
         if (opcode == 59u && a_xo == 24u) { // fres: reciprocal estimate (deterministic approximation)
             const float value = static_cast<float>(b);
             const float result = 1.0f / value;
             write_fpr(static_cast<double>(result));
+            update_fpu_cr1();
             break;
         }
         if (opcode == 59u) return false;
@@ -615,6 +623,7 @@ bool BroadwayCpu::execute_one() {
         default:
             return false;
         }
+        update_fpu_cr1();
         break;
     }
     case 31: { // X-form integer instructions
