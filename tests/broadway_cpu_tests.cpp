@@ -831,6 +831,32 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().fpr[15] == cpu.state().fpr[2]); // FRA >= -0.0 selects FRC
 
+    // fsel chooses FRB when FRA is negative.
+    auto fsel_negative_state = cpu.state();
+    fsel_negative_state.pc = 404;
+    fsel_negative_state.fpr[1] = std::bit_cast<std::uint64_t>(-1.0);
+    cpu.set_state(fsel_negative_state);
+    memory.write32_be(404, (63u << 26) | (15u << 21) | (1u << 16) |
+                      (3u << 11) | (2u << 6) | (23u << 1));
+    assert(cpu.step());
+    assert(cpu.state().fpr[15] == cpu.state().fpr[3]);
+
+    // Single-precision fused arithmetic rounds the result to binary32.
+    auto fused_single_state = cpu.state();
+    fused_single_state.pc = 408;
+    fused_single_state.fpr[1] = std::bit_cast<std::uint64_t>(2.0);
+    fused_single_state.fpr[2] = std::bit_cast<std::uint64_t>(3.0);
+    fused_single_state.fpr[3] = std::bit_cast<std::uint64_t>(4.0);
+    cpu.set_state(fused_single_state);
+    memory.write32_be(408, (59u << 26) | (16u << 21) | (1u << 16) |
+                      (2u << 11) | (3u << 6) | (29u << 1)); // fmadds
+    memory.write32_be(412, (59u << 26) | (17u << 21) | (1u << 16) |
+                      (2u << 11) | (3u << 6) | (28u << 1)); // fmsubs
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[16]) == 11.0);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[17]) == 5.0);
+
     // lfs/stfs convert between binary32 memory and binary64 FPR storage.
     auto single_state = cpu.state();
     single_state.pc = 352;
