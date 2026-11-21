@@ -2,7 +2,7 @@
 Nintendo Wii emulator project built from scratch in C++20 with CMake.
 
 ## Status
-**Current phase: 3 / 20 — PowerPC integer execution complete.**
+**Current phase: 4 / 20 — CPU control flow and exception foundation implemented.**
 
 The CPU has an architectural state model, a decode layer, and a tested initial integer executor supporting ADDI, ADDIS, ORI, ORIS, XORI, XORIS, ANDI., ADD, SUBF, AND, OR, XOR, and signed register CMP. This is not yet a playable emulator: graphics, memory, boot integration, peripherals, and many CPU instructions remain unimplemented.
 
