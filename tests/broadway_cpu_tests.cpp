@@ -2263,7 +2263,7 @@ int main() {
     rotate_record_state.xer = 1u << 31;
     cpu.set_state(rotate_record_state);
     memory.write32_be(1104u, (20u << 26) | (3u << 21) | (4u << 16) |
-        (1u << 11) | 1u); // rlwimi. r4,r3,1,0,31
+        (1u << 11) | (31u << 1) | 1u); // rlwimi. r4,r3,1,0,31
     assert(cpu.step());
     assert(cpu.state().gpr[4] == 3u);
     assert(((cpu.state().cr >> 28) & 0xfu) == 5u);
@@ -2273,7 +2273,7 @@ int main() {
     rotate_record_state.gpr[3] = 0x80000000u;
     cpu.set_state(rotate_record_state);
     memory.write32_be(1108u, (21u << 26) | (3u << 21) |
-        (4u << 16) | 1u); // rlwinm. r4,r3,0,0,31
+        (4u << 16) | (31u << 1) | 1u); // rlwinm. r4,r3,0,0,31
     assert(cpu.step());
     assert(cpu.state().gpr[4] == 0x80000000u);
     assert(((cpu.state().cr >> 28) & 0xfu) == 9u);
@@ -2284,7 +2284,7 @@ int main() {
     rotate_record_state.gpr[5] = 1u;
     cpu.set_state(rotate_record_state);
     memory.write32_be(1112u, (23u << 26) | (3u << 21) |
-        (4u << 16) | (5u << 11) | 1u); // rlwnm. r4,r3,r5,0,31
+        (4u << 16) | (5u << 11) | (31u << 1) | 1u); // rlwnm. r4,r3,r5,0,31
     assert(cpu.step());
     assert(cpu.state().gpr[4] == 1u);
     assert(((cpu.state().cr >> 28) & 0xfu) == 5u);
