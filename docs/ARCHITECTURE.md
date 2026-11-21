@@ -19,7 +19,7 @@ Build a Nintendo Wii emulator from a clean, testable C++ codebase. The target co
 | Core | Lifecycle, configuration, timing coordination, errors |
 | CPU | Gekko / PowerPC instruction execution, registers, exceptions |
 | Memory | Configurable RAM, big-endian aligned accesses, non-overlapping memory-mapped devices |
-| System | Boot flow, interrupts, timers, hardware registers |
+| System | Clock domains, deterministic timers, interrupt controller, boot-state transitions |
 | GPU | Hollywood / GX command processing and rendering |
 | Audio | DSP behavior, audio timing, output interface |
 | Input | Wii Remote and supported controller abstractions |
