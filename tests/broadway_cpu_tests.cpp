@@ -2119,12 +2119,12 @@ int main() {
     cpu.set_state(malformed_segment_state);
     memory.write32_be(1036u, xform(7, 3, 1, 595)); // invalid mfsr RB
     assert(!cpu.step());
-    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
     malformed_segment_state.pc = 1040u;
     cpu.set_state(malformed_segment_state);
     memory.write32_be(1040u, xform(8, 1, 6, 659)); // invalid mfsrin RA
     assert(!cpu.step());
-    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
 
     return 0;
 }
