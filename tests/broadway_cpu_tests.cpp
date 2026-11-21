@@ -1230,11 +1230,11 @@ int main() {
     assert(cpu.state().gpr[12] == 0x00001830u);
 
     // SPR bank round-trip: exception-save and scratch registers.
-    auto spr_state = cpu.state();
-    spr_state.pc = 712u;
-    spr_state.gpr[10] = 0x11223344u;
-    spr_state.gpr[11] = 0x55667788u;
-    cpu.set_state(spr_state);
+    auto spr_bank_state = cpu.state();
+    spr_bank_state.pc = 712u;
+    spr_bank_state.gpr[10] = 0x11223344u;
+    spr_bank_state.gpr[11] = 0x55667788u;
+    cpu.set_state(spr_bank_state);
     const auto spr_form = [](std::uint32_t reg, std::uint32_t spr,
                              std::uint32_t xo) {
         const std::uint32_t encoded_spr = ((spr & 31u) << 5) | (spr >> 5);
