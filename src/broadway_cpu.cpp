@@ -514,6 +514,20 @@ bool BroadwayCpu::execute_one() {
             state_.cr = (state_.cr & ~mask) | (result << shift);
             break;
         }
+        case 583: // mffs: move FPSCR to FPR
+            state_.fpr[frt] = 0xfff8000000000000ull | state_.fpscr;
+            break;
+        case 711: { // mtfsf: move selected FPR nibbles to FPSCR
+            const std::uint32_t field_mask = (instruction >> 17) & 0xffu;
+            const std::uint32_t source = static_cast<std::uint32_t>(state_.fpr[frb]);
+            for (std::uint32_t field = 0; field < 8; ++field) {
+                if ((field_mask & (1u << (7u - field))) == 0u) continue;
+                const std::uint32_t shift = 28u - field * 4u;
+                const std::uint32_t mask = 0xfu << shift;
+                state_.fpscr = (state_.fpscr & ~mask) | (source & mask);
+            }
+            break;
+        }
         case 14: // fctiw: convert to signed word using current rounding mode
         case 15: { // fctiwz: convert to signed word toward zero
             const double source = b;
