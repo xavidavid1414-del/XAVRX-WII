@@ -203,26 +203,6 @@ bool BroadwayCpu::execute_one() {
     };
 
     switch (opcode) {
-    case 12: // addic: add immediate carrying
-    case 13: { // addic.: add immediate carrying and record
-        const std::uint32_t lhs = state_.gpr[ra];
-        const std::uint32_t rhs = static_cast<std::uint32_t>(
-            sign_extend_16(immediate));
-        const std::uint64_t sum = static_cast<std::uint64_t>(lhs) + rhs;
-        state_.gpr[rt] = static_cast<std::uint32_t>(sum);
-        constexpr std::uint32_t xer_ca = 1u << 29;
-        state_.xer = (state_.xer & ~xer_ca) |
-                     ((sum >> 32u) != 0u ? xer_ca : 0u);
-        if (opcode == 13u) {
-            const std::uint32_t result = state_.gpr[rt];
-            const std::uint32_t so = (state_.xer >> 31u) & 1u;
-            const std::uint32_t cr0 =
-                (result == 0u ? 2u :
-                 (static_cast<std::int32_t>(result) < 0 ? 8u : 4u)) | so;
-            state_.cr = (state_.cr & 0x0fffffffu) | (cr0 << 28u);
-        }
-        break;
-    }
     case 3: { // twi: trap word immediate
         const std::uint32_t to = rt;
         const std::uint32_t lhs = state_.gpr[ra];
