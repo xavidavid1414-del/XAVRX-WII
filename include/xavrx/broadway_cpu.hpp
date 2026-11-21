@@ -29,6 +29,11 @@ public:
         std::uint32_t cr{0};
         std::uint32_t xer{0};
         std::uint32_t msr{0};
+        std::uint32_t srr0{0};
+        std::uint32_t srr1{0};
+        std::uint32_t dar{0};
+        std::uint32_t dsisr{0};
+        std::array<std::uint32_t, 4> sprg{};
         std::uint64_t time_base{0};
         std::uint32_t reservation_address{0};
         bool reservation_valid{false};
