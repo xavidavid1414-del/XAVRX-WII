@@ -1751,6 +1751,22 @@ int main() {
     assert(((cpu.state().cr >> 16) & 0xfu) == 7u);
     assert((cpu.state().fpscr & 0x00000700u) == 0u);
 
+    // mcrfs must reject reserved fields without changing architectural state.
+    for (const std::uint32_t reserved_bit :
+         {0x00000800u, 0x00020000u, 0x00200000u, 0x00400000u}) {
+        auto invalid_mcrfs_state = cpu.state();
+        invalid_mcrfs_state.pc = 916u;
+        invalid_mcrfs_state.fpscr = 0x12345678u;
+        invalid_mcrfs_state.cr = 0x89abcdefu;
+        cpu.set_state(invalid_mcrfs_state);
+        memory.write32_be(916u, (63u << 26) | (3u << 23) |
+                               (5u << 18) | (64u << 1) | reserved_bit);
+        assert(!cpu.step());
+        assert(cpu.state().pc == 916u);
+        assert(cpu.state().fpscr == 0x12345678u);
+        assert(cpu.state().cr == 0x89abcdefu);
+    }
+
     // Reciprocal and reciprocal-square-root estimates are deterministic
     // approximations in this interpreter and preserve binary32 for fres.
     auto fp_estimate_state = cpu.state();
