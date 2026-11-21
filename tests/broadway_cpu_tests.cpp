@@ -1408,5 +1408,53 @@ int main() {
            xavrx::BroadwayCpu::Exception::IllegalInstruction);
     assert(cpu.state().pc == 836u);
 
+    // Indexed floating-point loads/stores, including update forms.
+    auto indexed_fp_state = cpu.state();
+    indexed_fp_state.pc = 840u;
+    indexed_fp_state.gpr[3] = 256u;
+    indexed_fp_state.gpr[4] = 0u;
+    indexed_fp_state.fpr[8] = std::bit_cast<std::uint64_t>(1.5);
+    indexed_fp_state.fpr[9] = std::bit_cast<std::uint64_t>(2.25);
+    cpu.set_state(indexed_fp_state);
+    const auto xform_fp = [](std::uint32_t fr, std::uint32_t ra,
+                             std::uint32_t rb, std::uint32_t xo) {
+        return (31u << 26) | (fr << 21) | (ra << 16) |
+               (rb << 11) | (xo << 1);
+    };
+    memory.write32_be(256u, std::bit_cast<std::uint32_t>(-3.5f));
+    memory.write64_be(264u, std::bit_cast<std::uint64_t>(4.75));
+    memory.write32_be(840u, xform_fp(10, 3, 4, 535)); // lfsx f10,r3,r4
+    memory.write32_be(844u, xform_fp(11, 3, 4, 599)); // lfdx f11,r3,r4
+    memory.write32_be(848u, xform_fp(8, 3, 4, 663));  // stfsx f8,r3,r4
+    memory.write32_be(852u, xform_fp(9, 3, 4, 727));  // stfdx f9,r3,r4
+    memory.write32_be(856u, xform_fp(12, 3, 4, 567)); // lfsux f12,r3,r4
+    memory.write32_be(860u, xform_fp(13, 3, 4, 631)); // lfdux f13,r3,r4
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[10]) == -3.5);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[11]) == -3.5);
+    assert(cpu.step());
+    assert(memory.read32_be(256u) == std::bit_cast<std::uint32_t>(1.5f));
+    assert(cpu.step());
+    assert(memory.read64_be(264u) == std::bit_cast<std::uint64_t>(2.25));
+    assert(cpu.step());
+    assert(cpu.state().gpr[3] == 256u);
+    assert(std::bit_cast<double>(cpu.state().fpr[12]) == 1.5);
+    assert(cpu.step());
+    assert(cpu.state().gpr[3] == 256u);
+    assert(std::bit_cast<double>(cpu.state().fpr[13]) == 2.25);
+
+    // Indexed floating-point update forms reject RA=0 and load overlap.
+    auto invalid_indexed_fp = cpu.state();
+    invalid_indexed_fp.pc = 864u;
+    invalid_indexed_fp.gpr[3] = 272u;
+    invalid_indexed_fp.fpr[3] = std::bit_cast<std::uint64_t>(99.0);
+    cpu.set_state(invalid_indexed_fp);
+    memory.write32_be(864u, xform_fp(3, 3, 4, 567)); // lfsux f3,r3,r4
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+    assert(cpu.state().pc == 864u);
+    assert(cpu.state().gpr[3] == 272u);
+
     return 0;
 }
