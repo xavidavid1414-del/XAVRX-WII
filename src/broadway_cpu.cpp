@@ -1254,9 +1254,12 @@ bool BroadwayCpu::execute_one() {
                     ? (~0u << (32u - shift)) : 0u;
                 state_.gpr[ra] = (value >> shift) | fill;
             }
-            const bool shifted_out_ones = shift >= 32
-                ? value != 0u
-                : shift != 0u && (value & ((1u << shift) - 1u)) != 0u;
+            // PowerPC sets CA only when a negative operand loses at least
+            // one non-sign 1-bit during the arithmetic right shift.
+            const bool negative = (value & 0x80000000u) != 0u;
+            const bool shifted_out_ones = negative && (shift >= 32u
+                ? (value & 0x7fffffffu) != 0u
+                : shift != 0u && (value & ((1u << shift) - 1u)) != 0u);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          (shifted_out_ones ? (1u << 29) : 0u);
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
@@ -1272,8 +1275,9 @@ bool BroadwayCpu::execute_one() {
                     ? (~0u << (32u - shift)) : 0u;
                 state_.gpr[ra] = (value >> shift) | fill;
             }
-            const bool shifted_out_ones =
-                shift != 0u && (value & ((1u << shift) - 1u)) != 0u;
+            const bool negative = (value & 0x80000000u) != 0u;
+            const bool shifted_out_ones = negative && shift != 0u &&
+                (value & ((1u << shift) - 1u)) != 0u;
             state_.xer = (state_.xer & ~(1u << 29)) |
                          (shifted_out_ones ? (1u << 29) : 0u);
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[ra]);
