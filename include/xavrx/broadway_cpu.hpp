@@ -51,6 +51,10 @@ public:
     [[nodiscard]] const State& state() const noexcept;
     void set_state(const State& state) noexcept;
 
+    // Delivers the pending synchronous exception to its PowerPC vector.
+    // step() keeps its non-delivering behavior for debugger/test inspection.
+    [[nodiscard]] bool enter_exception() noexcept;
+
 private:
     [[nodiscard]] bool execute_one();
 
