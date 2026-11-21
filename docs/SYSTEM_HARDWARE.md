@@ -1,10 +1,7 @@
 # XAVRX-WII System Hardware Foundation
 
-## Clock domains
-The initial clock tree exposes CPU (729 MHz), GPU (243 MHz), bus (162 MHz), DSP (121.5 MHz), and Starlet ARM (243 MHz) reference frequencies. A caller may provide alternate non-zero frequencies for deterministic tests. These are model reference rates, not a claim that every PLL mode or timing relationship is reproduced.
-
-## Generic timers and boot state
-Four deterministic timers advance only when the host scheduler supplies CPU cycles. They support one-shot and periodic operation and raise generic timer interrupt lines. The boot controller validates Off -> BootRom -> Firmware -> Running transitions, plus halted and faulted states. These are scaffolding models, not the Wii's complete timer/alarm or boot ROM implementation.
+## Clock domains and generic scheduling
+The initial clock tree exposes reference domains for Broadway CPU (729 MHz), GPU (243 MHz), bus (162 MHz), DSP (121.5 MHz), and Starlet ARM (243 MHz). These are model reference rates, not a claim that every PLL mode or timing relationship is reproduced. Four generic deterministic timers advance when the host scheduler supplies cycles; they are scaffolding and are not substitutes for the Starlet hardware timer below.
 
 ## Wii MEM1 and MEM2
 The Wii memory object models 24 MiB of MEM1 and 64 MiB of MEM2 with shared backing across cached, uncached, and physical aliases.
@@ -14,26 +11,29 @@ The Wii memory object models 24 MiB of MEM1 and 64 MiB of MEM2 with shared backi
 | MEM1 | 0x80000000 | 0xC0000000 | 0x00000000 | 24 MiB |
 | MEM2 | 0x90000000 | 0xD0000000 | 0x10000000 | 64 MiB |
 
-Access widths, natural alignment, bank boundaries, and big-endian reads/writes are checked. This does not yet implement MMU/BAT translation, cache behavior, SRAM, MEM2 reservation/protection, or the complete memory map.
+Access widths, natural alignment, bank boundaries, and big-endian reads/writes are checked. MMU/BAT translation, cache behavior, SRAM, MEM2 reservation/protection, and the complete memory map are not yet implemented.
 
 ## Hollywood interrupt controller
-The model implements the two independent 32-bit Broadway and Starlet IRQ flag/mask pairs at offsets 0x30, 0x34, 0x38, and 0x3C. Hardware sources can be routed to Broadway, Starlet, or both. Flags are write-one-to-clear; masks gate each processor's asserted interrupt independently. The currently modeled source assignments include GPIO Broadway (10), GPIO Starlet (11), IPC Broadway (30), and IPC Starlet (31). Other hardware IRQ sources still need their own devices and event sources.
+The model implements the independent 32-bit Broadway and Starlet IRQ flag/mask pairs at offsets 0x30, 0x34, 0x38, and 0x3C. Sources can be routed to Broadway, Starlet, or both. Flags are write-one-to-clear; masks gate each processor's interrupt independently. Current event sources include Starlet timer (0), GPIOB (10), GPIO (11), IPC-to-Broadway (30), and IPC-to-Starlet (31). Other IRQ sources still need their corresponding devices and event sources.
+
+## Starlet timer and alarm
+The documented Starlet timer register at offset 0x10 is a 32-bit read-only counter; the alarm register at 0x14 is write-only and accepts a counter deadline. Advancing the modeled Starlet timer ticks across the programmed deadline raises Hollywood IRQ 0 for Starlet. The alarm is one-shot and can be acknowledged through the Starlet IRQ flag register (0x38). The host scheduler supplies timer ticks explicitly; a hardware clock-divider and wall-clock conversion are not claimed.
 
 ## Hollywood IPC
-The four documented 32-bit registers are modeled at offsets 0x00–0x0C: PPCMSG, PPCCTRL, ARMMSG, and ARMCTRL. Message words are shared. X1/X2 are Broadway-owned handshake flags, Y1/Y2 are Starlet-owned flags; the other side can observe and clear the appropriate flags. IRQ enables and IRQ 30/31 signaling are modeled. ARMCTRL is Starlet-only. The implementation models the documented IOS handshake flags, not IOS itself, request queues, DMA, or the full Starlet software environment.
+The four documented 32-bit registers are modeled at offsets 0x00–0x0C: PPCMSG, PPCCTRL, ARMMSG, and ARMCTRL. The two message words are shared and freely readable/writable by both CPUs. X1/X2 are Broadway-owned; Y1/Y2 are Starlet-owned. The opposite CPU may read and clear the flags but cannot set them. Broadway alone writes PPCCTRL; Starlet alone writes ARMCTRL. IY1/IY2 enable IRQ 30 on Broadway for Y1/Y2; IX1/IX2 enable IRQ 31 on Starlet for X1/X2. IOS itself, request queues, DMA, and the full Starlet software environment are not modeled.
 
 ## Hollywood GPIO
-The 24-pin GPIO register banks are modeled at offsets 0xC0–0xFC. Broadway has its GPIOB bank; Starlet has the full GPIO bank, enable and owner registers. The owner mask selects pins controlled through Broadway's bank. Inputs can be driven by the host/device layer; output, direction, straps, interrupt level, flag, and mask registers are represented. Level-sensitive matching sets the corresponding GPIO flags and raises IRQ 10 (Broadway bank) or IRQ 11 (Starlet bank). Device-specific electrical behavior and real Wii peripherals are not yet modeled.
+The 24-pin GPIO implementation uses one shared set of output, direction, input, interrupt-level, interrupt-flag, and interrupt-mask state. The Broadway GPIOB view is masked by GPIO_OWNER; Starlet's full view can inspect all pins. Broadway writes only owner-selected pins through GPIOB; Starlet writes only pins not assigned to Broadway through the full bank. GPIO_ENABLE gates pins. Interrupt flags latch when enabled pins reach their configured interrupt level and are W1C-clearable only after the pin returns to its idle (opposite) level. Masked owner-selected flags raise IRQ 10 to Broadway; unowned flags raise IRQ 11 to Starlet. GPIO_STRAPS is read-only in this model and host input is supplied through set_inputs().
 
-## MMIO integration
-HollywoodHardware implements the existing MemoryMappedDevice interface and map_into() installs the 0x400-byte register window at 0x0D000000 and its 0x0D800000 mirror. Accesses are 32-bit, naturally aligned, big-endian through the memory bus. The bus-facing default access is Broadway; explicit read_as / write_as methods apply CPU-specific permissions for Starlet-aware integration. Unknown registers and unsupported widths are rejected rather than silently inventing register behavior.
+## MMIO integration and CPU views
+Hollywood registers are 32-bit, naturally aligned, big-endian. The Broadway view is mapped at 0x0D000000; the Starlet view is mapped at 0x0D800000. map_into() accepts separate Broadway and Starlet Memory buses so access permissions are applied according to the initiating processor. The generic MemoryMappedDevice interface itself has no CPU identity; mapping both windows into one shared bus would lose that distinction, so separate CPU buses are the intended integration. Unknown registers and unsupported widths are rejected rather than assigned invented behavior.
 
 ## References
 - [WiiBrew: Hollywood registers](https://wiibrew.org/wiki/Hollywood/Registers)
 - [WiiBrew: Hollywood IRQs](https://wiibrew.org/wiki/Hollywood/IRQs)
 - [WiiBrew: Hollywood GPIOs](https://wiibrew.org/wiki/Hollywood/GPIOs)
 - [WiiBrew: Hardware IPC](https://wiibrew.org/wiki/Hardware/IPC)
-- [WiiBrew: Main memory](https://wiibrew.org/wiki/Hardware/Main_Memory)
+- [EmuDocs: Starlet timer and alarm](https://emudocs.layle.dev/GameCube%20%26%20Wii/Starlet/)
 
 ## Remaining Phase 6 work
-The Hollywood interrupt/IPC/GPIO foundations now exist, but Phase 6 is not complete. Remaining hardware includes the Hollywood timer/alarm and watchdog, reset and clock/PLL controls, AHB arbitration and protection, SRAM/boot ROM interfaces, NAND/SD/USB/Wi-Fi/Bluetooth/disc controllers, DSP/GPU interfaces, device timing, and integration with the running Broadway and Starlet execution environments. Register permissions and semantics must continue to be checked against hardware documentation and verified tests. Phase 7 remains blocked.
+Phase 6 remains open. Still missing watchdog, reset/PLL and AHB protection controls, SRAM/boot ROM, NAND/SD/USB/Wi-Fi/Bluetooth/disc controllers, DSP/GPU devices, device timing, and integration with running Broadway and Starlet execution environments. Register semantics and permissions must continue to be checked against hardware documentation and regression tests. Phase 7 remains blocked.
