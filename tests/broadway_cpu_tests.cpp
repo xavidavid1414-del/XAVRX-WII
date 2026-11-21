@@ -801,7 +801,7 @@ int main() {
     fcmp_nan_state.pc = 396;
     fcmp_nan_state.fpr[1] = 0x7ff8000000000000ull; // quiet NaN
     fcmp_nan_state.fpr[2] = std::bit_cast<std::uint64_t>(1.0);
-    fcmp_nan_state.fpscr = (1u << 7); // VE enables invalid-operation reporting
+    fcmp_nan_state.fpscr = (1u << 8); // VE enables invalid-operation reporting
     cpu.set_state(fcmp_nan_state);
     memory.write32_be(396, fform(0, 1, 2, 32)); // fcmpo cr0,f1,f2
     assert(cpu.step());
@@ -841,7 +841,7 @@ int main() {
     fp_divzero_state.pc = 408;
     fp_divzero_state.fpr[1] = std::bit_cast<std::uint64_t>(1.0);
     fp_divzero_state.fpr[2] = std::bit_cast<std::uint64_t>(0.0);
-    fp_divzero_state.fpscr = (1u << 10); // ZE enables divide-by-zero
+    fp_divzero_state.fpscr = (1u << 5); // ZE enables divide-by-zero
     cpu.set_state(fp_divzero_state);
     memory.write32_be(408, fform(9, 1, 2, 18)); // fdiv f9,f1,f2
     assert(cpu.step());
@@ -1578,7 +1578,7 @@ int main() {
     assert(static_cast<std::uint32_t>(cpu.state().fpr[5]) == 0xfffffffdu);
     assert(cpu.step());
     assert(static_cast<std::uint32_t>(cpu.state().fpr[6]) == 0x80000000u);
-    assert((cpu.state().fpscr & ((1u << 31) | (1u << 29) | (1u << 8))) ==
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 29) | (1u << 9))) ==
            ((1u << 31) | (1u << 29) | (1u << 8)));
 
     // fctiw obeys the PowerPC FPSCR rounding-mode field (RN).
