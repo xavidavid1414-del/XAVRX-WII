@@ -205,10 +205,10 @@ bool BroadwayCpu::execute_one() {
     switch (opcode) {
     case 12: // addic: add immediate carrying
     case 13: { // addic.: add immediate carrying and record
-        const std::int64_t lhs = static_cast<std::uint64_t>(state_.gpr[ra]);
-        const std::int64_t rhs = sign_extend_16(immediate);
-        const std::uint64_t sum = static_cast<std::uint64_t>(lhs) +
-                                  static_cast<std::uint64_t>(rhs);
+        const std::uint32_t lhs = state_.gpr[ra];
+        const std::uint32_t rhs = static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        const std::uint64_t sum = static_cast<std::uint64_t>(lhs) + rhs;
         state_.gpr[rt] = static_cast<std::uint32_t>(sum);
         constexpr std::uint32_t xer_ca = 1u << 29;
         state_.xer = (state_.xer & ~xer_ca) |
