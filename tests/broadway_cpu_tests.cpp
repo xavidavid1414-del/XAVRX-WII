@@ -906,6 +906,32 @@ int main() {
     assert(cpu.state().pc == 476u);
     assert(cpu.state().gpr[3] == 500u);
 
+    // lmw/stmw transfer the selected GPR range in big-endian word order.
+    auto multiple_state = cpu.state();
+    multiple_state.pc = 480;
+    multiple_state.gpr[3] = 128u;
+    for (std::uint32_t reg = 20; reg < 32u; ++reg) {
+        multiple_state.gpr[reg] = 0x10203000u + reg;
+    }
+    cpu.set_state(multiple_state);
+    memory.write32_be(480, (47u << 26) | (20u << 21) | (3u << 16) | 16u); // stmw r20,16(r3)
+    memory.write32_be(484, (46u << 26) | (20u << 21) | (3u << 16) | 16u); // lmw r20,16(r3)
+    for (std::uint32_t reg = 20; reg < 32u; ++reg) {
+        cpu.set_state(cpu.state());
+        multiple_state = cpu.state();
+        multiple_state.gpr[reg] = 0u;
+        cpu.set_state(multiple_state);
+    }
+    assert(cpu.step());
+    for (std::uint32_t reg = 20; reg < 32u; ++reg) {
+        assert(memory.read32_be(144u + (reg - 20u) * 4u) ==
+               0x10203000u + reg);
+    }
+    assert(cpu.step());
+    for (std::uint32_t reg = 20; reg < 32u; ++reg) {
+        assert(cpu.state().gpr[reg] == 0x10203000u + reg);
+    }
+
     // Structured CPU exceptions: fetch, illegal instruction and data faults.
     auto exception_state = cpu.state();
     exception_state.pc = 401u;
