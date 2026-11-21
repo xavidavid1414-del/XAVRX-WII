@@ -2095,5 +2095,36 @@ int main() {
     assert(!cpu.step());
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
 
+    // All four segment-register move forms are supervisor-only.
+    const std::uint32_t privileged_segment_ops[] = {
+        xform(7, 3, 0, 595), xform(5, 4, 0, 210),
+        xform(8, 0, 6, 659), xform(5, 0, 6, 242)
+    };
+    for (std::uint32_t i = 0; i < 4; ++i) {
+        user_segment_state = cpu.state();
+        user_segment_state.pc = 1020u + i * 4u;
+        user_segment_state.exception = xavrx::BroadwayCpu::Exception::None;
+        cpu.set_state(user_segment_state);
+        memory.write32_be(1020u + i * 4u, privileged_segment_ops[i]);
+        assert(!cpu.step());
+        assert(cpu.state().exception ==
+               xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
+    }
+
+    // Reserved fields must be zero in direct/indexed segment-register forms.
+    auto malformed_segment_state = cpu.state();
+    malformed_segment_state.pc = 1036u;
+    malformed_segment_state.msr = 0u;
+    malformed_segment_state.exception = xavrx::BroadwayCpu::Exception::None;
+    cpu.set_state(malformed_segment_state);
+    memory.write32_be(1036u, xform(7, 3, 1, 595)); // invalid mfsr RB
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+    malformed_segment_state.pc = 1040u;
+    cpu.set_state(malformed_segment_state);
+    memory.write32_be(1040u, xform(8, 1, 6, 659)); // invalid mfsrin RA
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+
     return 0;
 }
