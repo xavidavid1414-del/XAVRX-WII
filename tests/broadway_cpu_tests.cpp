@@ -960,6 +960,7 @@ int main() {
     indexed_state.gpr[3] = 200u;
     indexed_state.gpr[4] = 8u;
     indexed_state.gpr[5] = 0x12345678u;
+    indexed_state.gpr[11] = 12u;
     cpu.set_state(indexed_state);
     const auto xmem = [](std::uint32_t rt, std::uint32_t ra,
                          std::uint32_t rb, std::uint32_t xo) {
@@ -971,8 +972,8 @@ int main() {
     memory.write32_be(508, xmem(6, 3, 4, 23));   // lwzx r6,r3,r4
     memory.write32_be(512, xmem(5, 3, 4, 151));  // stwx r5,r3,r4
     memory.write32_be(516, xmem(7, 3, 4, 534));  // lwbrx r7,r3,r4
-    memory.write32_be(520, xmem(8, 3, 4, 790));  // lhbrx r8,r3,r4
-    memory.write32_be(524, xmem(9, 3, 4, 343));  // lhax r9,r3,r4
+    memory.write32_be(520, xmem(8, 3, 11, 790)); // lhbrx r8,r3,r11
+    memory.write32_be(524, xmem(9, 3, 11, 343)); // lhax r9,r3,r11
     assert(cpu.step());
     assert(cpu.state().gpr[6] == 0x89abcdefu);
     assert(cpu.step());
@@ -980,9 +981,9 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[7] == 0x78563412u);
     assert(cpu.step());
-    assert(cpu.state().gpr[8] == 0x7856u);
+    assert(cpu.state().gpr[8] == 0xf180u);
     assert(cpu.step());
-    assert(cpu.state().gpr[9] == 0x00001234u);
+    assert(cpu.state().gpr[9] == 0xffff80f1u);
 
     // Indexed update-form addressing writes the effective address to RA.
     auto indexed_update_state = cpu.state();
