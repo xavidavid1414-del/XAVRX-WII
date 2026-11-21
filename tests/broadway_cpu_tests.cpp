@@ -1747,5 +1747,38 @@ int main() {
     assert((cpu.state().xer & (1u << 30)) != 0u);
     assert((cpu.state().xer & (1u << 31)) != 0u);
 
+
+    // OE forms for carry arithmetic must set OV and sticky SO on signed overflow.
+    struct OverflowCase {
+        std::uint32_t xo;
+        std::uint32_t lhs;
+        std::uint32_t rhs;
+        bool carry;
+    };
+    const OverflowCase carry_overflow_cases[] = {
+        {522u, 0x7fffffffu, 1u, false},   // addco
+        {520u, 0xffffffffu, 0x7fffffffu, false}, // subfco
+        {650u, 0x7fffffffu, 0u, true},    // addeo
+        {648u, 0xffffffffu, 0x7fffffffu, true}, // subfeo
+        {714u, 0x7fffffffu, 0u, true},    // addzeo
+        {712u, 0x80000000u, 0u, true},    // subfzeo
+        {744u, 0x7fffffffu, 0u, false},   // subfmeo
+        {746u, 0x80000000u, 0u, false}    // addmeo
+    };
+    std::uint32_t oe_pc = 960u;
+    for (const auto& test : carry_overflow_cases) {
+        auto oe_state = cpu.state();
+        oe_state.pc = oe_pc;
+        oe_state.gpr[3] = test.lhs;
+        oe_state.gpr[4] = test.rhs;
+        oe_state.xer = test.carry ? (1u << 29) : 0u;
+        cpu.set_state(oe_state);
+        memory.write32_be(oe_pc, xform(5, 3, 4, test.xo));
+        assert(cpu.step());
+        assert((cpu.state().xer & (1u << 30)) != 0u);
+        assert((cpu.state().xer & (1u << 31)) != 0u);
+        oe_pc += 4u;
+    }
+
     return 0;
 }
