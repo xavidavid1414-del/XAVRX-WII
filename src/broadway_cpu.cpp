@@ -669,15 +669,30 @@ bool BroadwayCpu::execute_one() {
             break;
         }
         case 83: { // mfmsr: move machine-state register to GPR
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
             state_.gpr[rt] = state_.msr;
             break;
         }
         case 146: { // mtmsr: move GPR to machine-state register
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
             state_.msr = state_.gpr[rs];
             break;
         }
         case 339: { // mfspr: move supported special-purpose register to GPR
             const std::uint32_t spr = ra | (rb << 5);
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u && spr != 1u && spr != 8u && spr != 9u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
             switch (spr) {
             case 1: state_.gpr[rt] = state_.xer; break; // XER
             case 8: state_.gpr[rt] = state_.lr; break;  // LR
@@ -709,6 +724,11 @@ bool BroadwayCpu::execute_one() {
         case 467: { // mtspr: move GPR to supported special-purpose register
             const std::uint32_t spr = ra | (rb << 5);
             const std::uint32_t value = state_.gpr[rs];
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u && spr != 1u && spr != 8u && spr != 9u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
             switch (spr) {
             case 1: state_.xer = value; break; // XER
             case 8: state_.lr = value; break;  // LR
