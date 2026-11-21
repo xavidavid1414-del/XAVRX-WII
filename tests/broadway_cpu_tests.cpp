@@ -1540,6 +1540,25 @@ int main() {
     assert(cpu.step());
     assert(static_cast<std::uint32_t>(cpu.state().fpr[6]) == 0x80000000u);
 
+    // fctiw obeys the PowerPC FPSCR rounding-mode field (RN).
+    auto fp_round_up_state = cpu.state();
+    fp_round_up_state.pc = 900u;
+    fp_round_up_state.fpscr = 2u; // toward +infinity
+    fp_round_up_state.fpr[1] = std::bit_cast<std::uint64_t>(3.25);
+    fp_round_up_state.fpr[2] = std::bit_cast<std::uint64_t>(-3.25);
+    cpu.set_state(fp_round_up_state);
+    memory.write32_be(900u, (63u << 26) | (7u << 21) | (1u << 11) | (14u << 1));
+    assert(cpu.step());
+    assert(static_cast<std::uint32_t>(cpu.state().fpr[7]) == 4u);
+
+    auto fp_round_down_state = cpu.state();
+    fp_round_down_state.pc = 904u;
+    fp_round_down_state.fpscr = 3u; // toward -infinity
+    cpu.set_state(fp_round_down_state);
+    memory.write32_be(904u, (63u << 26) | (8u << 21) | (2u << 11) | (14u << 1));
+    assert(cpu.step());
+    assert(static_cast<std::uint32_t>(cpu.state().fpr[8]) == 0xfffffffcu);
+
     // mffs/mtfsf transfer selected FPSCR fields.
     auto fpscr_state = cpu.state();
     fpscr_state.pc = 892u;
