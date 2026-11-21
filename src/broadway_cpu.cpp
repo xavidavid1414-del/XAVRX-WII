@@ -1143,6 +1143,48 @@ bool BroadwayCpu::execute_one() {
             }
             break;
         }
+        case 595: { // mfsr: move segment register to GPR
+            if ((instruction & 1u) != 0u) return false;
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
+            state_.gpr[rt] = state_.segment_registers[ra & 0x0fu];
+            break;
+        }
+        case 210: { // mtsr: move GPR to segment register
+            if ((instruction & 1u) != 0u) return false;
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
+            state_.segment_registers[ra & 0x0fu] = state_.gpr[rs];
+            break;
+        }
+        case 659: { // mfsrin: move indexed segment register to GPR
+            if ((instruction & 1u) != 0u) return false;
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
+            const std::uint32_t segment = state_.gpr[rb] >> 28;
+            state_.gpr[rt] = state_.segment_registers[segment];
+            break;
+        }
+        case 242: { // mtsrin: move GPR to indexed segment register
+            if ((instruction & 1u) != 0u) return false;
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
+            const std::uint32_t segment = state_.gpr[rb] >> 28;
+            state_.segment_registers[segment] = state_.gpr[rs];
+            break;
+        }
         case 598: // sync: memory synchronization barrier
         case 854: // eieio: I/O ordering barrier
         case 566: // tlbsync: translation-lookaside-buffer synchronization
