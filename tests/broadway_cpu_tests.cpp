@@ -1056,5 +1056,35 @@ int main() {
     assert(cpu.state().cr == 0x2468ace0u);
     assert(cpu.state().xer == 0x80000000u);
 
+    // lwarx/stwcx. implement the foundational reservation protocol.
+    auto reservation_state = cpu.state();
+    reservation_state.pc = 616;
+    reservation_state.gpr[3] = 256u;
+    reservation_state.gpr[4] = 0u;
+    reservation_state.gpr[5] = 0xa1b2c3d4u;
+    reservation_state.xer = 1u << 31; // SO is preserved in CR0.
+    cpu.set_state(reservation_state);
+    memory.write32_be(256, 0x11223344u);
+    memory.write32_be(616, xmem(6, 3, 4, 20));  // lwarx r6,r3,r4
+    memory.write32_be(620, xmem(5, 3, 4, 150) | 1u); // stwcx. r5,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0x11223344u);
+    assert(cpu.state().reservation_valid);
+    assert(cpu.step());
+    assert(memory.read32_be(256) == 0xa1b2c3d4u);
+    assert(!cpu.state().reservation_valid);
+    assert((cpu.state().cr >> 28) == 3u); // EQ | SO
+
+    // A conditional store without a matching reservation must fail cleanly.
+    reservation_state = cpu.state();
+    reservation_state.pc = 624;
+    reservation_state.gpr[5] = 0x55667788u;
+    reservation_state.reservation_valid = false;
+    cpu.set_state(reservation_state);
+    memory.write32_be(624, xmem(5, 3, 4, 150) | 1u);
+    assert(cpu.step());
+    assert(memory.read32_be(256) == 0xa1b2c3d4u);
+    assert((cpu.state().cr >> 28) == 1u); // SO, EQ clear
+
     return 0;
 }
