@@ -954,6 +954,47 @@ int main() {
     assert(cpu.state().gpr[7] == 0xffffffffu);
     assert((cpu.state().xer & (1u << 29)) == 0u); // Borrow occurred.
 
+    // Indexed loads/stores and byte-reversed word/halfword transfers.
+    auto indexed_state = cpu.state();
+    indexed_state.pc = 508;
+    indexed_state.gpr[3] = 200u;
+    indexed_state.gpr[4] = 8u;
+    indexed_state.gpr[5] = 0x12345678u;
+    cpu.set_state(indexed_state);
+    const auto xmem = [](std::uint32_t rt, std::uint32_t ra,
+                         std::uint32_t rb, std::uint32_t xo) {
+        return (31u << 26) | (rt << 21) | (ra << 16) |
+               (rb << 11) | (xo << 1);
+    };
+    memory.write32_be(208, 0x89abcdefu);
+    memory.write16_be(212, 0x80f1u);
+    memory.write32_be(508, xmem(6, 3, 4, 23));   // lwzx r6,r3,r4
+    memory.write32_be(512, xmem(5, 3, 4, 151));  // stwx r5,r3,r4
+    memory.write32_be(516, xmem(7, 3, 4, 534));  // lwbrx r7,r3,r4
+    memory.write32_be(520, xmem(8, 3, 4, 790));  // lhbrx r8,r3,r4
+    memory.write32_be(524, xmem(9, 3, 4, 343));  // lhax r9,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0x89abcdefu);
+    assert(cpu.step());
+    assert(memory.read32_be(208) == 0x12345678u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[7] == 0x78563412u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[8] == 0x7856u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[9] == 0x00001234u);
+
+    // Indexed update-form addressing writes the effective address to RA.
+    auto indexed_update_state = cpu.state();
+    indexed_update_state.pc = 528;
+    indexed_update_state.gpr[3] = 224u;
+    indexed_update_state.gpr[4] = 4u;
+    cpu.set_state(indexed_update_state);
+    memory.write32_be(528, xmem(10, 3, 4, 55)); // lwzux r10,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[10] == memory.read32_be(228));
+    assert(cpu.state().gpr[3] == 228u);
+
     // Structured CPU exceptions: fetch, illegal instruction and data faults.
     auto exception_state = cpu.state();
     exception_state.pc = 401u;
