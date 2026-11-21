@@ -71,14 +71,20 @@ bool BroadwayCpu::enter_exception() noexcept {
     // floating-point availability and recoverability state. The handler
     // starts in supervisor mode; implementation-specific MSR bits are kept
     // conservative rather than synthesizing unsupported state.
-    constexpr std::uint32_t msr_ee = 1u << (31u - 15u);
-    constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
-    constexpr std::uint32_t msr_fp = 1u << (31u - 13u);
-    constexpr std::uint32_t msr_ir = 1u << (31u - 5u);
-    constexpr std::uint32_t msr_dr = 1u << (31u - 4u);
-    constexpr std::uint32_t msr_ri = 1u << (31u - 1u);
-    constexpr std::uint32_t msr_le = 1u;
-    state_.msr &= ~(msr_ee | msr_pr | msr_fp | msr_ir | msr_dr | msr_ri | msr_le);
+    constexpr std::uint32_t msr_pow = 1u << (31u - 18u);
+    constexpr std::uint32_t msr_ee  = 1u << (31u - 15u);
+    constexpr std::uint32_t msr_pr  = 1u << (31u - 14u);
+    constexpr std::uint32_t msr_fp  = 1u << (31u - 13u);
+    constexpr std::uint32_t msr_fe0 = 1u << (31u - 11u);
+    constexpr std::uint32_t msr_be  = 1u << (31u - 10u);
+    constexpr std::uint32_t msr_se  = 1u << (31u - 9u);
+    constexpr std::uint32_t msr_fe1 = 1u << (31u - 8u);
+    constexpr std::uint32_t msr_ir  = 1u << (31u - 5u);
+    constexpr std::uint32_t msr_dr  = 1u << (31u - 4u);
+    constexpr std::uint32_t msr_ri  = 1u << (31u - 1u);
+    constexpr std::uint32_t msr_le  = 1u;
+    state_.msr &= ~(msr_pow | msr_ee | msr_pr | msr_fp | msr_fe0 | msr_be |
+                    msr_se | msr_fe1 | msr_ir | msr_dr | msr_ri | msr_le);
 
     // The high-vector prefix is selected by MSR[IP].
     constexpr std::uint32_t msr_ip = 1u << (31u - 6u);
