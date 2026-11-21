@@ -803,6 +803,33 @@ int main() {
     assert(std::bit_cast<double>(cpu.state().fpr[12]) ==
            static_cast<double>(static_cast<float>(1.0 / 3.0) * 2.0f));
 
+
+    // Fused multiply-add/subtract instructions use one final rounding step.
+    auto fused_state = cpu.state();
+    fused_state.pc = 380;
+    fused_state.fpr[1] = std::bit_cast<std::uint64_t>(2.0);
+    fused_state.fpr[2] = std::bit_cast<std::uint64_t>(3.0);
+    fused_state.fpr[3] = std::bit_cast<std::uint64_t>(4.0);
+    cpu.set_state(fused_state);
+    memory.write32_be(380, fform(10, 1, 2, 29)); // fmadd f10,f1,f2,f3
+    memory.write32_be(384, fform(11, 1, 2, 28)); // fmsub f11,f1,f2,f3
+    memory.write32_be(388, fform(12, 1, 2, 31)); // fnmadd f12,f1,f2,f3
+    memory.write32_be(392, fform(13, 1, 2, 30)); // fnmsub f13,f1,f2,f3
+    memory.write32_be(396, fform(14, 0, 2, 22)); // fsqrt f14,f2
+    memory.write32_be(400, fform(15, 1, 2, 23)); // fsel f15,f1,f2,f3
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[10]) == 10.0);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[11]) == 4.0);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[12]) == -10.0);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[13]) == -4.0);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[14]) == std::sqrt(3.0));
+    assert(cpu.step());
+    assert(cpu.state().fpr[15] == cpu.state().fpr[2]); // FRA >= -0.0 selects FRC
+
     // lfs/stfs convert between binary32 memory and binary64 FPR storage.
     auto single_state = cpu.state();
     single_state.pc = 352;
