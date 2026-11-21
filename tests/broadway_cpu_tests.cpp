@@ -1036,5 +1036,25 @@ int main() {
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
     assert(cpu.state().pc == 392u);
 
+    // PowerPC synchronization instructions retire without altering CPU state.
+    auto barrier_state = cpu.state();
+    barrier_state.pc = 600;
+    barrier_state.gpr[3] = 0x13579bdfu;
+    barrier_state.cr = 0x2468ace0u;
+    barrier_state.xer = 0x80000000u;
+    cpu.set_state(barrier_state);
+    memory.write32_be(600, (19u << 26) | (150u << 1)); // isync
+    memory.write32_be(604, (31u << 26) | (598u << 1)); // sync
+    memory.write32_be(608, (31u << 26) | (854u << 1)); // eieio
+    memory.write32_be(612, (31u << 26) | (566u << 1)); // tlbsync
+    assert(cpu.step());
+    assert(cpu.step());
+    assert(cpu.step());
+    assert(cpu.step());
+    assert(cpu.state().pc == 616u);
+    assert(cpu.state().gpr[3] == 0x13579bdfu);
+    assert(cpu.state().cr == 0x2468ace0u);
+    assert(cpu.state().xer == 0x80000000u);
+
     return 0;
 }
