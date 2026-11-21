@@ -836,6 +836,31 @@ int main() {
     assert((cpu.state().cr >> 24) == 0xau);
     assert(std::bit_cast<double>(cpu.state().fpr[9]) == 5.0);
 
+    // Basic arithmetic exceptions update sticky FPSCR flags and summaries.
+    auto fp_divzero_state = cpu.state();
+    fp_divzero_state.pc = 408;
+    fp_divzero_state.fpr[1] = std::bit_cast<std::uint64_t>(1.0);
+    fp_divzero_state.fpr[2] = std::bit_cast<std::uint64_t>(0.0);
+    fp_divzero_state.fpscr = (1u << 10); // ZE enables divide-by-zero
+    cpu.set_state(fp_divzero_state);
+    memory.write32_be(408, fform(9, 1, 2, 18)); // fdiv f9,f1,f2
+    assert(cpu.step());
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 30) |
+                                (1u << 26))) ==
+           ((1u << 31) | (1u << 30) | (1u << 26)));
+
+    auto fp_invalid_div_state = cpu.state();
+    fp_invalid_div_state.pc = 412;
+    fp_invalid_div_state.fpr[1] = std::bit_cast<std::uint64_t>(0.0);
+    fp_invalid_div_state.fpr[2] = std::bit_cast<std::uint64_t>(0.0);
+    fp_invalid_div_state.fpscr = 0u;
+    cpu.set_state(fp_invalid_div_state);
+    memory.write32_be(412, fform(9, 1, 2, 18)); // fdiv 0,0
+    assert(cpu.step());
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 29) |
+                                (1u << 21))) ==
+           ((1u << 31) | (1u << 29) | (1u << 21)));
+
     // Single-precision arithmetic rounds each result to binary32.
     auto single_arithmetic_state = cpu.state();
     single_arithmetic_state.pc = 368;
