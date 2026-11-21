@@ -14,3 +14,14 @@ The boot controller validates transitions through Off -> BootRom -> Firmware -> 
 
 ## Scope
 This is a deterministic architectural foundation for later scheduler and hardware integration. It is not a cycle-accurate Wii clock/interrupt implementation and does not yet model Hollywood-specific interrupt registers, bus arbitration, PLL behavior, watchdog registers, or firmware execution.
+
+## Wii main-memory topology
+
+The Wii-specific memory object models 24 MiB of MEM1 and 64 MiB of MEM2 with shared backing storage across the documented CPU cached and uncached aliases and the physical address view used by hardware-side components.
+
+| Bank | Cached CPU view | Uncached CPU view | Physical view | Capacity |
+| --- | --- | --- | --- | --- |
+| MEM1 | 0x80000000 | 0xC0000000 | 0x00000000 | 24 MiB |
+| MEM2 | 0x90000000 | 0xD0000000 | 0x10000000 | 64 MiB |
+
+The implementation enforces access widths, natural alignment, bank boundaries, and big-endian reads/writes. Alias consistency, boundary behavior, and reset are covered by a dedicated test executable. This is a memory-bank foundation, not yet the complete Wii memory map: MMU/BAT translation, locked cache, MEM2 reservation/protection, SRAM, and MMIO devices remain future work.
