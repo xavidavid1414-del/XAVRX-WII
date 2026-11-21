@@ -1374,5 +1374,39 @@ int main() {
            xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
     assert(cpu.state().pc == 824u);
 
+
+    // Register-transfer instructions with Rc=1 are reserved encodings.
+    auto reserved_mfmsr_state = cpu.state();
+    reserved_mfmsr_state.pc = 828u;
+    reserved_mfmsr_state.msr = 0u;
+    reserved_mfmsr_state.gpr[11] = 0xfeedfaceu;
+    cpu.set_state(reserved_mfmsr_state);
+    memory.write32_be(828u, xform(11, 0, 0, 83) | 1u); // invalid mfmsr.
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::IllegalInstruction);
+    assert(cpu.state().pc == 828u);
+    assert(cpu.state().gpr[11] == 0xfeedfaceu);
+
+    auto reserved_mfspr_state = cpu.state();
+    reserved_mfspr_state.pc = 832u;
+    reserved_mfspr_state.lr = 0x12345678u;
+    cpu.set_state(reserved_mfspr_state);
+    memory.write32_be(832u, spr_form(11, 8, 339) | 1u); // invalid mfspr.
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::IllegalInstruction);
+    assert(cpu.state().gpr[11] == 0xfeedfaceu);
+
+    auto reserved_mftb_state = cpu.state();
+    reserved_mftb_state.pc = 836u;
+    reserved_mftb_state.time_base = 0x123456789abcdef0ull;
+    cpu.set_state(reserved_mftb_state);
+    memory.write32_be(836u, spr_form(11, 268, 371) | 1u); // invalid mftb.
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::IllegalInstruction);
+    assert(cpu.state().pc == 836u);
+
     return 0;
 }
