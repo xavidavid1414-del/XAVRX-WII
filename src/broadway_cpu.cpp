@@ -768,6 +768,34 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t field = (state_.fpscr >> source_shift) & 0xfu;
             const std::uint32_t mask = 0xfu << destination_shift;
             state_.cr = (state_.cr & ~mask) | (field << destination_shift);
+
+            // mcrfs clears copied exception status bits, but FEX and VX
+            // are derived summary bits and are recomputed from the remaining
+            // exception causes and enable controls.
+            std::uint32_t clear_mask = 0u;
+            switch (bfa) {
+            case 0: // FX and OX
+                clear_mask = (1u << 31) | (1u << 28);
+                break;
+            case 1: // UX, ZX, XX and VXSNAN
+                clear_mask = (1u << 27) | (1u << 26) |
+                             (1u << 25) | (1u << 24);
+                break;
+            case 2: // VXISI, VXIDI, VXZDZ and VXIMZ
+                clear_mask = (1u << 23) | (1u << 22) |
+                             (1u << 21) | (1u << 20);
+                break;
+            case 3: // VXVC
+                clear_mask = 1u << 19;
+                break;
+            case 5: // VXSOFT, VXSQRT and VXCVI
+                clear_mask = (1u << 10) | (1u << 9) | (1u << 8);
+                break;
+            default:
+                break;
+            }
+            state_.fpscr &= ~clear_mask;
+            refresh_fpscr_summaries();
             break;
         }
         case 134: { // mtfsfi: move immediate to one FPSCR field
