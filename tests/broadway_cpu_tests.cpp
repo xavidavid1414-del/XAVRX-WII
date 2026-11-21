@@ -1537,5 +1537,16 @@ int main() {
     assert(cpu.step());
     assert(((cpu.state().cr >> 24) & 0xfu) == 0xbu);
 
+    // mtfsfi updates one selected FPSCR nibble and optionally CR1.
+    auto mtfsfi_state = cpu.state();
+    mtfsfi_state.pc = 912u;
+    mtfsfi_state.fpscr = 0x01234567u;
+    mtfsfi_state.cr = 0x00123456u;
+    cpu.set_state(mtfsfi_state);
+    memory.write32_be(912u, (63u << 26) | (2u << 23) | (0xau << 12) | (134u << 1) | 1u);
+    assert(cpu.step());
+    assert(cpu.state().fpscr == 0x01a34567u);
+    assert(((cpu.state().cr >> 24) & 0xfu) == 0x1u);
+
     return 0;
 }
