@@ -857,6 +857,33 @@ int main() {
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[17]) == 5.0);
 
+
+    // Data-cache maintenance instructions: dcbz clears a complete 32-byte
+    // line; the remaining maintenance hints are accepted as modeled no-ops.
+    auto cache_state = cpu.state();
+    cache_state.pc = 420;
+    cache_state.gpr[3] = 515u;
+    cache_state.gpr[4] = 0u;
+    cache_state.reservation_valid = true;
+    cache_state.reservation_address = 512u;
+    cpu.set_state(cache_state);
+    for (std::uint32_t i = 512u; i < 544u; ++i) memory.write8(i, 0xa5u);
+    memory.write32_be(420, xform(0, 3, 4, 1014)); // dcbz r3,r4
+    assert(cpu.step());
+    assert(cpu.state().pc == 424u);
+    assert(!cpu.state().reservation_valid);
+    for (std::uint32_t i = 512u; i < 544u; ++i) {
+        assert(memory.read8(i) == 0u);
+    }
+    memory.write32_be(424, xform(0, 3, 4, 54));  // dcbst
+    memory.write32_be(428, xform(0, 3, 4, 86));  // dcbf
+    memory.write32_be(432, xform(0, 3, 4, 246)); // dcbtst
+    memory.write32_be(436, xform(0, 3, 4, 278)); // dcbt
+    memory.write32_be(440, xform(0, 3, 4, 470)); // dcbi
+    memory.write32_be(444, xform(0, 3, 4, 982)); // icbi
+    for (int i = 0; i < 6; ++i) assert(cpu.step());
+    assert(cpu.state().pc == 448u);
+
     // lfs/stfs convert between binary32 memory and binary64 FPR storage.
     auto single_state = cpu.state();
     single_state.pc = 352;
