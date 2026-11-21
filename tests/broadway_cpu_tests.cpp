@@ -6,7 +6,7 @@
 #include <cstdint>
 
 int main() {
-    xavrx::Memory memory(1024);
+    xavrx::Memory memory(2048);
     // addi r3, r0, 42
     memory.write32_be(0, (14u << 26) | (3u << 21) | 42u);
     // addi r4, r3, -2
