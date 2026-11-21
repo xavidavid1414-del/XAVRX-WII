@@ -57,6 +57,7 @@ public:
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
  [[nodiscard]] bool read_as(HollywoodCpu cpu,std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept;
  [[nodiscard]] bool write_as(HollywoodCpu cpu,std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept;
+ [[nodiscard]] bool map_into(memory::Memory& bus) noexcept;
  void reset() noexcept;
 private:
  HollywoodInterrupts interrupts_{};
