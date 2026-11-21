@@ -1139,7 +1139,7 @@ bool BroadwayCpu::execute_one() {
                 return false;
             }
             switch (spr) {
-            case 1: state_.gpr[rt] = state_.xer; break; // XER
+            case 1: state_.gpr[rt] = state_.xer & 0xe000007fu; break; // XER defined bits
             case 8: state_.gpr[rt] = state_.lr; break;  // LR
             case 9: state_.gpr[rt] = state_.ctr; break; // CTR
             case 18: state_.gpr[rt] = state_.dsisr; break; // DSISR
