@@ -558,7 +558,7 @@ bool BroadwayCpu::execute_one() {
                                 xo == 695u || xo == 759u;
             const bool is_double = xo == 599u || xo == 631u ||
                                    xo == 727u || xo == 759u;
-            if (update && (ra == 0u || (load && ra == rt))) return false;
+            if (update && ra == 0u) return false;
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             const std::uint32_t alignment = is_double ? 8u : 4u;
             if ((address & (alignment - 1u)) != 0u) {
