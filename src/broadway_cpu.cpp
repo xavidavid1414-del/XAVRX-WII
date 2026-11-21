@@ -477,6 +477,30 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
         switch (xo) {
+        case 20: { // lwarx: load word and establish a reservation
+            const std::uint32_t address = (ra == 0u ? 0u : a) + b;
+            if ((address & 3u) != 0u) {
+                throw std::invalid_argument("unaligned lwarx");
+            }
+            state_.gpr[rt] = memory_.read32_be(address);
+            state_.reservation_address = address;
+            state_.reservation_valid = true;
+            break;
+        }
+        case 150: { // stwcx.: conditional store and CR0 success indication
+            const std::uint32_t address = (ra == 0u ? 0u : a) + b;
+            if ((address & 3u) != 0u) {
+                throw std::invalid_argument("unaligned stwcx.");
+            }
+            const bool success = state_.reservation_valid &&
+                                 state_.reservation_address == address;
+            state_.reservation_valid = false;
+            const std::uint32_t so = (state_.xer >> 31) & 1u;
+            const std::uint32_t field = (success ? 2u : 0u) | so;
+            state_.cr = (state_.cr & 0x0fffffffu) | (field << 28);
+            if (success) memory_.write32_be(address, state_.gpr[rs]);
+            break;
+        }
         case 23: case 55: case 87: case 119:
         case 151: case 183: case 215: case 247:
         case 279: case 311: case 343: case 375:
