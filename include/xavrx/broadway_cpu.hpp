@@ -15,7 +15,8 @@ public:
         InstructionStorage,
         DataStorage,
         IllegalInstruction,
-        PrivilegedInstruction
+        PrivilegedInstruction,
+        SystemCall
     };
 
     struct State {
