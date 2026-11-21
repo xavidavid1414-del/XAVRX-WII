@@ -1935,5 +1935,25 @@ int main() {
     assert(cpu.enter_exception());
     assert(cpu.state().pc == 0x400u);
 
+    auto privileged_vector_state = cpu.state();
+    privileged_vector_state.pc = 0x380u;
+    privileged_vector_state.msr = 0u;
+    privileged_vector_state.exception =
+        xavrx::BroadwayCpu::Exception::PrivilegedInstruction;
+    cpu.set_state(privileged_vector_state);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0x700u);
+    assert(cpu.state().srr0 == 0x380u);
+    assert(cpu.state().srr1 == 0u);
+
+    auto high_alignment_state = cpu.state();
+    high_alignment_state.pc = 0x3a0u;
+    high_alignment_state.msr = 1u << (31u - 6u);
+    high_alignment_state.exception = xavrx::BroadwayCpu::Exception::Alignment;
+    cpu.set_state(high_alignment_state);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0xfff00600u);
+    assert(cpu.state().srr0 == 0x3a0u);
+
     return 0;
 }
