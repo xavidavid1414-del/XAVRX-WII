@@ -64,7 +64,9 @@ bool BroadwayCpu::step() {
             ++state_.time_base;
             return true;
         }
-        state_.exception = Exception::IllegalInstruction;
+        if (state_.exception == Exception::None) {
+            state_.exception = Exception::IllegalInstruction;
+        }
         return false;
     } catch (const std::invalid_argument&) {
         state_.exception = Exception::Alignment;
@@ -151,7 +153,17 @@ bool BroadwayCpu::execute_one() {
         if (xo == 150u) { // isync: instruction synchronization barrier
             break;
         }
-        if (xo == 50u) { // rfi: restore machine state and resume at SRR0
+        if (xo == 50u) { // rfi: privileged return from interrupt
+            if (instruction != 0x4c000064u) return false;
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
+            if ((state_.srr0 & 3u) != 0u) {
+                state_.exception = Exception::Alignment;
+                return false;
+            }
             state_.msr = state_.srr1;
             state_.pc = state_.srr0;
             state_.reservation_valid = false;
