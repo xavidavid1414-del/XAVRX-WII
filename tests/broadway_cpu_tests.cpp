@@ -2003,5 +2003,29 @@ int main() {
     assert(cpu.state().pc == 0xfff00600u);
     assert(cpu.state().srr0 == 0x3a0u);
 
+
+    // Indexed integer load/store faults must both capture the effective address.
+    auto indexed_memory_fault = cpu.state();
+    indexed_memory_fault.pc = 932u;
+    indexed_memory_fault.gpr[3] = 2048u;
+    indexed_memory_fault.gpr[4] = 0u;
+    indexed_memory_fault.dar = 0u;
+    cpu.set_state(indexed_memory_fault);
+    memory.write32_be(932u, xform(5, 3, 4, 23)); // lwzx r5,r3,r4
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
+    assert(cpu.state().dar == 2048u);
+
+    indexed_memory_fault = cpu.state();
+    indexed_memory_fault.pc = 936u;
+    indexed_memory_fault.gpr[3] = 2048u;
+    indexed_memory_fault.gpr[4] = 0u;
+    indexed_memory_fault.dar = 0u;
+    cpu.set_state(indexed_memory_fault);
+    memory.write32_be(936u, xform(5, 3, 4, 151)); // stwx r5,r3,r4
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
+    assert(cpu.state().dar == 2048u);
+
     return 0;
 }
