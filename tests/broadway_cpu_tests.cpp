@@ -829,7 +829,7 @@ int main() {
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[14]) == std::sqrt(3.0));
     assert(cpu.step());
-    assert(cpu.state().fpr[15] == cpu.state().fpr[2]); // FRA >= -0.0 selects FRC
+    assert(cpu.state().fpr[15] == cpu.state().fpr[3]); // FRA >= -0.0 selects FRC
 
     // lfs/stfs convert between binary32 memory and binary64 FPR storage.
     auto single_state = cpu.state();
