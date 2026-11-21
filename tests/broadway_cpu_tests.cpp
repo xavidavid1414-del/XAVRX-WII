@@ -1267,5 +1267,26 @@ int main() {
         assert(cpu.state().gpr[11] == 0x11223344u);
     }
 
+
+    // Additional SPR bank: DEC, SDR1 and EAR are readable and writable.
+    auto extra_spr_state = cpu.state();
+    extra_spr_state.pc = 776u;
+    extra_spr_state.gpr[10] = 0x89abcdefu;
+    cpu.set_state(extra_spr_state);
+    memory.write32_be(776u, spr_form(10, 22, 467));  // mtspr DEC,r10
+    memory.write32_be(780u, spr_form(10, 25, 467));  // mtspr SDR1,r10
+    memory.write32_be(784u, spr_form(10, 282, 467)); // mtspr EAR,r10
+    memory.write32_be(788u, spr_form(11, 22, 339));  // mfspr r11,DEC
+    memory.write32_be(792u, spr_form(11, 25, 339));  // mfspr r11,SDR1
+    memory.write32_be(796u, spr_form(11, 282, 339)); // mfspr r11,EAR
+    for (int i = 0; i < 3; ++i) assert(cpu.step());
+    assert(cpu.state().dec == 0x89abcdefu);
+    assert(cpu.state().sdr1 == 0x89abcdefu);
+    assert(cpu.state().ear == 0x89abcdefu);
+    for (int i = 0; i < 3; ++i) {
+        assert(cpu.step());
+        assert(cpu.state().gpr[11] == 0x89abcdefu);
+    }
+
     return 0;
 }
