@@ -25,18 +25,22 @@ DecodedInstruction InstructionDecoder::decode(std::uint32_t word) noexcept{
  case 150:return ext(InstructionId::InstructionSync,InstructionForm::XL,op,xo);
  case 528:return ext(InstructionId::BranchCountRegister,InstructionForm::XL,op,xo);
  default:return{};}}
- case 31:{const auto xo=static_cast<std::uint16_t>((word>>1U)&0x3FFU);switch(xo){
- case 0:return ext(InstructionId::Compare,InstructionForm::X,op,xo);
- case 19:return ext(InstructionId::MoveFromCr,InstructionForm::X,op,xo);
- case 28:return ext(InstructionId::And,InstructionForm::X,op,xo);
- case 40:return ext(InstructionId::Subf,InstructionForm::XO,op,xo);
- case 144:return ext(InstructionId::MoveToCrFields,InstructionForm::X,op,xo);
- case 266:return ext(InstructionId::Add,InstructionForm::XO,op,xo);
- case 316:return ext(InstructionId::Xor,InstructionForm::X,op,xo);
- case 339:return ext(InstructionId::MoveFromSpr,InstructionForm::X,op,xo);
- case 444:return ext(InstructionId::Or,InstructionForm::X,op,xo);
- case 467:return ext(InstructionId::MoveToSpr,InstructionForm::X,op,xo);
- default:return{};}}
+ case 31:{
+   const auto raw_xo=static_cast<std::uint16_t>((word>>1U)&0x3FFU);
+   // XO-form arithmetic has a separate OE bit; normalize it for identification.
+   if(raw_xo==266U||raw_xo==778U)return ext(InstructionId::Add,InstructionForm::XO,op,266U);
+   if(raw_xo==40U||raw_xo==552U)return ext(InstructionId::Subf,InstructionForm::XO,op,40U);
+   switch(raw_xo){
+   case 0:return ext(InstructionId::Compare,InstructionForm::X,op,raw_xo);
+   case 19:return ext(InstructionId::MoveFromCr,InstructionForm::X,op,raw_xo);
+   case 28:return ext(InstructionId::And,InstructionForm::X,op,raw_xo);
+   case 144:return ext(InstructionId::MoveToCrFields,InstructionForm::X,op,raw_xo);
+   case 316:return ext(InstructionId::Xor,InstructionForm::X,op,raw_xo);
+   case 339:return ext(InstructionId::MoveFromSpr,InstructionForm::X,op,raw_xo);
+   case 444:return ext(InstructionId::Or,InstructionForm::X,op,raw_xo);
+   case 467:return ext(InstructionId::MoveToSpr,InstructionForm::X,op,raw_xo);
+   default:return{};}
+ }
  case 63:{const auto xo=static_cast<std::uint16_t>((word>>1U)&0x3FFU);switch(xo){
  case 18:return ext(InstructionId::FloatDivide,InstructionForm::A,op,xo);
  case 20:return ext(InstructionId::FloatSubtract,InstructionForm::A,op,xo);
