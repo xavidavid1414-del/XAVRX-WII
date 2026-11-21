@@ -1164,7 +1164,7 @@ bool BroadwayCpu::execute_one() {
             break;
         }
         case 659: { // mfsrin: move indexed segment register to GPR
-            if ((instruction & 0x001f0801u) != 0u) return false;
+            if ((instruction & 0x001f0001u) != 0u) return false;
             constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
             if ((state_.msr & msr_pr) != 0u) {
                 state_.exception = Exception::PrivilegedInstruction;
@@ -1175,7 +1175,7 @@ bool BroadwayCpu::execute_one() {
             break;
         }
         case 242: { // mtsrin: move GPR to indexed segment register
-            if ((instruction & 0x001f0801u) != 0u) return false;
+            if ((instruction & 0x001f0001u) != 0u) return false;
             constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
             if ((state_.msr & msr_pr) != 0u) {
                 state_.exception = Exception::PrivilegedInstruction;
