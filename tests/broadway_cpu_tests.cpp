@@ -931,6 +931,29 @@ int main() {
         assert(cpu.state().gpr[reg] == 0x10203000u + reg);
     }
 
+    // Immediate carry arithmetic: subfic, addic and addic. update XER[CA].
+    auto carry_immediate_state = cpu.state();
+    carry_immediate_state.pc = 496;
+    carry_immediate_state.gpr[3] = 0xffffffffu;
+    carry_immediate_state.gpr[4] = 1u;
+    carry_immediate_state.xer = 1u << 31; // Preserve SO through addic.
+    carry_immediate_state.cr = 0x01234567u;
+    cpu.set_state(carry_immediate_state);
+    memory.write32_be(496, (12u << 26) | (5u << 21) | (3u << 16) | 1u); // addic r5,r3,1
+    memory.write32_be(500, (13u << 26) | (6u << 21) | (3u << 16)); // addic. r6,r3,0
+    memory.write32_be(504, (8u << 26) | (7u << 21) | (4u << 16)); // subfic r7,r4,0
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == 0u);
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0xffffffffu);
+    assert((cpu.state().xer & (1u << 29)) == 0u);
+    assert((cpu.state().cr >> 28) == 9u); // LT | SO
+    assert((cpu.state().cr & 0x0fffffffu) == 0x01234567u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[7] == 0xffffffffu);
+    assert((cpu.state().xer & (1u << 29)) == 0u); // Borrow occurred.
+
     // Structured CPU exceptions: fetch, illegal instruction and data faults.
     auto exception_state = cpu.state();
     exception_state.pc = 401u;
