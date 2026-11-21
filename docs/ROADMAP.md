@@ -3,7 +3,7 @@ A phase is complete only after implementation, automated checks, correction of d
 
 1. **Project foundation** — COMPLETE. Repository structure, C++20/CMake, architecture boundaries, smoke tests, CI.
 2. **CPU foundation** — COMPLETE. Gekko register model, CPU architectural state, condition-register access, and an initial instruction decode framework with focused tests.
-3. **PowerPC integer execution** — NEXT. Implement selected integer instructions and focused unit tests.
+3. **PowerPC integer execution** — COMPLETE. Implemented and tested ADDI/ADDIS, immediate logical operations, ADD/SUBF, AND/OR/XOR, signed register CMP, CR updates, PC advancement, and safe rejection of unsupported encodings.
 4. **CPU control flow and exceptions** — branches, traps, interrupts, and exception state.
 5. **Memory subsystem** — address space, access widths, alignment, and memory-mapped I/O contracts.
 6. **System hardware model** — clocks, timers, interrupt controller, and boot-state model.
