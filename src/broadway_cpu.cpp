@@ -677,6 +677,7 @@ bool BroadwayCpu::execute_one() {
         case 15: { // fctiwz: convert to signed word toward zero
             const double source = b;
             std::int32_t converted = std::numeric_limits<std::int32_t>::min();
+            bool invalid_conversion = !std::isfinite(source);
             if (std::isfinite(source)) {
                 double rounded = std::trunc(source);
                 if (xo == 14u) {
@@ -690,8 +691,12 @@ bool BroadwayCpu::execute_one() {
                 if (rounded >= static_cast<double>(std::numeric_limits<std::int32_t>::min()) &&
                     rounded <= static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
                     converted = static_cast<std::int32_t>(rounded);
+                    invalid_conversion = false;
+                } else {
+                    invalid_conversion = true;
                 }
             }
+            if (invalid_conversion) raise_fpscr_exception(1u << 8); // VXCVI
             state_.fpr[frt] = 0xfff8000000000000ull |
                 static_cast<std::uint32_t>(converted);
             break;
