@@ -1,0 +1,12 @@
+#include "xavrx/system/wii_memory.hpp"
+#include <cstdint>
+#include <iostream>
+namespace {int failures=0;void check(bool ok,const char* m){if(!ok){std::cerr<<"FAIL: "<<m<<'\n';++failures;}}}
+int main(){using namespace xavrx::system;using xavrx::memory::AccessResult;
+ WiiMemory memory;check(memory.mem1_capacity()==24U*1024U*1024U,"MEM1 capacity is 24 MiB");check(memory.mem2_capacity()==64U*1024U*1024U,"MEM2 capacity is 64 MiB");
+ check(memory.write32(WiiMemory::mem1_cached,0x12345678U)==AccessResult::Success,"write MEM1 cached alias");std::uint32_t value=0;check(memory.read32(WiiMemory::mem1_uncached,value)==AccessResult::Success&&value==0x12345678U,"MEM1 cached and uncached aliases share backing");check(memory.read32(WiiMemory::mem1_physical,value)==AccessResult::Success&&value==0x12345678U,"MEM1 physical alias shares backing");
+ check(memory.write64(WiiMemory::mem2_cached,0x0123456789ABCDEFULL)==AccessResult::Success,"write MEM2 cached alias");std::uint64_t wide=0;check(memory.read64(WiiMemory::mem2_uncached,wide)==AccessResult::Success&&wide==0x0123456789ABCDEFULL,"MEM2 uncached alias shares backing");check(memory.read64(WiiMemory::mem2_physical,wide)==AccessResult::Success&&wide==0x0123456789ABCDEFULL,"MEM2 physical alias shares backing");
+ check(memory.write32(WiiMemory::mem1_cached+static_cast<std::uint32_t>(WiiMemory::mem1_size)-4U,0xAABBCCDDU)==AccessResult::Success,"last MEM1 word accessible");check(memory.read32(WiiMemory::mem1_uncached+static_cast<std::uint32_t>(WiiMemory::mem1_size)-4U,value)==AccessResult::Success&&value==0xAABBCCDDU,"MEM1 upper boundary alias");check(memory.read32(WiiMemory::mem1_cached+static_cast<std::uint32_t>(WiiMemory::mem1_size),value)==AccessResult::Unmapped,"MEM1 boundary rejected");
+ check(memory.read32(WiiMemory::mem2_cached+static_cast<std::uint32_t>(WiiMemory::mem2_size),value)==AccessResult::Unmapped,"MEM2 boundary rejected");check(memory.read32(WiiMemory::mem1_cached+1U,value)==AccessResult::Misaligned,"misaligned access rejected");check(memory.read(WiiMemory::mem1_cached,3,wide)==AccessResult::InvalidWidth,"invalid width rejected");check(memory.read32(0x70000000U,value)==AccessResult::Unmapped,"unmapped address rejected");
+ memory.reset();check(memory.read32(WiiMemory::mem1_cached,value)==AccessResult::Success&&value==0U,"reset clears MEM1");check(memory.read64(WiiMemory::mem2_cached,wide)==AccessResult::Success&&wide==0U,"reset clears MEM2");
+ if(failures){std::cerr<<failures<<" Wii memory test(s) failed\n";return 1;}std::cout<<"All Wii memory map tests passed\n";return 0;}
