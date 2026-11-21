@@ -5,7 +5,7 @@
 #include <cstdint>
 
 int main() {
-    xavrx::Memory memory(512);
+    xavrx::Memory memory(1024);
     // addi r3, r0, 42
     memory.write32_be(0, (14u << 26) | (3u << 21) | 42u);
     // addi r4, r3, -2
@@ -1005,7 +1005,7 @@ int main() {
     assert(cpu.state().pc == 401u);
 
     exception_state = cpu.state();
-    exception_state.pc = 512u;
+    exception_state.pc = 1024u;
     cpu.set_state(exception_state);
     assert(!cpu.step());
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::InstructionStorage);
@@ -1020,7 +1020,7 @@ int main() {
 
     exception_state = cpu.state();
     exception_state.pc = 388u;
-    exception_state.gpr[3] = 512u;
+    exception_state.gpr[3] = 1024u;
     cpu.set_state(exception_state);
     memory.write32_be(388, (32u << 26) | (10u << 21) | (3u << 16)); // lwz r10,0(r3)
     assert(!cpu.step());
