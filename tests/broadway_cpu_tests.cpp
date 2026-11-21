@@ -2126,5 +2126,36 @@ int main() {
     assert(!cpu.step());
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
 
+    // Direct forms also reserve the fifth segment-field bit and RB.
+    malformed_segment_state.pc = 1044u;
+    cpu.set_state(malformed_segment_state);
+    memory.write32_be(1044u, xform(7, 19, 0, 595)); // mfsr segment bit 20
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+
+    malformed_segment_state.pc = 1048u;
+    cpu.set_state(malformed_segment_state);
+    memory.write32_be(1048u, xform(5, 20, 0, 210)); // mtsr segment bit 20
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+
+    malformed_segment_state.pc = 1052u;
+    cpu.set_state(malformed_segment_state);
+    memory.write32_be(1052u, xform(5, 4, 1, 210)); // mtsr RB
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+
+    malformed_segment_state.pc = 1056u;
+    cpu.set_state(malformed_segment_state);
+    memory.write32_be(1056u, xform(8, 0, 6, 659) | 1u); // mfsrin Rc
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+
+    malformed_segment_state.pc = 1060u;
+    cpu.set_state(malformed_segment_state);
+    memory.write32_be(1060u, xform(5, 1, 6, 242)); // mtsrin RA
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+
     return 0;
 }
