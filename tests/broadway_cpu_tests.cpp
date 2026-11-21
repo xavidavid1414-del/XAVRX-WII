@@ -1237,10 +1237,9 @@ int main() {
     cpu.set_state(spr_bank_state);
     const auto spr_form = [](std::uint32_t reg, std::uint32_t spr,
                              std::uint32_t xo) {
-        const std::uint32_t encoded_spr = ((spr & 31u) << 5) | (spr >> 5);
         return (31u << 26) | (reg << 21) |
-               ((encoded_spr & 31u) << 16) |
-               ((encoded_spr >> 5) << 11) | (xo << 1);
+               ((spr & 31u) << 16) |
+               ((spr >> 5) << 11) | (xo << 1);
     };
     memory.write32_be(712u, spr_form(10, 18, 467)); // mtspr DSISR,r10
     memory.write32_be(716u, spr_form(10, 19, 467)); // mtspr DAR,r10
