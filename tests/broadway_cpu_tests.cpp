@@ -1331,5 +1331,48 @@ int main() {
     assert(cpu.state().pc == 808u);
     assert(cpu.state().msr == 0u);
 
+
+    // Privileged MSR instructions are rejected in user mode.
+    auto user_msr_state = cpu.state();
+    user_msr_state.pc = 812u;
+    user_msr_state.msr = 1u << (31u - 14u);
+    user_msr_state.gpr[10] = 0xabcdef01u;
+    cpu.set_state(user_msr_state);
+    memory.write32_be(812u, xform(11, 0, 0, 83)); // mfmsr r11
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
+    assert(cpu.state().pc == 812u);
+
+    auto user_mtmsr_state = cpu.state();
+    user_mtmsr_state.pc = 816u;
+    user_mtmsr_state.msr = 1u << (31u - 14u);
+    cpu.set_state(user_mtmsr_state);
+    memory.write32_be(816u, xform(10, 0, 0, 146)); // mtmsr r10
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
+    assert(cpu.state().msr == (1u << (31u - 14u)));
+
+    // User mode may access LR, but not supervisor-only SPRs such as DAR.
+    auto user_spr_state = cpu.state();
+    user_spr_state.pc = 820u;
+    user_spr_state.msr = 1u << (31u - 14u);
+    user_spr_state.lr = 0x12345678u;
+    cpu.set_state(user_spr_state);
+    memory.write32_be(820u, spr_form(11, 8, 339)); // mfspr r11,LR
+    assert(cpu.step());
+    assert(cpu.state().gpr[11] == 0x12345678u);
+
+    auto user_dar_state = cpu.state();
+    user_dar_state.pc = 824u;
+    user_dar_state.msr = 1u << (31u - 14u);
+    cpu.set_state(user_dar_state);
+    memory.write32_be(824u, spr_form(11, 19, 339)); // mfspr r11,DAR
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
+    assert(cpu.state().pc == 824u);
+
     return 0;
 }
