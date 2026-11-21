@@ -1288,5 +1288,21 @@ int main() {
         assert(cpu.state().gpr[11] == 0x89abcdefu);
     }
 
+
+    // rfi restores MSR from SRR1, resumes at SRR0 and clears reservation.
+    auto rfi_state = cpu.state();
+    rfi_state.pc = 800u;
+    rfi_state.srr0 = 900u;
+    rfi_state.srr1 = 0x0000a5a5u;
+    rfi_state.msr = 0x00001234u;
+    rfi_state.reservation_valid = true;
+    rfi_state.reservation_address = 64u;
+    cpu.set_state(rfi_state);
+    memory.write32_be(800u, (19u << 26) | (50u << 1)); // rfi
+    assert(cpu.step());
+    assert(cpu.state().pc == 900u);
+    assert(cpu.state().msr == 0x0000a5a5u);
+    assert(!cpu.state().reservation_valid);
+
     return 0;
 }
