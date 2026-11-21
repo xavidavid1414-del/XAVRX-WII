@@ -2027,5 +2027,27 @@ int main() {
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
     assert(cpu.state().dar == 2048u);
 
+
+    // Update-form stores may legally use the base register as their source.
+    auto stwu_overlap = cpu.state();
+    stwu_overlap.pc = 940u;
+    stwu_overlap.gpr[1] = 512u;
+    cpu.set_state(stwu_overlap);
+    memory.write32_be(940u, (37u << 26) | (1u << 21) |
+        (1u << 16) | 0xfffcu); // stwu r1,-4(r1)
+    assert(cpu.step());
+    assert(cpu.state().gpr[1] == 508u);
+    assert(memory.read32_be(508u) == 512u);
+
+    auto stwux_overlap = cpu.state();
+    stwux_overlap.pc = 944u;
+    stwux_overlap.gpr[3] = 600u;
+    stwux_overlap.gpr[4] = 4u;
+    cpu.set_state(stwux_overlap);
+    memory.write32_be(944u, xform(3, 3, 4, 183)); // stwux r3,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().gpr[3] == 604u);
+    assert(memory.read32_be(604u) == 600u);
+
     return 0;
 }
