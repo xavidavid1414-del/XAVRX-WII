@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 namespace xavrx::system {
-enum class ClockDomain : std::uint8_t { Cpu, Gpu, Bus, Dsp, Count };
+enum class ClockDomain : std::uint8_t { Cpu, Gpu, Bus, Dsp, Starlet, Count };
 class SystemClock final {
 public:
  SystemClock() noexcept;
