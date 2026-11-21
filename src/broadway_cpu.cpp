@@ -514,6 +514,17 @@ bool BroadwayCpu::execute_one() {
             state_.cr = (state_.cr & ~mask) | (result << shift);
             break;
         }
+        case 64: { // mcrfs: move an FPSCR field to a CR field
+            if ((instruction & 1u) != 0u) return false;
+            const std::uint32_t bf = (instruction >> 23) & 7u;
+            const std::uint32_t bfa = (instruction >> 18) & 7u;
+            const std::uint32_t source_shift = 28u - bfa * 4u;
+            const std::uint32_t destination_shift = 28u - bf * 4u;
+            const std::uint32_t field = (state_.fpscr >> source_shift) & 0xfu;
+            const std::uint32_t mask = 0xfu << destination_shift;
+            state_.cr = (state_.cr & ~mask) | (field << destination_shift);
+            break;
+        }
         case 134: { // mtfsfi: move immediate to one FPSCR field
             const std::uint32_t field = (instruction >> 23) & 7u;
             const std::uint32_t immediate = (instruction >> 12) & 0xfu;
