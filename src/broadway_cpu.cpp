@@ -305,7 +305,7 @@ bool BroadwayCpu::execute_one() {
     case 32: // lwz
     case 33: { // lwzu: load word and update RA
         const bool update = opcode == 33u;
-        if (update && ra == 0u) return false;
+        if (update && (ra == 0u || ra == rt)) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) throw std::invalid_argument("unaligned lwz");
@@ -321,7 +321,7 @@ bool BroadwayCpu::execute_one() {
     case 42: // lha
     case 43: { // lhau
         const bool update = opcode == 35u || opcode == 41u || opcode == 43u;
-        if (update && ra == 0u) return false;
+        if (update && (ra == 0u || ra == rt)) return false;
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((opcode >= 40u) && (address & 1u) != 0u) {
