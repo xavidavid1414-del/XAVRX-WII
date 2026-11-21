@@ -83,7 +83,7 @@ int main(){
  s.set_pc(0xB000U);
  check(ControlFlowExecutor::raise_exception(ExceptionKind::Program,s)==ControlFlowResult::Executed&&s.pc()==0x700U&&s.srr0()==0xB000U,"program exception vector");
  s.reset();s.set_pc(0xC000U);s.set_gpr(4,9U);
- const auto twi=(3U<<26U)|(4U<<21U)|(4U<<16U)|5U;
+ const auto twi=(3U<<26U)|(8U<<21U)|(4U<<16U)|5U;
  check(ControlFlowExecutor::execute(twi,s)==ControlFlowResult::Executed&&s.pc()==0x700U&&s.srr0()==0xC000U,"twi raises program exception on signed greater");
  s.reset();s.set_pc(0xD000U);s.set_gpr(4,3U);s.set_gpr(5,3U);
  const auto tw=(31U<<26U)|(4U<<21U)|(4U<<16U)|(5U<<11U)|(4U<<1U);
