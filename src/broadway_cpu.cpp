@@ -500,6 +500,12 @@ bool BroadwayCpu::execute_one() {
             }
             break;
         }
+        if (opcode == 59u && a_xo == 24u) { // fres: reciprocal estimate (deterministic approximation)
+            const float value = static_cast<float>(b);
+            const float result = 1.0f / value;
+            write_fpr(static_cast<double>(result));
+            break;
+        }
         if (opcode == 59u) return false;
         switch (xo) {
         case 0:   // fcmpu: unordered compare into selected CR field
@@ -584,6 +590,9 @@ bool BroadwayCpu::execute_one() {
             break;
         case 22: // fsqrt
             write_fpr(std::sqrt(b));
+            break;
+        case 26: // frsqrte: reciprocal square-root estimate
+            write_fpr(1.0 / std::sqrt(b));
             break;
         case 23: { // fsel: select FRC for nonnegative FRA, otherwise FRB
             const std::uint32_t selected = a >= -0.0
