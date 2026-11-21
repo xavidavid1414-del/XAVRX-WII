@@ -80,6 +80,19 @@ bool BroadwayCpu::execute_one() {
     const std::uint32_t immediate = instruction & 0xffffu;
     const std::uint32_t next_pc = state_.pc + 4u;
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
+    // The 750CL reservation granule is modeled as one 32-byte cache line.
+    // Any CPU store to that line invalidates the active reservation.
+    const auto invalidate_reservation = [&](std::uint32_t address,
+                                            std::uint32_t size) {
+        if (!state_.reservation_valid || size == 0u) return;
+        const std::uint64_t first = address;
+        const std::uint64_t last = first + size;
+        const std::uint64_t reserved_line =
+            static_cast<std::uint64_t>(state_.reservation_address & ~31u);
+        if (first < reserved_line + 32u && last > reserved_line) {
+            state_.reservation_valid = false;
+        }
+    };
 
     switch (opcode) {
     case 48: // lfs
@@ -120,6 +133,7 @@ bool BroadwayCpu::execute_one() {
             throw std::invalid_argument("unaligned floating-point store");
         }
         const double value = std::bit_cast<double>(state_.fpr[frs]);
+        invalidate_reservation(address, is_double ? 8u : 4u);
         if (is_double) {
             memory_.write64_be(address, state_.fpr[frs]);
         } else {
@@ -318,6 +332,7 @@ bool BroadwayCpu::execute_one() {
         if (halfword && (address & 1u) != 0u) {
             throw std::invalid_argument("unaligned halfword store");
         }
+        invalidate_reservation(address, halfword ? 2u : 1u);
         if (halfword) memory_.write16_be(address,
             static_cast<std::uint16_t>(state_.gpr[rt]));
         else memory_.write8(address, static_cast<std::uint8_t>(state_.gpr[rt]));
@@ -343,6 +358,7 @@ bool BroadwayCpu::execute_one() {
                     address + (reg - rt) * 4u);
             }
         } else {
+            invalidate_reservation(address, static_cast<std::uint32_t>(byte_count));
             for (std::uint32_t reg = rt; reg < 32u; ++reg) {
                 memory_.write32_be(address + (reg - rt) * 4u,
                                    state_.gpr[reg]);
@@ -357,6 +373,7 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) throw std::invalid_argument("unaligned stw");
+        invalidate_reservation(address, 4u);
         memory_.write32_be(address, state_.gpr[rt]);
         if (update) state_.gpr[ra] = address;
         break;
@@ -488,6 +505,7 @@ bool BroadwayCpu::execute_one() {
             break;
         }
         case 150: { // stwcx.: conditional store and CR0 success indication
+            if ((instruction & 1u) == 0u) return false; // Rc must be set.
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             if ((address & 3u) != 0u) {
                 throw std::invalid_argument("unaligned stwcx.");
@@ -498,7 +516,9 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t so = (state_.xer >> 31) & 1u;
             const std::uint32_t field = (success ? 2u : 0u) | so;
             state_.cr = (state_.cr & 0x0fffffffu) | (field << 28);
-            if (success) memory_.write32_be(address, state_.gpr[rs]);
+            if (success) {
+                memory_.write32_be(address, state_.gpr[rs]);
+            }
             break;
         }
         case 23: case 55: case 87: case 119:
@@ -548,6 +568,8 @@ bool BroadwayCpu::execute_one() {
                 state_.gpr[rt] = value;
             } else {
                 const std::uint32_t value = state_.gpr[rs];
+                invalidate_reservation(address, byte_access ? 1u :
+                    half_access ? 2u : 4u);
                 if (byte_access) {
                     memory_.write8(address, static_cast<std::uint8_t>(value));
                 } else if (half_access) {
