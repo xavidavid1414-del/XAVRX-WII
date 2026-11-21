@@ -785,6 +785,19 @@ int main() {
     assert(cpu.step());
     assert(memory.read64_be(400) == std::bit_cast<std::uint64_t>(5.0));
 
+    // Floating-point record forms copy FPSCR[0:3] into CR1.
+    auto fpu_record_state = cpu.state();
+    fpu_record_state.pc = 388;
+    fpu_record_state.fpr[1] = std::bit_cast<std::uint64_t>(2.0);
+    fpu_record_state.fpr[2] = std::bit_cast<std::uint64_t>(3.0);
+    fpu_record_state.fpscr = 0xa0000000u;
+    fpu_record_state.cr = 0x01234567u;
+    cpu.set_state(fpu_record_state);
+    memory.write32_be(388, fform(9, 1, 2, 21) | 1u); // fadd. f9,f1,f2
+    assert(cpu.step());
+    assert((cpu.state().cr >> 24) == 0xau);
+    assert(std::bit_cast<double>(cpu.state().fpr[9]) == 5.0);
+
     // Single-precision arithmetic rounds each result to binary32.
     auto single_arithmetic_state = cpu.state();
     single_arithmetic_state.pc = 368;
