@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <bit>
+#include <cmath>
 #include <cstdint>
 
 int main() {
@@ -811,20 +812,20 @@ int main() {
     fused_state.fpr[2] = std::bit_cast<std::uint64_t>(3.0);
     fused_state.fpr[3] = std::bit_cast<std::uint64_t>(4.0);
     cpu.set_state(fused_state);
-    memory.write32_be(380, fform(10, 1, 2, 29)); // fmadd f10,f1,f2,f3
-    memory.write32_be(384, fform(11, 1, 2, 28)); // fmsub f11,f1,f2,f3
-    memory.write32_be(388, fform(12, 1, 2, 31)); // fnmadd f12,f1,f2,f3
-    memory.write32_be(392, fform(13, 1, 2, 30)); // fnmsub f13,f1,f2,f3
+    memory.write32_be(380, (63u << 26) | (10u << 21) | (1u << 16) | (2u << 11) | (3u << 6) | (29u << 1)); // fmadd f10,f1,f3,f2
+    memory.write32_be(384, (63u << 26) | (11u << 21) | (1u << 16) | (2u << 11) | (3u << 6) | (28u << 1)); // fmsub f11,f1,f3,f2
+    memory.write32_be(388, (63u << 26) | (12u << 21) | (1u << 16) | (2u << 11) | (3u << 6) | (31u << 1)); // fnmadd f12,f1,f3,f2
+    memory.write32_be(392, (63u << 26) | (13u << 21) | (1u << 16) | (2u << 11) | (3u << 6) | (30u << 1)); // fnmsub f13,f1,f3,f2
     memory.write32_be(396, fform(14, 0, 2, 22)); // fsqrt f14,f2
-    memory.write32_be(400, fform(15, 1, 2, 23)); // fsel f15,f1,f2,f3
+    memory.write32_be(400, (63u << 26) | (15u << 21) | (1u << 16) | (3u << 11) | (2u << 6) | (23u << 1)); // fsel f15,f1,f3,f2
     assert(cpu.step());
-    assert(std::bit_cast<double>(cpu.state().fpr[10]) == 10.0);
+    assert(std::bit_cast<double>(cpu.state().fpr[10]) == 11.0);
     assert(cpu.step());
-    assert(std::bit_cast<double>(cpu.state().fpr[11]) == 4.0);
+    assert(std::bit_cast<double>(cpu.state().fpr[11]) == 5.0);
     assert(cpu.step());
-    assert(std::bit_cast<double>(cpu.state().fpr[12]) == -10.0);
+    assert(std::bit_cast<double>(cpu.state().fpr[12]) == -11.0);
     assert(cpu.step());
-    assert(std::bit_cast<double>(cpu.state().fpr[13]) == -4.0);
+    assert(std::bit_cast<double>(cpu.state().fpr[13]) == -5.0);
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[14]) == std::sqrt(3.0));
     assert(cpu.step());
