@@ -2157,5 +2157,41 @@ int main() {
     assert(!cpu.step());
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
 
+
+    // FPU instructions raise FloatingPointUnavailable when MSR[FP] is clear.
+    auto fp_unavailable_state = cpu.state();
+    fp_unavailable_state.msr = 0u;
+    fp_unavailable_state.pc = 1064u;
+    fp_unavailable_state.fpr[2] = 0x3ff0000000000000ull;
+    cpu.set_state(fp_unavailable_state);
+    memory.write32_be(1064u, (63u << 26) | (1u << 21) | (2u << 16) |
+        (3u << 11) | (21u << 1)); // fadd f1,f2,f3
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::FloatingPointUnavailable);
+    assert(cpu.state().pc == 1064u);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0x800u);
+    assert(cpu.state().srr0 == 1064u);
+
+    fp_unavailable_state = cpu.state();
+    fp_unavailable_state.pc = 1068u;
+    fp_unavailable_state.msr = 1u << (31u - 13u);
+    cpu.set_state(fp_unavailable_state);
+    memory.write32_be(1068u, (63u << 26) | (1u << 21) |
+        (2u << 16) | (3u << 11) | (21u << 1));
+    assert(cpu.step());
+
+    // Indexed floating-point loads are gated by the same MSR[FP] check.
+    fp_unavailable_state = cpu.state();
+    fp_unavailable_state.pc = 1072u;
+    fp_unavailable_state.msr = 0u;
+    cpu.set_state(fp_unavailable_state);
+    memory.write32_be(1072u, xform(1, 3, 4, 535)); // lfsx f1,r3,r4
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::FloatingPointUnavailable);
+    assert(cpu.state().pc == 1072u);
+
     return 0;
 }
