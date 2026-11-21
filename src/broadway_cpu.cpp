@@ -131,6 +131,9 @@ bool BroadwayCpu::execute_one() {
     }
     case 19: { // CR logical operations and mcrf
         const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
+        if (xo == 150u) { // isync: instruction synchronization barrier
+            break;
+        }
         if (xo == 0) { // mcrf: move one condition-register field
             const std::uint32_t bf = (instruction >> 23) & 7u;
             const std::uint32_t bfa = (instruction >> 18) & 7u;
@@ -584,6 +587,13 @@ bool BroadwayCpu::execute_one() {
             }
             break;
         }
+        case 598: // sync: memory synchronization barrier
+        case 854: // eieio: I/O ordering barrier
+        case 566: // tlbsync: translation-lookaside-buffer synchronization
+            // The current interpreter is single-threaded and has no modeled
+            // cache/TLB hierarchy, so these ordering instructions retire as
+            // architectural no-ops while preserving instruction sequencing.
+            break;
         case 528: { // bctr: conditional branch to CTR
             const std::uint32_t bo = rt;
             const std::uint32_t bi = ra;
