@@ -1854,9 +1854,12 @@ int main() {
     // Explicit PowerPC exception delivery saves SRR state and selects vectors.
     auto exception_vector_state = cpu.state();
     exception_vector_state.pc = 0x180u;
-    exception_vector_state.msr = (1u << (31u - 15u)) |
-        (1u << (31u - 14u)) | (1u << (31u - 13u)) |
-        (1u << (31u - 5u)) | (1u << (31u - 4u));
+    exception_vector_state.msr = (1u << (31u - 18u)) |
+        (1u << (31u - 15u)) | (1u << (31u - 14u)) |
+        (1u << (31u - 13u)) | (1u << (31u - 11u)) |
+        (1u << (31u - 10u)) | (1u << (31u - 9u)) |
+        (1u << (31u - 8u)) | (1u << (31u - 5u)) |
+        (1u << (31u - 4u)) | (1u << (31u - 1u)) | 1u;
     exception_vector_state.exception =
         xavrx::BroadwayCpu::Exception::IllegalInstruction;
     exception_vector_state.reservation_valid = true;
@@ -1867,7 +1870,14 @@ int main() {
     assert(cpu.state().srr1 == exception_vector_state.msr);
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
     assert(!cpu.state().reservation_valid);
-    assert((cpu.state().msr & (1u << (31u - 14u))) == 0u);
+    constexpr std::uint32_t exception_cleared_msr_bits =
+        (1u << (31u - 18u)) | (1u << (31u - 15u)) |
+        (1u << (31u - 14u)) | (1u << (31u - 13u)) |
+        (1u << (31u - 11u)) | (1u << (31u - 10u)) |
+        (1u << (31u - 9u)) | (1u << (31u - 8u)) |
+        (1u << (31u - 5u)) | (1u << (31u - 4u)) |
+        (1u << (31u - 1u)) | 1u;
+    assert((cpu.state().msr & exception_cleared_msr_bits) == 0u);
     assert(!cpu.enter_exception());
 
     auto high_vector_state = cpu.state();
