@@ -6,7 +6,7 @@ constexpr std::size_t index(ClockDomain d) noexcept{return static_cast<std::size
 constexpr std::uint64_t nanoseconds_per_second=1000000000ULL;
 constexpr std::uint64_t bit(std::size_t line) noexcept{return std::uint32_t{1}<<line;}
 }
-SystemClock::SystemClock() noexcept:hz_{729000000ULL,243000000ULL,162000000ULL,81000000ULL},valid_(true){}
+SystemClock::SystemClock() noexcept:hz_{729000000ULL,243000000ULL,162000000ULL,121500000ULL,243000000ULL},valid_(true){}
 SystemClock::SystemClock(const std::array<std::uint64_t,index(ClockDomain::Count)>& hz) noexcept:hz_(hz){
  valid_=true;for(const auto value:hz_)if(value==0U)valid_=false;
 }
