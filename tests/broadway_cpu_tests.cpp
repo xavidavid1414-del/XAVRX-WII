@@ -1086,5 +1086,36 @@ int main() {
     assert(memory.read32_be(256) == 0xa1b2c3d4u);
     assert((cpu.state().cr >> 28) == 1u); // SO, EQ clear
 
+
+    // Any store into the reserved 32-byte line invalidates lwarx state.
+    reservation_state = cpu.state();
+    reservation_state.pc = 628;
+    reservation_state.gpr[3] = 256u;
+    reservation_state.gpr[4] = 0u;
+    reservation_state.gpr[7] = 0xdeadbeefu;
+    reservation_state.reservation_valid = false;
+    cpu.set_state(reservation_state);
+    memory.write32_be(628, xmem(6, 3, 4, 20)); // lwarx r6,r3,r4
+    memory.write32_be(632, (36u << 26) | (7u << 21) | (3u << 16) | 8u); // stw r7,8(r3)
+    memory.write32_be(636, xmem(5, 3, 4, 150) | 1u); // stwcx. r5,r3,r4
+    assert(cpu.step());
+    assert(cpu.state().reservation_valid);
+    assert(cpu.step());
+    assert(!cpu.state().reservation_valid);
+    assert(cpu.step());
+    assert(memory.read32_be(256) == 0xa1b2c3d4u); // conditional store failed
+
+    // stwcx. without Rc=1 is an illegal encoding and leaves state unchanged.
+    reservation_state = cpu.state();
+    reservation_state.pc = 640;
+    reservation_state.reservation_valid = true;
+    reservation_state.reservation_address = 256u;
+    cpu.set_state(reservation_state);
+    memory.write32_be(640, xmem(5, 3, 4, 150)); // Rc incorrectly clear
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::IllegalInstruction);
+    assert(cpu.state().reservation_valid);
+    assert(cpu.state().pc == 640u);
+
     return 0;
 }
