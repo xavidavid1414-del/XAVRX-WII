@@ -598,13 +598,13 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[23] == 0x55667788u);
     assert(cpu.step());
-    assert(cpu.state().gpr[24] == 0xaabbccddu);
+    assert(cpu.state().gpr[24] == (0xaabbccddu & 0xe000007fu));
     assert(cpu.step());
     assert(cpu.state().lr == 0x01020304u);
     assert(cpu.step());
     assert(cpu.state().ctr == 0x05060708u);
     assert(cpu.step());
-    assert(cpu.state().xer == 0x090a0b0cu);
+    assert(cpu.state().xer == (0x090a0b0cu & 0xe000007fu));
 
     // An unsupported SPR must be rejected without changing CPU state.
     auto unsupported_spr_state = cpu.state();
