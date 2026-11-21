@@ -754,6 +754,7 @@ int main() {
     // Foundational FPU: lfd/stfd, arithmetic, sign operations and comparison.
     auto fpu_state = cpu.state();
     fpu_state.pc = 324;
+    fpu_state.msr = 1u << (31u - 13u); // enable MSR[FP] for FPU tests
     fpu_state.gpr[3] = 400u;
     fpu_state.fpr[1] = 0x4000000000000000ull; // 2.0
     fpu_state.fpr[2] = 0x4008000000000000ull; // 3.0
