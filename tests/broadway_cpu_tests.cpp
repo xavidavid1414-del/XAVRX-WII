@@ -884,6 +884,21 @@ int main() {
     for (int i = 0; i < 6; ++i) assert(cpu.step());
     assert(cpu.state().pc == 448u);
 
+
+    // mftb exposes the deterministic emulated time-base counter.
+    auto time_state = cpu.state();
+    time_state.pc = 448;
+    time_state.time_base = 0x12345678abcdef01ull;
+    cpu.set_state(time_state);
+    memory.write32_be(448, xform(5, 12, 8, 371)); // mftb r5,TBL (SPR 268)
+    memory.write32_be(452, xform(6, 13, 8, 371)); // mftb r6,TBU (SPR 269)
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == 0xabcdef01u);
+    assert(cpu.state().time_base == 0x12345678abcdef02ull);
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0x12345678u);
+    assert(cpu.state().time_base == 0x12345678abcdef03ull);
+
     // lfs/stfs convert between binary32 memory and binary64 FPR storage.
     auto single_state = cpu.state();
     single_state.pc = 352;
