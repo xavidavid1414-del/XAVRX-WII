@@ -17,6 +17,7 @@ check(s.pc()==0U&&s.lr()==0U&&s.ctr()==0U&&s.xer()==0U&&s.gpr(31)==0U&&s.fpr(30)
 auto d=InstructionDecoder::decode(enc(14));check(d.id==InstructionId::Addi&&d.form==InstructionForm::D&&d.valid(),"D form");
 d=InstructionDecoder::decode(enc(18));check(d.id==InstructionId::Branch&&d.form==InstructionForm::I,"I form");
 d=InstructionDecoder::decode(enc(31,266));check(d.id==InstructionId::Add&&d.has_extended_opcode&&d.extended_opcode==266,"extended opcode");
+check(InstructionDecoder::decode(enc(17)).form==InstructionForm::SC,"system-call form");
 check(InstructionDecoder::decode(enc(19,16)).id==InstructionId::BranchLinkRegister,"XL form");
 check(InstructionDecoder::decode(enc(63,21)).id==InstructionId::FloatAdd,"A form");
 check(!InstructionDecoder::decode(enc(63,999)).valid()&&!InstructionDecoder::decode(0xFFFFFFFFU).valid(),"unknown encodings rejected");
