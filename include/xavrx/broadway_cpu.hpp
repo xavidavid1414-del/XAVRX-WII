@@ -17,7 +17,8 @@ public:
         IllegalInstruction,
         PrivilegedInstruction,
         SystemCall,
-        FloatingPointUnavailable
+        FloatingPointUnavailable,
+        Program
     };
 
     struct State {
