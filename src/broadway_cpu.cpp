@@ -304,6 +304,32 @@ bool BroadwayCpu::execute_one() {
         if (update) state_.gpr[ra] = address;
         break;
     }
+    case 46: // lmw: load multiple words
+    case 47: { // stmw: store multiple words
+        const std::uint32_t address = base + static_cast<std::uint32_t>(
+            sign_extend_16(immediate));
+        if ((address & 3u) != 0u) {
+            throw std::invalid_argument("unaligned multiple-word access");
+        }
+        // Validate the complete range before changing registers or memory.
+        const std::size_t word_count = 32u - rt;
+        const std::size_t byte_count = word_count * 4u;
+        if (!memory_.contains(address, byte_count)) {
+            throw std::out_of_range("multiple-word access outside memory");
+        }
+        if (opcode == 46u) {
+            for (std::uint32_t reg = rt; reg < 32u; ++reg) {
+                state_.gpr[reg] = memory_.read32_be(
+                    address + (reg - rt) * 4u);
+            }
+        } else {
+            for (std::uint32_t reg = rt; reg < 32u; ++reg) {
+                memory_.write32_be(address + (reg - rt) * 4u,
+                                   state_.gpr[reg]);
+            }
+        }
+        break;
+    }
     case 36: // stw
     case 37: { // stwu: store word and update RA
         const bool update = opcode == 37u;
