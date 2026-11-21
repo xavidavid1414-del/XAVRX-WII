@@ -1298,6 +1298,35 @@ int main() {
     assert(cpu.state().cr == 0x2468ace0u);
     assert(cpu.state().xer == 0x80000000u);
 
+    // tlbie is privileged and its unused RT/RA/Rc fields must be zero.
+    auto tlbie_state = cpu.state();
+    tlbie_state.pc = 620u;
+    tlbie_state.msr = 0u;
+    tlbie_state.gpr[3] = 0x12345000u;
+    cpu.set_state(tlbie_state);
+    memory.write32_be(620u, xform(0u, 0u, 3u, 306u)); // tlbie r3
+    assert(cpu.step());
+    assert(cpu.state().pc == 624u);
+
+    tlbie_state = cpu.state();
+    tlbie_state.pc = 624u;
+    tlbie_state.msr = 1u << (31u - 14u); // MSR[PR]
+    cpu.set_state(tlbie_state);
+    memory.write32_be(624u, xform(0u, 0u, 3u, 306u));
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
+    assert(cpu.state().pc == 624u);
+
+    tlbie_state = cpu.state();
+    tlbie_state.pc = 628u;
+    tlbie_state.msr = 0u;
+    cpu.set_state(tlbie_state);
+    memory.write32_be(628u, xform(1u, 0u, 3u, 306u)); // reserved RT field
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+    assert(cpu.state().pc == 628u);
+
     // lwarx/stwcx. implement the foundational reservation protocol.
     auto reservation_state = cpu.state();
     reservation_state.pc = 616;
