@@ -14,7 +14,8 @@ public:
         Alignment,
         InstructionStorage,
         DataStorage,
-        IllegalInstruction
+        IllegalInstruction,
+        PrivilegedInstruction
     };
 
     struct State {
