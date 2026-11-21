@@ -668,8 +668,8 @@ bool BroadwayCpu::execute_one() {
             }
             break;
         }
-        case 83: { // mfmsr
-            if ((instruction & 1u) != 0u) return false;: move machine-state register to GPR
+        case 83: { // mfmsr: move machine-state register to GPR
+            if ((instruction & 1u) != 0u) return false;
             constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
             if ((state_.msr & msr_pr) != 0u) {
                 state_.exception = Exception::PrivilegedInstruction;
@@ -678,8 +678,8 @@ bool BroadwayCpu::execute_one() {
             state_.gpr[rt] = state_.msr;
             break;
         }
-        case 146: { // mtmsr
-            if ((instruction & 1u) != 0u) return false;: move GPR to machine-state register
+        case 146: { // mtmsr: move GPR to machine-state register
+            if ((instruction & 1u) != 0u) return false;
             constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
             if ((state_.msr & msr_pr) != 0u) {
                 state_.exception = Exception::PrivilegedInstruction;
@@ -688,8 +688,8 @@ bool BroadwayCpu::execute_one() {
             state_.msr = state_.gpr[rs];
             break;
         }
-        case 339: { // mfspr
-            if ((instruction & 1u) != 0u) return false;: move supported special-purpose register to GPR
+        case 339: { // mfspr: move supported special-purpose register to GPR
+            if ((instruction & 1u) != 0u) return false;
             const std::uint32_t spr = ra | (rb << 5);
             constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
             if ((state_.msr & msr_pr) != 0u && spr != 1u && spr != 8u && spr != 9u) {
@@ -713,8 +713,8 @@ bool BroadwayCpu::execute_one() {
             }
             break;
         }
-        case 371: { // mftb
-            if ((instruction & 1u) != 0u) return false;: move time-base register to GPR
+        case 371: { // mftb: move time-base register to GPR
+            if ((instruction & 1u) != 0u) return false;
             const std::uint32_t spr = ra | (rb << 5);
             if (spr == 268u) {
                 state_.gpr[rt] = static_cast<std::uint32_t>(state_.time_base);
@@ -725,8 +725,8 @@ bool BroadwayCpu::execute_one() {
             }
             break;
         }
-        case 467: { // mtspr
-            if ((instruction & 1u) != 0u) return false;: move GPR to supported special-purpose register
+        case 467: { // mtspr: move GPR to supported special-purpose register
+            if ((instruction & 1u) != 0u) return false;
             const std::uint32_t spr = ra | (rb << 5);
             const std::uint32_t value = state_.gpr[rs];
             constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
