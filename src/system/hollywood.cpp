@@ -42,17 +42,41 @@ void HollywoodIpc::update_interrupts()noexcept{
 }
 void HollywoodIpc::reset()noexcept{ppc_message_=arm_message_=0;x1_=x2_=y1_=y2_=iy1_=iy2_=ix1_=ix2_=0;}
 bool HollywoodGpio::read(HollywoodCpu cpu,std::uint32_t off,std::uint32_t& value)const noexcept{
- const bool b=off>=0xc0U&&off<=0xd8U;const auto reg=off-(b?0xc0U:0xe0U);
- if(b&&cpu!=HollywoodCpu::Broadway)return false;if(!b&&cpu!=HollywoodCpu::Starlet)return false;
- switch(reg){case 0:value=b?b_out_:a_out_;break;case 4:value=b?b_dir_:a_dir_;break;case 8:value=input_;break;case 12:value=b?b_level_:a_level_;break;case 16:value=b?b_flags_:a_flags_;break;case 20:value=b?b_mask_:a_mask_;break;case 24:value=b?straps_:straps_;break;case 28:if(b)return false;value=enable_;break;case 32:if(b)return false;value=a_out_;break;case 36:if(b)return false;value=a_dir_;break;case 40:if(b)return false;value=input_;break;case 44:if(b)return false;value=a_level_;break;case 48:if(b)return false;value=a_flags_;break;case 52:if(b)return false;value=a_mask_;break;case 56:if(b)return false;value=straps_;break;case 60:if(b)return false;value=owner_;break;default:return false;}
- value&=pins;return true;
+ if(off==0xdcU){if(cpu!=HollywoodCpu::Starlet)return false;value=enable_;return true;}
+ if(off>=0xc0U&&off<=0xd8U){
+  if(cpu!=HollywoodCpu::Broadway)return false;
+  switch(off){case 0xc0:value=b_out_;break;case 0xc4:value=b_dir_;break;case 0xc8:value=input_;break;case 0xcc:value=b_level_;break;case 0xd0:value=b_flags_;break;case 0xd4:value=b_mask_;break;case 0xd8:value=straps_;break;default:return false;}
+  value&=pins;return true;
+ }
+ if(off>=0xe0U&&off<=0xfcU){
+  if(cpu!=HollywoodCpu::Starlet)return false;
+  switch(off){case 0xe0:value=a_out_;break;case 0xe4:value=a_dir_;break;case 0xe8:value=input_;break;case 0xec:value=a_level_;break;case 0xf0:value=a_flags_;break;case 0xf4:value=a_mask_;break;case 0xf8:value=straps_;break;case 0xfc:value=owner_;break;default:return false;}
+  value&=pins;return true;
+ }
+ return false;
 }
 bool HollywoodGpio::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value)noexcept{
- const bool b=off>=0xc0U&&off<=0xd8U;const auto reg=off-(b?0xc0U:0xe0U);
- if(b&&cpu!=HollywoodCpu::Broadway)return false;if(!b&&cpu!=HollywoodCpu::Starlet)return false;
- if(b){const auto allowed=owner_&pins;switch(reg){case 0:b_out_=(b_out_&~allowed)|(value&allowed);break;case 4:b_dir_=(b_dir_&~allowed)|(value&allowed);break;case 12:b_level_=(b_level_&~allowed)|(value&allowed);break;case 16:b_flags_&=~(value&allowed);break;case 20:b_mask_=(b_mask_&~allowed)|(value&allowed);break;default:return false;}}
- else {switch(reg){case 28:enable_=value&pins;break;case 32:a_out_=((a_out_&owner_)|(value&~owner_))&pins;break;case 36:a_dir_=((a_dir_&owner_)|(value&~owner_))&pins;break;case 44:a_level_=((a_level_&owner_)|(value&~owner_))&pins;break;case 48:a_flags_&=~(value&~owner_&pins);break;case 52:a_mask_=((a_mask_&owner_)|(value&~owner_))&pins;break;case 60:owner_=value&pins;break;default:return false;}}
- refresh_interrupts();return true;
+ if(off==0xdcU){if(cpu!=HollywoodCpu::Starlet)return false;enable_=value&pins;refresh_interrupts();return true;}
+ if(off>=0xc0U&&off<=0xd8U){
+  if(cpu!=HollywoodCpu::Broadway)return false;
+  const auto allowed=owner_&pins;
+  switch(off){case 0xc0:b_out_=(b_out_&~allowed)|(value&allowed);break;case 0xc4:b_dir_=(b_dir_&~allowed)|(value&allowed);break;case 0xcc:b_level_=(b_level_&~allowed)|(value&allowed);break;case 0xd0:b_flags_&=~(value&allowed);break;case 0xd4:b_mask_=(b_mask_&~allowed)|(value&allowed);break;default:return false;}
+  refresh_interrupts();return true;
+ }
+ if(off>=0xe0U&&off<=0xfcU){
+  if(cpu!=HollywoodCpu::Starlet)return false;
+  switch(off){
+   case 0xe0:a_out_=((a_out_&owner_)|(value&~owner_))&pins;break;
+   case 0xe4:a_dir_=((a_dir_&owner_)|(value&~owner_))&pins;break;
+   case 0xec:a_level_=((a_level_&owner_)|(value&~owner_))&pins;break;
+   case 0xf0:a_flags_&=~(value&~owner_&pins);break;
+   case 0xf4:a_mask_=((a_mask_&owner_)|(value&~owner_))&pins;break;
+   case 0xfc:owner_=value&pins;break;
+   default:return false;
+  }
+  refresh_interrupts();return true;
+ }
+ return false;
 }
 void HollywoodGpio::set_inputs(std::uint32_t levels)noexcept{input_=levels&pins;refresh_interrupts();}
 void HollywoodGpio::refresh_interrupts()noexcept{
