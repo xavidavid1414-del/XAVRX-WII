@@ -1229,5 +1229,44 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[12] == 0x00001830u);
 
+    // SPR bank round-trip: exception-save and scratch registers.
+    auto spr_state = cpu.state();
+    spr_state.pc = 712u;
+    spr_state.gpr[10] = 0x11223344u;
+    spr_state.gpr[11] = 0x55667788u;
+    cpu.set_state(spr_state);
+    const auto spr_form = [](std::uint32_t reg, std::uint32_t spr,
+                             std::uint32_t xo) {
+        const std::uint32_t encoded_spr = ((spr & 31u) << 5) | (spr >> 5);
+        return (31u << 26) | (reg << 21) |
+               ((encoded_spr & 31u) << 16) |
+               ((encoded_spr >> 5) << 11) | (xo << 1);
+    };
+    memory.write32_be(712u, spr_form(10, 18, 467)); // mtspr DSISR,r10
+    memory.write32_be(716u, spr_form(10, 19, 467)); // mtspr DAR,r10
+    memory.write32_be(720u, spr_form(10, 26, 467)); // mtspr SRR0,r10
+    memory.write32_be(724u, spr_form(10, 27, 467)); // mtspr SRR1,r10
+    memory.write32_be(728u, spr_form(10, 272, 467)); // mtspr SPRG0,r10
+    memory.write32_be(732u, spr_form(10, 273, 467)); // mtspr SPRG1,r10
+    memory.write32_be(736u, spr_form(10, 274, 467)); // mtspr SPRG2,r10
+    memory.write32_be(740u, spr_form(10, 275, 467)); // mtspr SPRG3,r10
+    memory.write32_be(744u, spr_form(11, 18, 339)); // mfspr r11,DSISR
+    memory.write32_be(748u, spr_form(11, 19, 339)); // mfspr r11,DAR
+    memory.write32_be(752u, spr_form(11, 26, 339)); // mfspr r11,SRR0
+    memory.write32_be(756u, spr_form(11, 27, 339)); // mfspr r11,SRR1
+    memory.write32_be(760u, spr_form(11, 272, 339)); // mfspr r11,SPRG0
+    memory.write32_be(764u, spr_form(11, 273, 339)); // mfspr r11,SPRG1
+    memory.write32_be(768u, spr_form(11, 274, 339)); // mfspr r11,SPRG2
+    memory.write32_be(772u, spr_form(11, 275, 339)); // mfspr r11,SPRG3
+    for (int i = 0; i < 8; ++i) assert(cpu.step());
+    assert(cpu.state().dsisr == 0x11223344u);
+    assert(cpu.state().dar == 0x11223344u);
+    assert(cpu.state().srr0 == 0x11223344u);
+    assert(cpu.state().srr1 == 0x11223344u);
+    for (int i = 0; i < 8; ++i) {
+        assert(cpu.step());
+        assert(cpu.state().gpr[11] == 0x11223344u);
+    }
+
     return 0;
 }
