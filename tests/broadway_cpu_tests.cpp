@@ -2066,5 +2066,34 @@ int main() {
     assert(cpu.state().gpr[3] == 604u);
     assert(memory.read32_be(604u) == 600u);
 
+    // Segment-register move instructions (privileged PowerPC operations).
+    auto segment_state = cpu.state();
+    segment_state.pc = 1000u;
+    segment_state.msr = 0u;
+    segment_state.gpr[5] = 0x12345678u;
+    segment_state.gpr[6] = 0x20000000u;
+    segment_state.segment_registers[3] = 0xaabbccddu;
+    cpu.set_state(segment_state);
+    memory.write32_be(1000u, xform(7, 3, 0, 595)); // mfsr r7,sr3
+    memory.write32_be(1004u, xform(5, 4, 0, 210)); // mtsr sr4,r5
+    memory.write32_be(1008u, xform(8, 0, 6, 659)); // mfsrin r8,r6
+    memory.write32_be(1012u, xform(5, 0, 6, 242)); // mtsrin r5,r6
+    assert(cpu.step());
+    assert(cpu.state().gpr[7] == 0xaabbccddu);
+    assert(cpu.step());
+    assert(cpu.state().segment_registers[4] == 0x12345678u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[8] == 0u);
+    assert(cpu.step());
+    assert(cpu.state().segment_registers[2] == 0x12345678u);
+
+    auto user_segment_state = cpu.state();
+    user_segment_state.pc = 1016u;
+    user_segment_state.msr = 1u << (31u - 14u);
+    cpu.set_state(user_segment_state);
+    memory.write32_be(1016u, xform(7, 3, 0, 595)); // privileged mfsr
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
+
     return 0;
 }
