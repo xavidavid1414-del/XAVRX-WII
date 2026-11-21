@@ -33,6 +33,9 @@ public:
         std::uint32_t srr1{0};
         std::uint32_t dar{0};
         std::uint32_t dsisr{0};
+        std::uint32_t dec{0};
+        std::uint32_t sdr1{0};
+        std::uint32_t ear{0};
         std::array<std::uint32_t, 4> sprg{};
         std::uint64_t time_base{0};
         std::uint32_t reservation_address{0};
