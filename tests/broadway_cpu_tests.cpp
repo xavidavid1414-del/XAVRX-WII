@@ -1558,5 +1558,18 @@ int main() {
     assert(cpu.step());
     assert(((cpu.state().cr >> 16) & 0xfu) == 6u);
 
+    // Reciprocal and reciprocal-square-root estimates are deterministic
+    // approximations in this interpreter and preserve binary32 for fres.
+    auto fp_estimate_state = cpu.state();
+    fp_estimate_state.pc = 920u;
+    fp_estimate_state.fpr[1] = std::bit_cast<std::uint64_t>(4.0);
+    cpu.set_state(fp_estimate_state);
+    memory.write32_be(920u, (59u << 26) | (2u << 21) | (1u << 11) | (24u << 1)); // fres f2,f1
+    memory.write32_be(924u, (63u << 26) | (3u << 21) | (1u << 11) | (26u << 1)); // frsqrte f3,f1
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[2]) == 0.25);
+    assert(cpu.step());
+    assert(std::bit_cast<double>(cpu.state().fpr[3]) == 0.5);
+
     return 0;
 }
