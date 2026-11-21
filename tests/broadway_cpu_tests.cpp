@@ -785,6 +785,30 @@ int main() {
     assert(cpu.step());
     assert(memory.read64_be(400) == std::bit_cast<std::uint64_t>(5.0));
 
+    // Floating-point comparisons update FPCC in FPSCR as well as CR.
+    auto fcmp_fpscr_state = cpu.state();
+    fcmp_fpscr_state.pc = 392;
+    fcmp_fpscr_state.fpr[1] = std::bit_cast<std::uint64_t>(2.0);
+    fcmp_fpscr_state.fpr[2] = std::bit_cast<std::uint64_t>(3.0);
+    fcmp_fpscr_state.fpscr = 0u;
+    cpu.set_state(fcmp_fpscr_state);
+    memory.write32_be(392, fform(0, 1, 2, 0)); // fcmpu cr0,f1,f2
+    assert(cpu.step());
+    assert((cpu.state().fpscr & 0x0000f000u) == 0x00008000u);
+    assert((cpu.state().cr >> 28) == 8u);
+
+    auto fcmp_nan_state = cpu.state();
+    fcmp_nan_state.pc = 396;
+    fcmp_nan_state.fpr[1] = 0x7ff8000000000000ull; // quiet NaN
+    fcmp_nan_state.fpr[2] = std::bit_cast<std::uint64_t>(1.0);
+    fcmp_nan_state.fpscr = 0u;
+    cpu.set_state(fcmp_nan_state);
+    memory.write32_be(396, fform(0, 1, 2, 32)); // fcmpo cr0,f1,f2
+    assert(cpu.step());
+    assert((cpu.state().fpscr & 0x0000f000u) == 0x00001000u);
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 29) | (1u << 19))) ==
+           ((1u << 31) | (1u << 29) | (1u << 19)));
+
     // Floating-point record forms copy FPSCR[0:3] into CR1.
     auto fpu_record_state = cpu.state();
     fpu_record_state.pc = 388;
