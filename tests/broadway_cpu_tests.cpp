@@ -1780,5 +1780,45 @@ int main() {
         oe_pc += 4u;
     }
 
+
+    // Non-overflow OE cases clear OV but preserve sticky SO, and Rc updates CR0.
+    struct NoOverflowCase {
+        std::uint32_t xo;
+        std::uint32_t lhs;
+        std::uint32_t rhs;
+        bool carry;
+        std::uint32_t expected;
+    };
+    const NoOverflowCase carry_no_overflow_cases[] = {
+        {522u, 1u, 2u, false, 3u},          // addco
+        {520u, 2u, 3u, false, 1u},          // subfco
+        {650u, 1u, 2u, false, 3u},          // addeo
+        {648u, 2u, 3u, true, 1u},           // subfeo
+        {714u, 5u, 0u, false, 5u},          // addzeo
+        {712u, 5u, 0u, true, 0xfffffffbu},  // subfzeo
+        {744u, 5u, 0u, false, 0xfffffff9u}, // subfmeo
+        {746u, 5u, 0u, false, 4u}           // addmeo
+    };
+    std::uint32_t safe_pc = oe_pc;
+    for (const auto& test : carry_no_overflow_cases) {
+        auto safe_state = cpu.state();
+        safe_state.pc = safe_pc;
+        safe_state.gpr[3] = test.lhs;
+        safe_state.gpr[4] = test.rhs;
+        safe_state.xer = (1u << 31) | (1u << 30) |
+                         (test.carry ? (1u << 29) : 0u);
+        cpu.set_state(safe_state);
+        memory.write32_be(safe_pc, xform(5, 3, 4, test.xo) | 1u);
+        assert(cpu.step());
+        assert(cpu.state().gpr[5] == test.expected);
+        assert((cpu.state().xer & (1u << 30)) == 0u);
+        assert((cpu.state().xer & (1u << 31)) != 0u);
+        const std::uint32_t cr0 = (cpu.state().cr >> 28) & 0xfu;
+        assert((cr0 & 1u) == 1u); // CR0.SO reflects sticky XER[SO].
+        assert((cr0 & 0xeu) == (test.expected == 0u ? 2u :
+            ((test.expected & 0x80000000u) != 0u ? 8u : 4u)));
+        safe_pc += 4u;
+    }
+
     return 0;
 }
