@@ -10,7 +10,7 @@ DecodedInstruction InstructionDecoder::decode(std::uint32_t word) noexcept{
  case 14:return simple(InstructionId::Addi,InstructionForm::D,op);
  case 15:return simple(InstructionId::Addis,InstructionForm::D,op);
  case 16:return simple(InstructionId::BranchConditional,InstructionForm::B,op);
- case 17:return simple(InstructionId::SystemCall,InstructionForm::Unknown,op);
+ case 17:return simple(InstructionId::SystemCall,InstructionForm::SC,op);
  case 18:return simple(InstructionId::Branch,InstructionForm::I,op);
  case 24:return simple(InstructionId::Ori,InstructionForm::D,op);
  case 25:return simple(InstructionId::Oris,InstructionForm::D,op);
