@@ -454,6 +454,25 @@ int main() {
     assert((cpu.state().cr >> 28) == 0xau);
     assert((cpu.state().cr & 0x0fffffffu) == 0x02245678u);
 
+    // mcrf reserved bits must not be silently accepted.
+    auto invalid_mcrf_state = cpu.state();
+    invalid_mcrf_state.pc = 256u;
+    invalid_mcrf_state.cr = 0x12345678u;
+    cpu.set_state(invalid_mcrf_state);
+    memory.write32_be(256u, (19u << 26) | (2u << 23) |
+                             (1u << 18) | (1u << 16)); // reserved bit
+    assert(!cpu.step());
+    assert(cpu.state().pc == 256u);
+    assert(cpu.state().cr == 0x12345678u);
+
+    // isync is a fixed encoding; nonzero reserved fields are rejected.
+    auto invalid_isync_state = cpu.state();
+    invalid_isync_state.pc = 260u;
+    cpu.set_state(invalid_isync_state);
+    memory.write32_be(260u, 0x4c20012cu);
+    assert(!cpu.step());
+    assert(cpu.state().pc == 260u);
+
     // sraw/srawi update XER[CA] from one-bits shifted out of the low end.
     auto arithmetic_carry_state = cpu.state();
     arithmetic_carry_state.pc = 0;
