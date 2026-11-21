@@ -1304,5 +1304,32 @@ int main() {
     assert(cpu.state().msr == 0x0000a5a5u);
     assert(!cpu.state().reservation_valid);
 
+
+    // rfi is privileged: user mode must raise a privilege exception.
+    auto rfi_user_state = cpu.state();
+    rfi_user_state.pc = 804u;
+    rfi_user_state.srr0 = 900u;
+    rfi_user_state.srr1 = 0x55u;
+    rfi_user_state.msr = 1u << (31u - 14u);
+    cpu.set_state(rfi_user_state);
+    memory.write32_be(804u, 0x4c000064u);
+    assert(!cpu.step());
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::PrivilegedInstruction);
+    assert(cpu.state().pc == 804u);
+
+    // An unaligned SRR0 is rejected without partially restoring the MSR.
+    auto rfi_alignment_state = cpu.state();
+    rfi_alignment_state.pc = 808u;
+    rfi_alignment_state.msr = 0u;
+    rfi_alignment_state.srr0 = 901u;
+    rfi_alignment_state.srr1 = 0x1234u;
+    cpu.set_state(rfi_alignment_state);
+    memory.write32_be(808u, 0x4c000064u);
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().pc == 808u);
+    assert(cpu.state().msr == 0u);
+
     return 0;
 }
