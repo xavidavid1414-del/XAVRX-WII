@@ -2,8 +2,10 @@
 namespace xavrx::system {
 namespace { constexpr std::uint32_t pins=0x00ffffffU; constexpr std::uint32_t bit(std::uint8_t n) noexcept{return std::uint32_t{1}<<n;} }
 void HollywoodInterrupts::raise(std::uint8_t source,IrqRoute route) noexcept {
- if(source>=32U)return;const auto b=bit(source),r=static_cast<std::uint8_t>(route);
- if((r&1U)!=0U)ppc_flags_|=b;if((r&2U)!=0U)arm_flags_|=b;
+ if(source>=32U)return;
+ const auto b=bit(source);const auto route_bits=static_cast<std::uint8_t>(route);
+ if((route_bits&1U)!=0U)ppc_flags_|=b;
+ if((route_bits&2U)!=0U)arm_flags_|=b;
 }
 void HollywoodInterrupts::clear(HollywoodCpu cpu,std::uint32_t bits) noexcept {if(cpu==HollywoodCpu::Broadway)ppc_flags_&=~bits;else arm_flags_&=~bits;}
 void HollywoodInterrupts::set_mask(HollywoodCpu cpu,std::uint32_t bits) noexcept {if(cpu==HollywoodCpu::Broadway)ppc_mask_=bits;else arm_mask_=bits;}
@@ -54,7 +56,8 @@ bool HollywoodGpio::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value
 }
 void HollywoodGpio::set_inputs(std::uint32_t levels)noexcept{input_=levels&pins;refresh_interrupts();}
 void HollywoodGpio::refresh_interrupts()noexcept{
- const auto b_active=(input_&b_level_)&b_mask_&owner_&pins;const auto a_active=(input_&a_level_)&a_mask_&~owner_&enable_&pins;
+ const auto b_active=(~(input_^b_level_))&b_mask_&owner_&pins;
+ const auto a_active=(~(input_^a_level_))&a_mask_&~owner_&enable_&pins;
  if(b_active){b_flags_|=b_active;irq_.raise(10,IrqRoute::Both);}if(a_active){a_flags_|=a_active;irq_.raise(11,IrqRoute::Both);}
 }
 void HollywoodGpio::reset()noexcept{input_=straps_=owner_=b_out_=b_dir_=b_level_=b_flags_=b_mask_=a_out_=a_dir_=a_level_=a_flags_=a_mask_=0;enable_=pins;}
@@ -63,14 +66,14 @@ bool HollywoodHardware::write(std::uint32_t off,std::uint8_t width,std::uint64_t
 bool HollywoodHardware::read_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t width,std::uint64_t& value)noexcept{
  if(width!=4U||(off&3U)!=0U||off>=window_size)return false;std::uint32_t v=0;
  if(off<0x10U){if(!ipc_.read(cpu,off,v))return false;}
- else if(off>=0x30U&&off<=0x3cU){switch(off){case 0x30:v=interrupts_.flags(HollywoodCpu::Broadway);break;case 0x34:v=interrupts_.mask(HollywoodCpu::Broadway);break;case 0x38:v=interrupts_.flags(HollywoodCpu::Starlet);break;case 0x3c:v=interrupts_.mask(HollywoodCpu::Starlet);break;}}
+ else if(off>=0x30U&&off<=0x3cU){if((off>=0x38U)&&cpu!=HollywoodCpu::Starlet)return false;switch(off){case 0x30:v=interrupts_.flags(HollywoodCpu::Broadway);break;case 0x34:v=interrupts_.mask(HollywoodCpu::Broadway);break;case 0x38:v=interrupts_.flags(HollywoodCpu::Starlet);break;case 0x3c:v=interrupts_.mask(HollywoodCpu::Starlet);break;}}
  else if(off>=0xc0U&&off<=0xfcU){if(!gpio_.read(cpu,off,v))return false;}
  else return false;value=v;return true;
 }
 bool HollywoodHardware::write_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{
  if(width!=4U||(off&3U)!=0U||off>=window_size||value>0xffffffffULL)return false;const auto v=static_cast<std::uint32_t>(value);
  if(off<0x10U)return ipc_.write(cpu,off,v);
- if(off>=0x30U&&off<=0x3cU){switch(off){case 0x30:interrupts_.clear(HollywoodCpu::Broadway,v);break;case 0x34:interrupts_.set_mask(HollywoodCpu::Broadway,v);break;case 0x38:interrupts_.clear(HollywoodCpu::Starlet,v);break;case 0x3c:interrupts_.set_mask(HollywoodCpu::Starlet,v);break;}return true;}
+ if(off>=0x30U&&off<=0x3cU){if((off>=0x38U)&&cpu!=HollywoodCpu::Starlet)return false;switch(off){case 0x30:interrupts_.clear(HollywoodCpu::Broadway,v);break;case 0x34:interrupts_.set_mask(HollywoodCpu::Broadway,v);break;case 0x38:interrupts_.clear(HollywoodCpu::Starlet,v);break;case 0x3c:interrupts_.set_mask(HollywoodCpu::Starlet,v);break;}return true;}
  if(off>=0xc0U&&off<=0xfcU)return gpio_.write(cpu,off,v);return false;
 }
 void HollywoodHardware::reset()noexcept{interrupts_=HollywoodInterrupts{};ipc_.reset();gpio_.reset();}
