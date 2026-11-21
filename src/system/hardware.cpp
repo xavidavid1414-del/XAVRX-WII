@@ -36,11 +36,11 @@ int InterruptController::claim_highest_priority()noexcept{
 }
 TimerBank::TimerBank(std::size_t base)noexcept:interrupt_base_(base){}
 bool TimerBank::configure(std::size_t timer,std::uint64_t reload,bool periodic,bool enabled_value)noexcept{
- if(timer>=timer_count||reload==0U||interrupt_base_+timer>=InterruptController::line_count)return false;
+ if(timer>=timer_count||reload==0U||interrupt_base_>=InterruptController::line_count||timer>=InterruptController::line_count-interrupt_base_)return false;
  timers_[timer]={reload,reload,0U,periodic,enabled_value};return true;
 }
 void TimerBank::enable(std::size_t timer,bool value)noexcept{
- if(timer>=timer_count)return;auto& t=timers_[timer];if(value&&!t.enabled&&t.remaining==0U)t.remaining=t.reload;t.enabled=value;
+ if(timer>=timer_count)return;auto& t=timers_[timer];if(value&&t.reload==0U)return;if(value&&!t.enabled&&t.remaining==0U)t.remaining=t.reload;t.enabled=value;
 }
 void TimerBank::reset(std::size_t timer)noexcept{if(timer<timer_count)timers_[timer]=Timer{};}
 void TimerBank::advance(std::uint64_t cycles,InterruptController& interrupts)noexcept{
@@ -48,10 +48,10 @@ void TimerBank::advance(std::uint64_t cycles,InterruptController& interrupts)noe
  for(std::size_t i=0;i<timer_count;++i){
   auto& t=timers_[i];if(!t.enabled)continue;
   if(cycles<t.remaining){t.remaining-=cycles;continue;}
-  const auto elapsed=cycles-t.remaining;++t.expirations;interrupts.raise(interrupt_base_+i);
-  if(!t.periodic){t.remaining=0U;t.enabled=false;continue;}
-  const auto extra=elapsed/t.reload;
-  if(t.expirations<=std::numeric_limits<std::uint64_t>::max()-extra)t.expirations+=extra;else t.expirations=std::numeric_limits<std::uint64_t>::max();
+  const auto elapsed=cycles-t.remaining;interrupts.raise(interrupt_base_+i);
+  if(!t.periodic){if(t.expirations!=std::numeric_limits<std::uint64_t>::max())++t.expirations;t.remaining=0U;t.enabled=false;continue;}
+  const auto extra=elapsed/t.reload;const auto count=extra+1U;
+  if(t.expirations>std::numeric_limits<std::uint64_t>::max()-count)t.expirations=std::numeric_limits<std::uint64_t>::max();else t.expirations+=count;
   const auto remainder=elapsed%t.reload;t.remaining=remainder==0U?t.reload:t.reload-remainder;
  }
 }
