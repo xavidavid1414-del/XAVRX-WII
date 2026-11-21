@@ -136,6 +136,35 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().gpr[16] == 0xfffffffeu);
 
+    // SRAW/SRAWI set XER[CA] only for discarded 1-bits from a negative value.
+    auto arithmetic_carry_state = cpu.state();
+    arithmetic_carry_state.pc = 940u;
+    arithmetic_carry_state.gpr[3] = 0x7fffffffu; // positive: no CA
+    arithmetic_carry_state.gpr[4] = 1u;
+    arithmetic_carry_state.xer &= ~(1u << 29);
+    cpu.set_state(arithmetic_carry_state);
+    memory.write32_be(940u, xform(3, 17, 4, 792)); // sraw r17,r3,r4
+    assert(cpu.step());
+    assert((cpu.state().xer & (1u << 29)) == 0u);
+
+    arithmetic_carry_state = cpu.state();
+    arithmetic_carry_state.pc = 944u;
+    arithmetic_carry_state.gpr[3] = 0xfffffff0u; // negative with discarded 1-bits
+    arithmetic_carry_state.gpr[4] = 32u;
+    cpu.set_state(arithmetic_carry_state);
+    memory.write32_be(944u, xform(3, 17, 4, 792)); // sraw r17,r3,r4
+    assert(cpu.step());
+    assert((cpu.state().xer & (1u << 29)) != 0u);
+
+    arithmetic_carry_state = cpu.state();
+    arithmetic_carry_state.pc = 948u;
+    arithmetic_carry_state.gpr[3] = 0x80000000u; // only the sign bit is set
+    arithmetic_carry_state.gpr[4] = 32u;
+    cpu.set_state(arithmetic_carry_state);
+    memory.write32_be(948u, xform(3, 17, 4, 792)); // sraw r17,r3,r4
+    assert(cpu.step());
+    assert((cpu.state().xer & (1u << 29)) == 0u);
+
     // rlwinm rotates left then applies PowerPC's MSB-numbered bit mask.
     auto rotate_state = cpu.state();
     rotate_state.pc = 112;
