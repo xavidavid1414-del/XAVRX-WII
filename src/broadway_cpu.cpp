@@ -550,6 +550,41 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
         switch (xo) {
+        case 535: case 567: case 599: case 631:
+        case 663: case 695: case 727: case 759: { // Indexed floating-point loads/stores
+            const bool load = xo == 535u || xo == 567u ||
+                              xo == 599u || xo == 631u;
+            const bool update = xo == 567u || xo == 631u ||
+                                xo == 695u || xo == 759u;
+            const bool is_double = xo == 599u || xo == 631u ||
+                                   xo == 727u || xo == 759u;
+            if (update && (ra == 0u || (load && ra == rt))) return false;
+            const std::uint32_t address = (ra == 0u ? 0u : a) + b;
+            const std::uint32_t alignment = is_double ? 8u : 4u;
+            if ((address & (alignment - 1u)) != 0u) {
+                throw std::invalid_argument("unaligned indexed floating-point access");
+            }
+            if (load) {
+                if (is_double) {
+                    state_.fpr[rt] = memory_.read64_be(address);
+                } else {
+                    const float value = std::bit_cast<float>(memory_.read32_be(address));
+                    state_.fpr[rt] = std::bit_cast<std::uint64_t>(
+                        static_cast<double>(value));
+                }
+            } else {
+                const double value = std::bit_cast<double>(state_.fpr[rs]);
+                invalidate_reservation(address, is_double ? 8u : 4u);
+                if (is_double) {
+                    memory_.write64_be(address, state_.fpr[rs]);
+                } else {
+                    memory_.write32_be(address, std::bit_cast<std::uint32_t>(
+                        static_cast<float>(value)));
+                }
+            }
+            if (update) state_.gpr[ra] = address;
+            break;
+        }
         case 20: { // lwarx: load word and establish a reservation
             const std::uint32_t address = (ra == 0u ? 0u : a) + b;
             if ((address & 3u) != 0u) {
