@@ -36,12 +36,14 @@ std::uint32_t ppc_mask(std::uint32_t begin, std::uint32_t end) noexcept {
 }
 
 template <typename State, typename Operation>
-auto record_dar_on_fault(State& state, std::uint32_t address,
+auto record_dar_on_fault(State& state, std::uint32_t address, bool is_store,
                          Operation&& operation) -> decltype(operation()) {
     try {
         return operation();
     } catch (const std::out_of_range&) {
         state.dar = address;
+        // DSISR[Store] identifies a failed store during a data-storage fault.
+        state.dsisr = is_store ? (1u << (31u - 25u)) : 0u;
         throw;
     }
 }
@@ -139,28 +141,28 @@ bool BroadwayCpu::step() {
 
 bool BroadwayCpu::execute_one() {
     const auto read8 = [&](std::uint32_t address) {
-        return record_dar_on_fault(state_, address, [&] { return memory_.read8(address); });
+        return record_dar_on_fault(state_, address, false, [&] { return memory_.read8(address); });
     };
     const auto read16 = [&](std::uint32_t address) {
-        return record_dar_on_fault(state_, address, [&] { return memory_.read16_be(address); });
+        return record_dar_on_fault(state_, address, false, [&] { return memory_.read16_be(address); });
     };
     const auto read32 = [&](std::uint32_t address) {
-        return record_dar_on_fault(state_, address, [&] { return memory_.read32_be(address); });
+        return record_dar_on_fault(state_, address, false, [&] { return memory_.read32_be(address); });
     };
     const auto read64 = [&](std::uint32_t address) {
-        return record_dar_on_fault(state_, address, [&] { return memory_.read64_be(address); });
+        return record_dar_on_fault(state_, address, false, [&] { return memory_.read64_be(address); });
     };
     const auto write8 = [&](std::uint32_t address, std::uint8_t value) {
-        record_dar_on_fault(state_, address, [&] { memory_.write8(address, value); });
+        record_dar_on_fault(state_, address, true, [&] { memory_.write8(address, value); });
     };
     const auto write16 = [&](std::uint32_t address, std::uint16_t value) {
-        record_dar_on_fault(state_, address, [&] { memory_.write16_be(address, value); });
+        record_dar_on_fault(state_, address, true, [&] { memory_.write16_be(address, value); });
     };
     const auto write32 = [&](std::uint32_t address, std::uint32_t value) {
-        record_dar_on_fault(state_, address, [&] { memory_.write32_be(address, value); });
+        record_dar_on_fault(state_, address, true, [&] { memory_.write32_be(address, value); });
     };
     const auto write64 = [&](std::uint32_t address, std::uint64_t value) {
-        record_dar_on_fault(state_, address, [&] { memory_.write64_be(address, value); });
+        record_dar_on_fault(state_, address, true, [&] { memory_.write64_be(address, value); });
     };
 
     const std::uint32_t instruction = memory_.read32_be(state_.pc);
