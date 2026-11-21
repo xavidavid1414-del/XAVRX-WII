@@ -1850,5 +1850,50 @@ int main() {
         invalid_load_pc += 4u;
     }
 
+
+    // Explicit PowerPC exception delivery saves SRR state and selects vectors.
+    auto exception_vector_state = cpu.state();
+    exception_vector_state.pc = 0x180u;
+    exception_vector_state.msr = (1u << (31u - 15u)) |
+        (1u << (31u - 14u)) | (1u << (31u - 13u)) |
+        (1u << (31u - 5u)) | (1u << (31u - 4u));
+    exception_vector_state.exception =
+        xavrx::BroadwayCpu::Exception::IllegalInstruction;
+    exception_vector_state.reservation_valid = true;
+    cpu.set_state(exception_vector_state);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0x700u);
+    assert(cpu.state().srr0 == 0x180u);
+    assert(cpu.state().srr1 == exception_vector_state.msr);
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+    assert(!cpu.state().reservation_valid);
+    assert((cpu.state().msr & (1u << (31u - 14u))) == 0u);
+    assert(!cpu.enter_exception());
+
+    auto high_vector_state = cpu.state();
+    high_vector_state.pc = 0x244u;
+    high_vector_state.msr = 1u << (31u - 6u); // high exception prefix
+    high_vector_state.exception = xavrx::BroadwayCpu::Exception::DataStorage;
+    cpu.set_state(high_vector_state);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0xfff00300u);
+    assert(cpu.state().srr0 == 0x244u);
+
+    auto alignment_vector_state = cpu.state();
+    alignment_vector_state.pc = 0x300u;
+    alignment_vector_state.msr = 0u;
+    alignment_vector_state.exception = xavrx::BroadwayCpu::Exception::Alignment;
+    cpu.set_state(alignment_vector_state);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0x600u);
+
+    auto instruction_vector_state = cpu.state();
+    instruction_vector_state.pc = 0x340u;
+    instruction_vector_state.exception =
+        xavrx::BroadwayCpu::Exception::InstructionStorage;
+    cpu.set_state(instruction_vector_state);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0x400u);
+
     return 0;
 }
