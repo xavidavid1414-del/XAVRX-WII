@@ -1681,5 +1681,17 @@ int main() {
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[3]) == 0.5);
 
+    // FPSCR control writes must immediately recompute the enabled-exception summary.
+    auto fpscr_summary_state = cpu.state();
+    fpscr_summary_state.pc = 932u;
+    fpscr_summary_state.fpscr = (1u << 26); // ZX sticky, ZE/VE disabled
+    cpu.set_state(fpscr_summary_state);
+    memory.write32_be(932u, (63u << 26) | (24u << 21) | (38u << 1)); // mtfsb1 VE
+    memory.write32_be(936u, (63u << 26) | (24u << 21) | (70u << 1)); // mtfsb0 VE
+    assert(cpu.step());
+    assert((cpu.state().fpscr & (1u << 30)) != 0u); // FEX asserted immediately
+    assert(cpu.step());
+    assert((cpu.state().fpscr & (1u << 30)) == 0u); // FEX cleared immediately
+
     return 0;
 }
