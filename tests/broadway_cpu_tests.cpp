@@ -1569,6 +1569,36 @@ int main() {
     assert(cpu.state().gpr[3] == 264u);
     assert(std::bit_cast<double>(cpu.state().fpr[13]) == 2.25);
 
+    auto indexed_fault = cpu.state();
+    indexed_fault.pc = 920u;
+    indexed_fault.gpr[3] = 256u;
+    indexed_fault.gpr[4] = 1u;
+    cpu.set_state(indexed_fault);
+    memory.write32_be(920u, xform_fp(10, 3, 4, 535)); // unaligned lfsx
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().dar == 257u);
+
+    indexed_fault = cpu.state();
+    indexed_fault.pc = 924u;
+    indexed_fault.gpr[3] = 256u;
+    indexed_fault.gpr[4] = 2u;
+    cpu.set_state(indexed_fault);
+    memory.write32_be(924u, xform_fp(10, 3, 4, 599)); // unaligned lfdx
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().dar == 258u);
+
+    indexed_fault = cpu.state();
+    indexed_fault.pc = 928u;
+    indexed_fault.gpr[3] = 256u;
+    indexed_fault.gpr[4] = 1u;
+    cpu.set_state(indexed_fault);
+    memory.write32_be(928u, xform_fp(10, 3, 4, 23)); // unaligned lwzx
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Alignment);
+    assert(cpu.state().dar == 257u);
+
     // Indexed floating-point update forms reject RA=0 and load overlap.
     auto invalid_indexed_fp = cpu.state();
     invalid_indexed_fp.pc = 864u;
