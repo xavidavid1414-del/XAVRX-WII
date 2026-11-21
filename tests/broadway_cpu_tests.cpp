@@ -1539,6 +1539,7 @@ int main() {
     indexed_fp_state.gpr[3] = 256u;
     indexed_fp_state.gpr[4] = 0u;
     indexed_fp_state.gpr[5] = 8u;
+    indexed_fp_state.msr = 1u << (31u - 13u); // enable MSR[FP]
     indexed_fp_state.fpr[8] = std::bit_cast<std::uint64_t>(1.5);
     indexed_fp_state.fpr[9] = std::bit_cast<std::uint64_t>(2.25);
     cpu.set_state(indexed_fp_state);
