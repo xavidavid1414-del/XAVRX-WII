@@ -4,7 +4,7 @@ Nintendo Wii emulator project built from scratch in C++20 with CMake.
 ## Status
 **Current phase: 6 / 20 — initial system hardware model implemented and verified.**
 
-The CPU has an architectural state model, an initial integer/control-flow executor, a configurable big-endian memory bus with aligned 8/16/32/64-bit access and memory-mapped device callbacks, and an initial system hardware model with CPU/GPU/bus/DSP clocks, deterministic timers, interrupt lines, and boot-state transitions. This is not yet a playable emulator: the full Wii memory map, MMU, graphics, boot integration, peripherals, and many CPU instructions remain unimplemented.
+The CPU has an architectural state model, an initial integer/control-flow executor, a configurable big-endian memory bus with aligned 8/16/32/64-bit access and memory-mapped device callbacks, and an initial system model plus a Wii-specific MEM1 (24 MiB) / MEM2 (64 MiB) memory topology with cached, uncached, and physical aliases. This is not yet a playable emulator: the full Wii memory map, MMU, graphics, boot integration, peripherals, and many CPU instructions remain unimplemented.
 
 ## Build
 ```sh
