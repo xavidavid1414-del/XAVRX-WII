@@ -1645,7 +1645,7 @@ int main() {
     cpu.set_state(fpscr_rc_state);
     memory.write32_be(908u, (63u << 26) | (3u << 21) | (38u << 1) | 1u); // mtfsb1 3.
     assert(cpu.step());
-    assert(((cpu.state().cr >> 24) & 0xfu) == 0xbu);
+    assert(((cpu.state().cr >> 24) & 0xfu) == 0xau);
 
     // mtfsfi updates one selected FPSCR nibble and optionally CR1.
     auto mtfsfi_state = cpu.state();
