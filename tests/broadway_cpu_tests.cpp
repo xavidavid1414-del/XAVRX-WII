@@ -2308,5 +2308,27 @@ int main() {
     assert(cpu.state().gpr[4] == 1u);
     assert(((cpu.state().cr >> 28) & 0xfu) == 5u);
 
+    // addic updates XER[CA] but does not alter CR; addic. also records CR0.
+    auto addic_state = cpu.state();
+    addic_state.pc = 1200u;
+    addic_state.gpr[3] = 0xffffffffu;
+    addic_state.gpr[4] = 0x7fffffffu;
+    addic_state.xer = 1u << 31u; // preserve SO
+    addic_state.cr = 0x12345678u;
+    cpu.set_state(addic_state);
+    memory.write32_be(1200u, (12u << 26) | (5u << 21) |
+                              (3u << 16) | 1u); // addic r5,r3,1
+    memory.write32_be(1204u, (13u << 26) | (6u << 21) |
+                              (4u << 16) | 1u); // addic. r6,r4,1
+    assert(cpu.step());
+    assert(cpu.state().gpr[5] == 0u);
+    assert((cpu.state().xer & (1u << 29u)) != 0u);
+    assert(cpu.state().cr == 0x12345678u); // non-record form leaves CR untouched
+    assert(cpu.step());
+    assert(cpu.state().gpr[6] == 0x80000000u);
+    assert((cpu.state().xer & (1u << 29u)) == 0u);
+    assert((cpu.state().xer & (1u << 31u)) != 0u);
+    assert((cpu.state().cr >> 28u) == 9u); // LT | SO
+
     return 0;
 }
