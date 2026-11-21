@@ -279,6 +279,7 @@ bool BroadwayCpu::execute_one() {
     case 19: { // CR logical operations and mcrf
         const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
         if (xo == 150u) { // isync: instruction synchronization barrier
+            if (instruction != 0x4c00012cu) return false;
             break;
         }
         if (xo == 50u) { // rfi: privileged return from interrupt
@@ -298,6 +299,7 @@ bool BroadwayCpu::execute_one() {
             return true;
         }
         if (xo == 0) { // mcrf: move one condition-register field
+            if ((instruction & 0x00630001u) != 0u) return false;
             const std::uint32_t bf = (instruction >> 23) & 7u;
             const std::uint32_t bfa = (instruction >> 18) & 7u;
             const std::uint32_t destination_shift = 28u - bf * 4u;
