@@ -1198,6 +1198,17 @@ int main() {
     assert(!cpu.step());
     assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
     assert(cpu.state().pc == 388u);
+    assert(cpu.state().dar == 2048u);
+
+    // A failed store records its effective address in DAR as well.
+    exception_state = cpu.state();
+    exception_state.pc = 396u;
+    exception_state.gpr[3] = 2048u;
+    cpu.set_state(exception_state);
+    memory.write32_be(396, (36u << 26) | (10u << 21) | (3u << 16)); // stw r10,0(r3)
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::DataStorage);
+    assert(cpu.state().dar == 2048u);
 
     exception_state = cpu.state();
     exception_state.pc = 392u;
