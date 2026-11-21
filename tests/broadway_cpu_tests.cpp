@@ -916,13 +916,12 @@ int main() {
     cpu.set_state(multiple_state);
     memory.write32_be(480, (47u << 26) | (20u << 21) | (3u << 16) | 16u); // stmw r20,16(r3)
     memory.write32_be(484, (46u << 26) | (20u << 21) | (3u << 16) | 16u); // lmw r20,16(r3)
+    assert(cpu.step());
     for (std::uint32_t reg = 20; reg < 32u; ++reg) {
-        cpu.set_state(cpu.state());
         multiple_state = cpu.state();
         multiple_state.gpr[reg] = 0u;
         cpu.set_state(multiple_state);
     }
-    assert(cpu.step());
     for (std::uint32_t reg = 20; reg < 32u; ++reg) {
         assert(memory.read32_be(144u + (reg - 20u) * 4u) ==
                0x10203000u + reg);
