@@ -474,6 +474,72 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
         switch (xo) {
+        case 23: case 55: case 87: case 119:
+        case 151: case 183: case 215: case 247:
+        case 279: case 311: case 343: case 375:
+        case 407: case 439: case 534: case 662:
+        case 790: case 918: { // Indexed and byte-reversed memory operations
+            const bool update = xo == 55u || xo == 119u || xo == 183u ||
+                xo == 247u || xo == 311u || xo == 375u || xo == 439u;
+            const bool load = xo == 23u || xo == 55u || xo == 87u ||
+                xo == 119u || xo == 279u || xo == 311u || xo == 343u ||
+                xo == 375u || xo == 534u || xo == 790u;
+            if (update && (ra == 0u || (load ? ra == rt : ra == rs))) return false;
+            const std::uint32_t address = (ra == 0u ? 0u : state_.gpr[ra]) + b;
+            const bool byte_access = xo == 87u || xo == 119u ||
+                                     xo == 215u || xo == 247u;
+            const bool half_access = xo == 279u || xo == 311u ||
+                xo == 343u || xo == 375u || xo == 407u || xo == 439u ||
+                xo == 790u || xo == 918u;
+            const bool reverse = xo == 534u || xo == 662u ||
+                                 xo == 790u || xo == 918u;
+            const std::uint32_t alignment = byte_access ? 1u : half_access ? 2u : 4u;
+            if ((address & (alignment - 1u)) != 0u) {
+                throw std::invalid_argument("unaligned indexed memory access");
+            }
+            if (load) {
+                std::uint32_t value = 0;
+                if (byte_access) {
+                    value = memory_.read8(address);
+                } else if (half_access) {
+                    const std::uint16_t half = memory_.read16_be(address);
+                    if (reverse) {
+                        value = static_cast<std::uint32_t>((half >> 8) | (half << 8)) & 0xffffu;
+                    } else if (xo == 343u || xo == 375u) {
+                        value = static_cast<std::uint32_t>(static_cast<std::int32_t>(
+                            static_cast<std::int16_t>(half)));
+                    } else {
+                        value = half;
+                    }
+                } else {
+                    const std::uint32_t word = memory_.read32_be(address);
+                    value = reverse ? ((word & 0x000000ffu) << 24) |
+                        ((word & 0x0000ff00u) << 8) |
+                        ((word & 0x00ff0000u) >> 8) |
+                        ((word & 0xff000000u) >> 24) : word;
+                }
+                state_.gpr[rt] = value;
+            } else {
+                const std::uint32_t value = state_.gpr[rs];
+                if (byte_access) {
+                    memory_.write8(address, static_cast<std::uint8_t>(value));
+                } else if (half_access) {
+                    const std::uint16_t half = static_cast<std::uint16_t>(value);
+                    const std::uint16_t stored = reverse
+                        ? static_cast<std::uint16_t>((half >> 8) | (half << 8)) : half;
+                    memory_.write16_be(address, stored);
+                } else {
+                    const std::uint32_t stored = reverse
+                        ? ((value & 0x000000ffu) << 24) |
+                          ((value & 0x0000ff00u) << 8) |
+                          ((value & 0x00ff0000u) >> 8) |
+                          ((value & 0xff000000u) >> 24) : value;
+                    memory_.write32_be(address, stored);
+                }
+            }
+            if (update) state_.gpr[ra] = address;
+            break;
+        }
         case 512: { // mcrxr: move XER summary bits into a CR field and clear them
             const std::uint32_t field = (instruction >> 23) & 7u;
             const std::uint32_t xer_flags = (state_.xer >> 28) & 0xeu;
