@@ -1113,37 +1113,53 @@ bool BroadwayCpu::execute_one() {
             state_.cr = (state_.cr & ~mask) | (result << shift);
             break;
         }
-        case 10: { // addc: add and record carry in XER[CA]
+        case 10: case 522: { // addc / addco
             const std::uint64_t sum = static_cast<std::uint64_t>(a) + b;
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if (xo == 522u) {
+                const std::int64_t wide = static_cast<std::int64_t>(static_cast<std::int32_t>(a)) + static_cast<std::int32_t>(b);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
-        case 8: { // subfc: RB - RA and record no-borrow carry in XER[CA]
+        case 8: case 520: { // subfc / subfco
             state_.gpr[rt] = b - a;
             state_.xer = (state_.xer & ~(1u << 29)) |
                          (b >= a ? (1u << 29) : 0u);
+            if (xo == 520u) {
+                const std::int64_t wide = static_cast<std::int64_t>(static_cast<std::int32_t>(b)) - static_cast<std::int32_t>(a);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
-        case 138: { // adde: add registers and XER[CA]
+        case 138: case 650: { // adde / addeo
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum = static_cast<std::uint64_t>(a) + b + carry_in;
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if (xo == 650u) {
+                const std::int64_t wide = static_cast<std::int64_t>(static_cast<std::int32_t>(a)) + static_cast<std::int32_t>(b) + static_cast<std::int64_t>(carry_in);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
-        case 136: { // subfe: RB - RA - 1 + XER[CA]
+        case 136: case 648: { // subfe / subfeo
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum =
                 static_cast<std::uint64_t>(~a) + b + carry_in;
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if (xo == 648u) {
+                const std::int64_t wide = static_cast<std::int64_t>(static_cast<std::int32_t>(b)) - static_cast<std::int32_t>(a) - 1 + static_cast<std::int64_t>(carry_in);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
@@ -1152,7 +1168,7 @@ bool BroadwayCpu::execute_one() {
             state_.gpr[rt] = 0u - a;
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
-        case 202: { // addze: RA + XER[CA], recording carry-out
+        case 202: case 714: { // addze / addzeo
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum = static_cast<std::uint64_t>(a) + carry_in;
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
@@ -1161,7 +1177,7 @@ bool BroadwayCpu::execute_one() {
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
-        case 200: { // subfze: ~RA + XER[CA], recording carry-out
+        case 200: case 712: { // subfze / subfzeo
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum = static_cast<std::uint64_t>(~a) + carry_in;
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
@@ -1170,7 +1186,7 @@ bool BroadwayCpu::execute_one() {
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
-        case 232: { // subfme: ~RA + XER[CA] - 1, recording carry-out
+        case 232: case 744: { // subfme / subfmeo
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum = static_cast<std::uint64_t>(~a) +
                                       0xffffffffu + carry_in;
@@ -1180,7 +1196,7 @@ bool BroadwayCpu::execute_one() {
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
-        case 234: { // addme: RA - 1 + XER[CA], recording carry-out
+        case 234: case 746: { // addme / addmeo
             const std::uint64_t carry_in = (state_.xer >> 29) & 1u;
             const std::uint64_t sum = static_cast<std::uint64_t>(a) +
                                       0xffffffffu + carry_in;
