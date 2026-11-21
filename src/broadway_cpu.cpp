@@ -72,6 +72,7 @@ bool BroadwayCpu::enter_exception() noexcept {
     case Exception::IllegalInstruction:
     case Exception::PrivilegedInstruction: vector = 0x0700u; break;
     case Exception::SystemCall:           vector = 0x0c00u; break;
+    case Exception::FloatingPointUnavailable: vector = 0x0800u; break;
     case Exception::None: return false;
     }
 
@@ -167,6 +168,22 @@ bool BroadwayCpu::execute_one() {
     const std::uint32_t ra = (instruction >> 16) & 31u;
     const std::uint32_t immediate = instruction & 0xffffu;
     const std::uint32_t next_pc = state_.pc + 4u;
+
+    // Floating-point instructions trap before execution when MSR[FP] is clear.
+    constexpr std::uint32_t msr_fp_enable = 1u << (31u - 13u);
+    bool uses_fpu = opcode == 48u || opcode == 49u || opcode == 50u ||
+        opcode == 51u || opcode == 52u || opcode == 53u ||
+        opcode == 54u || opcode == 55u || opcode == 59u || opcode == 63u;
+    if (opcode == 31u) {
+        const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
+        uses_fpu = xo == 535u || xo == 567u || xo == 599u || xo == 631u ||
+            xo == 663u || xo == 695u || xo == 727u || xo == 759u ||
+            xo == 983u;
+    }
+    if (uses_fpu && (state_.msr & msr_fp_enable) == 0u) {
+        state_.exception = Exception::FloatingPointUnavailable;
+        return false;
+    }
     const std::uint32_t base = ra == 0 ? 0u : state_.gpr[ra];
     // The 750CL reservation granule is modeled as one 32-byte cache line.
     // Any CPU store to that line invalidates the active reservation.
