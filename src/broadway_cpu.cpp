@@ -1174,6 +1174,10 @@ bool BroadwayCpu::execute_one() {
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if (xo == 714u) {
+                const std::int64_t wide = static_cast<std::int64_t>(static_cast<std::int32_t>(a)) + static_cast<std::int64_t>(carry_in);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
@@ -1183,6 +1187,10 @@ bool BroadwayCpu::execute_one() {
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if (xo == 712u) {
+                const std::int64_t wide = -static_cast<std::int64_t>(static_cast<std::int32_t>(a)) - 1 + static_cast<std::int64_t>(carry_in);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
@@ -1193,6 +1201,10 @@ bool BroadwayCpu::execute_one() {
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if (xo == 744u) {
+                const std::int64_t wide = -static_cast<std::int64_t>(static_cast<std::int32_t>(a)) - 2 + static_cast<std::int64_t>(carry_in);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
@@ -1203,6 +1215,10 @@ bool BroadwayCpu::execute_one() {
             state_.gpr[rt] = static_cast<std::uint32_t>(sum);
             state_.xer = (state_.xer & ~(1u << 29)) |
                          ((sum >> 32) != 0 ? (1u << 29) : 0u);
+            if (xo == 746u) {
+                const std::int64_t wide = static_cast<std::int64_t>(static_cast<std::int32_t>(a)) - 1 + static_cast<std::int64_t>(carry_in);
+                set_overflow(wide < INT32_MIN || wide > INT32_MAX);
+            }
             if ((instruction & 1u) != 0) update_cr0(state_, state_.gpr[rt]);
             break;
         }
