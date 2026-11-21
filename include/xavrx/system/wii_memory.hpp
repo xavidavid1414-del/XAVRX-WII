@@ -24,7 +24,7 @@ public:
  [[nodiscard]] std::size_t mem2_capacity() const noexcept{return mem2_.size();}
  void reset() noexcept;
 private:
- [[nodiscard]] bool translate(std::uint32_t address,std::uint8_t width,std::vector<std::uint8_t>& bank,std::size_t& offset) noexcept;
+ [[nodiscard]] bool translate(std::uint32_t address,std::uint8_t width,std::vector<std::uint8_t>*& bank,std::size_t& offset) noexcept;
  std::vector<std::uint8_t> mem1_,mem2_;
 };
 }
