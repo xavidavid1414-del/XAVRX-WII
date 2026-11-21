@@ -1516,5 +1516,26 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().fpscr == 0xabcdef01u);
 
+    // mtfsb1/mtfsb0 set and clear FPSCR bits using PPC bit numbering.
+    auto fpscr_bit_state = cpu.state();
+    fpscr_bit_state.pc = 900u;
+    fpscr_bit_state.fpscr = 0u;
+    cpu.set_state(fpscr_bit_state);
+    memory.write32_be(900u, (63u << 26) | (0u << 21) | (38u << 1)); // mtfsb1 0
+    memory.write32_be(904u, (63u << 26) | (0u << 21) | (70u << 1)); // mtfsb0 0
+    assert(cpu.step());
+    assert(cpu.state().fpscr == 0x80000000u);
+    assert(cpu.step());
+    assert(cpu.state().fpscr == 0u);
+
+    auto fpscr_rc_state = cpu.state();
+    fpscr_rc_state.pc = 908u;
+    fpscr_rc_state.fpscr = 0xa0000000u;
+    fpscr_rc_state.cr = 0x01234567u;
+    cpu.set_state(fpscr_rc_state);
+    memory.write32_be(908u, (63u << 26) | (3u << 21) | (38u << 1) | 1u); // mtfsb1 3.
+    assert(cpu.step());
+    assert((cpu.state().cr >> 24) == 0xau);
+
     return 0;
 }
