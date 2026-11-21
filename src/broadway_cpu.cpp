@@ -49,6 +49,46 @@ void BroadwayCpu::set_state(const State& state) noexcept {
     state_ = state;
 }
 
+bool BroadwayCpu::enter_exception() noexcept {
+    if (state_.exception == Exception::None) return false;
+
+    // PowerPC 750-family synchronous exception vector offsets.
+    std::uint32_t vector = 0;
+    switch (state_.exception) {
+    case Exception::Alignment:            vector = 0x0600u; break;
+    case Exception::InstructionStorage:   vector = 0x0400u; break;
+    case Exception::DataStorage:          vector = 0x0300u; break;
+    case Exception::IllegalInstruction:
+    case Exception::PrivilegedInstruction: vector = 0x0700u; break;
+    case Exception::None: return false;
+    }
+
+    // Save the faulting instruction address and pre-exception MSR.
+    state_.srr0 = state_.pc;
+    state_.srr1 = state_.msr;
+
+    // Exception entry clears translation, privilege, external interrupt,
+    // floating-point availability and recoverability state. The handler
+    // starts in supervisor mode; implementation-specific MSR bits are kept
+    // conservative rather than synthesizing unsupported state.
+    constexpr std::uint32_t msr_ee = 1u << (31u - 15u);
+    constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+    constexpr std::uint32_t msr_fp = 1u << (31u - 13u);
+    constexpr std::uint32_t msr_ir = 1u << (31u - 5u);
+    constexpr std::uint32_t msr_dr = 1u << (31u - 4u);
+    constexpr std::uint32_t msr_ri = 1u << (31u - 1u);
+    constexpr std::uint32_t msr_le = 1u;
+    state_.msr &= ~(msr_ee | msr_pr | msr_fp | msr_ir | msr_dr | msr_ri | msr_le);
+
+    // The high-vector prefix is selected by MSR[IP].
+    constexpr std::uint32_t msr_ip = 1u << (31u - 6u);
+    const std::uint32_t prefix = (state_.srr1 & msr_ip) ? 0xfff00000u : 0u;
+    state_.pc = prefix + vector;
+    state_.exception = Exception::None;
+    state_.reservation_valid = false;
+    return true;
+}
+
 bool BroadwayCpu::step() {
     state_.exception = Exception::None;
     if ((state_.pc & 3u) != 0u) {
