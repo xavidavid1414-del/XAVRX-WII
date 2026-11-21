@@ -1562,6 +1562,19 @@ int main() {
     assert(cpu.step());
     assert(memory.read32_be(280u) == 0x55667788u);
 
+    // fsqrt of a negative finite operand raises VXSQRT and summary flags.
+    auto fp_sqrt_invalid_state = cpu.state();
+    fp_sqrt_invalid_state.pc = 928u;
+    fp_sqrt_invalid_state.fpr[2] = std::bit_cast<std::uint64_t>(-4.0);
+    fp_sqrt_invalid_state.fpscr = (1u << 7); // VE
+    cpu.set_state(fp_sqrt_invalid_state);
+    memory.write32_be(928u, (63u << 26) | (14u << 21) | (2u << 11) | (22u << 1));
+    assert(cpu.step());
+    assert(std::isnan(std::bit_cast<double>(cpu.state().fpr[14])));
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 30) |
+                                (1u << 29) | (1u << 9))) ==
+           ((1u << 31) | (1u << 30) | (1u << 29) | (1u << 9)));
+
     // fctiw rounds to nearest according to the host's default mode; fctiwz truncates.
     auto fp_convert_state = cpu.state();
     fp_convert_state.pc = 880u;
