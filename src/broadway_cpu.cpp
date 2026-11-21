@@ -459,6 +459,53 @@ bool BroadwayCpu::execute_one() {
                 state_.cr = (state_.cr & 0x00ffffffu) | (cr1 << 24);
             }
         };
+        constexpr std::uint32_t fpscr_invalid_causes =
+            (1u << 24) | (1u << 23) | (1u << 22) |
+            (1u << 21) | (1u << 20) | (1u << 19) |
+            (1u << 10) | (1u << 9) | (1u << 8);
+        constexpr std::uint32_t fpscr_ox = 1u << 28;
+        constexpr std::uint32_t fpscr_ux = 1u << 27;
+        constexpr std::uint32_t fpscr_zx = 1u << 26;
+        constexpr std::uint32_t fpscr_xx = 1u << 25;
+        constexpr std::uint32_t fpscr_fx = 1u << 31;
+        constexpr std::uint32_t fpscr_fex = 1u << 30;
+        constexpr std::uint32_t fpscr_vx = 1u << 29;
+        auto refresh_fpscr_summaries = [&]() {
+            const bool invalid = (state_.fpscr & fpscr_invalid_causes) != 0u;
+            if (invalid) state_.fpscr |= fpscr_vx;
+            else state_.fpscr &= ~fpscr_vx;
+
+            constexpr std::uint32_t ve = 1u << 7;
+            constexpr std::uint32_t oe = 1u << 8;
+            constexpr std::uint32_t ue = 1u << 9;
+            constexpr std::uint32_t ze = 1u << 10;
+            constexpr std::uint32_t xe = 1u << 11;
+            const bool enabled =
+                (invalid && (state_.fpscr & ve) != 0u) ||
+                ((state_.fpscr & fpscr_ox) != 0u && (state_.fpscr & oe) != 0u) ||
+                ((state_.fpscr & fpscr_ux) != 0u && (state_.fpscr & ue) != 0u) ||
+                ((state_.fpscr & fpscr_zx) != 0u && (state_.fpscr & ze) != 0u) ||
+                ((state_.fpscr & fpscr_xx) != 0u && (state_.fpscr & xe) != 0u);
+            if (enabled) state_.fpscr |= fpscr_fex;
+            else state_.fpscr &= ~fpscr_fex;
+        };
+        auto raise_fpscr_exception = [&](std::uint32_t flags) {
+            constexpr std::uint32_t exception_status =
+                fpscr_invalid_causes | fpscr_ox | fpscr_ux |
+                fpscr_zx | fpscr_xx;
+            const std::uint32_t old_status = state_.fpscr & exception_status;
+            state_.fpscr |= flags;
+            const std::uint32_t new_status = state_.fpscr & exception_status;
+            if ((new_status & ~old_status) != 0u) state_.fpscr |= fpscr_fx;
+            refresh_fpscr_summaries();
+        };
+        auto is_signaling_nan = [](std::uint64_t bits) {
+            constexpr std::uint64_t exponent = 0x7ff0000000000000ull;
+            constexpr std::uint64_t fraction = 0x000fffffffffffffull;
+            constexpr std::uint64_t quiet = 0x0008000000000000ull;
+            return (bits & exponent) == exponent &&
+                   (bits & fraction) != 0u && (bits & quiet) == 0u;
+        };
         // fsel is an A-form instruction: its low five XO bits must be
         // decoded separately because FRB/FRC share the upper XO bits.
         if (opcode == 63u && a_xo == 23u) {
@@ -472,6 +519,43 @@ bool BroadwayCpu::execute_one() {
             a_xo == 25u || a_xo == 28u || a_xo == 29u ||
             a_xo == 30u || a_xo == 31u) {
             const double c_value = std::bit_cast<double>(state_.fpr[frc]);
+            const bool uses_frc = a_xo == 25u || a_xo >= 28u;
+            const bool signaling_operand = is_signaling_nan(state_.fpr[fra]) ||
+                (uses_frc ? is_signaling_nan(state_.fpr[frc])
+                          : is_signaling_nan(state_.fpr[frb])) ||
+                (a_xo >= 28u && is_signaling_nan(state_.fpr[frb]));
+            std::uint32_t arithmetic_exceptions = signaling_operand
+                ? (1u << 24) : 0u; // VXSNAN
+            const double multiply_rhs = uses_frc ? c_value : b;
+            switch (a_xo) {
+            case 18: // division
+                if (a == 0.0 && b == 0.0)
+                    arithmetic_exceptions |= 1u << 21; // VXZDZ
+                else if (std::isinf(a) && std::isinf(b))
+                    arithmetic_exceptions |= 1u << 22; // VXIDI
+                else if (std::isfinite(a) && a != 0.0 && b == 0.0)
+                    arithmetic_exceptions |= fpscr_zx; // ZX
+                break;
+            case 20: // subtraction
+                if (std::isinf(a) && std::isinf(b) &&
+                    std::signbit(a) == std::signbit(b))
+                    arithmetic_exceptions |= 1u << 23; // VXISI
+                break;
+            case 21: // addition
+                if (std::isinf(a) && std::isinf(b) &&
+                    std::signbit(a) != std::signbit(b))
+                    arithmetic_exceptions |= 1u << 23; // VXISI
+                break;
+            case 25: // multiplication
+                if ((a == 0.0 && std::isinf(multiply_rhs)) ||
+                    (std::isinf(a) && multiply_rhs == 0.0))
+                    arithmetic_exceptions |= 1u << 20; // VXIMZ
+                break;
+            default:
+                break;
+            }
+            if (arithmetic_exceptions != 0u)
+                raise_fpscr_exception(arithmetic_exceptions);
             if (opcode == 59u) {
                 const float lhs = static_cast<float>(a);
                 const float rhs = static_cast<float>(b);
@@ -530,45 +614,14 @@ bool BroadwayCpu::execute_one() {
 
             // FPCC (FPSCR[12:15]) mirrors the comparison classification.
             state_.fpscr = (state_.fpscr & ~0x0000f000u) | (result << 12);
-            const bool lhs_snan = std::isnan(lhs) &&
-                (state_.fpr[fra] & (1ull << 51)) == 0u;
-            const bool rhs_snan = std::isnan(rhs) &&
-                (state_.fpr[frb] & (1ull << 51)) == 0u;
-            const bool signaling_nan = lhs_snan || rhs_snan;
+            const bool signaling_nan =
+                is_signaling_nan(state_.fpr[fra]) ||
+                is_signaling_nan(state_.fpr[frb]);
             const bool invalid_ordered_compare = unordered && xo == 32u;
-            if (signaling_nan || invalid_ordered_compare) {
-                constexpr std::uint32_t fx = 1u << 31;
-                constexpr std::uint32_t fex = 1u << 30;
-                constexpr std::uint32_t vx = 1u << 29;
-                constexpr std::uint32_t vxsnan = 1u << 24;
-                constexpr std::uint32_t vxvc = 1u << 19;
-                constexpr std::uint32_t invalid_causes =
-                    (1u << 24) | (1u << 23) | (1u << 22) |
-                    (1u << 21) | (1u << 20) | (1u << 19) |
-                    (1u << 10) | (1u << 9) | (1u << 8);
-                const std::uint32_t old_causes = state_.fpscr & invalid_causes;
-                if (signaling_nan) state_.fpscr |= vxsnan;
-                if (invalid_ordered_compare) state_.fpscr |= vxvc;
-                const std::uint32_t new_causes = state_.fpscr & invalid_causes;
-                if (new_causes != old_causes) state_.fpscr |= fx;
-                state_.fpscr = (state_.fpscr & ~vx) |
-                    (new_causes != 0u ? vx : 0u);
-
-                // FEX is the summary of exception classes enabled by FPSCR.
-                constexpr std::uint32_t ve = 1u << 7;
-                constexpr std::uint32_t oe = 1u << 8;
-                constexpr std::uint32_t ue = 1u << 9;
-                constexpr std::uint32_t ze = 1u << 10;
-                constexpr std::uint32_t xe = 1u << 11;
-                const bool enabled =
-                    ((state_.fpscr & vx) != 0u && (state_.fpscr & ve) != 0u) ||
-                    ((state_.fpscr & (1u << 28)) != 0u && (state_.fpscr & oe) != 0u) ||
-                    ((state_.fpscr & (1u << 27)) != 0u && (state_.fpscr & ue) != 0u) ||
-                    ((state_.fpscr & (1u << 26)) != 0u && (state_.fpscr & ze) != 0u) ||
-                    ((state_.fpscr & (1u << 25)) != 0u && (state_.fpscr & xe) != 0u);
-                if (enabled) state_.fpscr |= fex;
-                else state_.fpscr &= ~fex;
-            }
+            std::uint32_t exception_flags = 0u;
+            if (signaling_nan) exception_flags |= 1u << 24; // VXSNAN
+            if (invalid_ordered_compare) exception_flags |= 1u << 19; // VXVC
+            if (exception_flags != 0u) raise_fpscr_exception(exception_flags);
             break;
         }
         case 64: { // mcrfs: move an FPSCR field to a CR field
@@ -647,6 +700,8 @@ bool BroadwayCpu::execute_one() {
             write_fpr(static_cast<double>(static_cast<float>(b)));
             break;
         case 22: // fsqrt
+            if (std::isless(b, 0.0))
+                raise_fpscr_exception(1u << 10); // VXSQRT
             write_fpr(std::sqrt(b));
             break;
         case 26: // frsqrte: reciprocal square-root estimate
