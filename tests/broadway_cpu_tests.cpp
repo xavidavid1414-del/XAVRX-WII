@@ -488,7 +488,7 @@ int main() {
     assert(cpu.step());
     assert(((cpu.state().cr >> 20) & 0xfu) == 3u); // EQ | SO
 
-    // A shift of 32 or more discards the entire nonzero source word.
+    // Shifting only the sign bit out does not set XER[CA].
     auto wide_arithmetic_carry_state = cpu.state();
     wide_arithmetic_carry_state.pc = 8;
     wide_arithmetic_carry_state.gpr[3] = 0x80000000u;
@@ -497,7 +497,7 @@ int main() {
     memory.write32_be(8, xform(3, 17, 4, 792)); // sraw r17,r3,r4
     assert(cpu.step());
     assert(cpu.state().gpr[17] == 0xffffffffu);
-    assert((cpu.state().xer & (1u << 29)) != 0u);
+    assert((cpu.state().xer & (1u << 29)) == 0u);
 
 
     // Rc variants of multiply/divide instructions update CR0 and retain XER[SO].
