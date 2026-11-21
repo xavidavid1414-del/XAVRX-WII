@@ -151,6 +151,12 @@ bool BroadwayCpu::execute_one() {
         if (xo == 150u) { // isync: instruction synchronization barrier
             break;
         }
+        if (xo == 50u) { // rfi: restore machine state and resume at SRR0
+            state_.msr = state_.srr1;
+            state_.pc = state_.srr0;
+            state_.reservation_valid = false;
+            return true;
+        }
         if (xo == 0) { // mcrf: move one condition-register field
             const std::uint32_t bf = (instruction >> 23) & 7u;
             const std::uint32_t bfa = (instruction >> 18) & 7u;
