@@ -2254,5 +2254,40 @@ int main() {
     assert(cpu.step());
     assert(cpu.state().xer == 0x0000007fu);
 
+
+    // Rc=1 on all rotate-and-mask forms records the result in CR0.
+    auto rotate_record_state = cpu.state();
+    rotate_record_state.pc = 1104u;
+    rotate_record_state.gpr[3] = 0x80000001u;
+    rotate_record_state.gpr[4] = 0xffffffffu;
+    rotate_record_state.xer = 1u << 31;
+    cpu.set_state(rotate_record_state);
+    memory.write32_be(1104u, (20u << 26) | (3u << 21) | (4u << 16) |
+        (1u << 11) | 1u); // rlwimi. r4,r3,1,0,31
+    assert(cpu.step());
+    assert(cpu.state().gpr[4] == 3u);
+    assert(((cpu.state().cr >> 28) & 0xfu) == 5u);
+
+    rotate_record_state = cpu.state();
+    rotate_record_state.pc = 1108u;
+    rotate_record_state.gpr[3] = 0x80000000u;
+    cpu.set_state(rotate_record_state);
+    memory.write32_be(1108u, (21u << 26) | (3u << 21) |
+        (4u << 16) | 1u); // rlwinm. r4,r3,0,0,31
+    assert(cpu.step());
+    assert(cpu.state().gpr[4] == 0x80000000u);
+    assert(((cpu.state().cr >> 28) & 0xfu) == 9u);
+
+    rotate_record_state = cpu.state();
+    rotate_record_state.pc = 1112u;
+    rotate_record_state.gpr[3] = 0x80000000u;
+    rotate_record_state.gpr[5] = 1u;
+    cpu.set_state(rotate_record_state);
+    memory.write32_be(1112u, (23u << 26) | (3u << 21) |
+        (4u << 16) | (5u << 11) | 1u); // rlwnm. r4,r3,r5,0,31
+    assert(cpu.step());
+    assert(cpu.state().gpr[4] == 1u);
+    assert(((cpu.state().cr >> 28) & 0xfu) == 5u);
+
     return 0;
 }
