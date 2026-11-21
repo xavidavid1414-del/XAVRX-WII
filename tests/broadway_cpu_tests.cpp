@@ -1929,6 +1929,23 @@ int main() {
     }
 
 
+    // sc saves the following instruction address and enters the system-call vector.
+    auto system_call_state = cpu.state();
+    system_call_state.pc = 0x3c0u;
+    system_call_state.msr = 0u;
+    system_call_state.gpr[3] = 0x12345678u;
+    cpu.set_state(system_call_state);
+    memory.write32_be(0x3c0u, 0x44000002u); // sc
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::SystemCall);
+    assert(cpu.state().pc == 0x3c4u);
+    assert(cpu.state().gpr[3] == 0x12345678u);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0x0c00u);
+    assert(cpu.state().srr0 == 0x3c4u);
+    assert(cpu.state().srr1 == 0u);
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+
     // Explicit PowerPC exception delivery saves SRR state and selects vectors.
     auto exception_vector_state = cpu.state();
     exception_vector_state.pc = 0x180u;
