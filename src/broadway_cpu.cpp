@@ -1271,6 +1271,16 @@ bool BroadwayCpu::execute_one() {
             state_.segment_registers[segment] = state_.gpr[rs];
             break;
         }
+        case 306: { // tlbie: invalidate one TLB entry
+            if ((instruction & 0x0010f801u) != 0u) return false;
+            constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
+            if ((state_.msr & msr_pr) != 0u) {
+                state_.exception = Exception::PrivilegedInstruction;
+                return false;
+            }
+            // The current core has no address-translation/TLB model yet.
+            break;
+        }
         case 598: // sync: memory synchronization barrier
         case 854: // eieio: I/O ordering barrier
         case 566: // tlbsync: translation-lookaside-buffer synchronization
