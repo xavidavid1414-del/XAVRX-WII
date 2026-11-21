@@ -1475,5 +1475,16 @@ int main() {
     assert(cpu.state().gpr[3] == 264u);
     assert(memory.read64_be(264u) == std::bit_cast<std::uint64_t>(6.75));
 
+    // stfiwx stores the low-order 32 bits of the selected FPR.
+    auto stfiwx_state = cpu.state();
+    stfiwx_state.pc = 876u;
+    stfiwx_state.gpr[3] = 280u;
+    stfiwx_state.gpr[4] = 0u;
+    stfiwx_state.fpr[10] = 0x1122334455667788ull;
+    cpu.set_state(stfiwx_state);
+    memory.write32_be(876u, xform_fp(10, 3, 4, 983)); // stfiwx f10,r3,r4
+    assert(cpu.step());
+    assert(memory.read32_be(280u) == 0x55667788u);
+
     return 0;
 }
