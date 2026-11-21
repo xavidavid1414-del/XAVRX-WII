@@ -1177,7 +1177,7 @@ bool BroadwayCpu::execute_one() {
                 return false;
             }
             switch (spr) {
-            case 1: state_.xer = value; break; // XER
+            case 1: state_.xer = value & 0xe000007fu; break; // XER: SO, OV, CA and byte count
             case 8: state_.lr = value; break;  // LR
             case 9: state_.ctr = value; break; // CTR
             case 18: state_.dsisr = value; break; // DSISR
