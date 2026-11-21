@@ -1433,7 +1433,7 @@ int main() {
     assert(cpu.step());
     assert(std::bit_cast<double>(cpu.state().fpr[10]) == -3.5);
     assert(cpu.step());
-    assert(std::bit_cast<double>(cpu.state().fpr[11]) == -3.5);
+    assert(std::bit_cast<double>(cpu.state().fpr[11]) == 4.75);
     assert(cpu.step());
     assert(memory.read32_be(256u) == std::bit_cast<std::uint32_t>(1.5f));
     assert(cpu.step());
