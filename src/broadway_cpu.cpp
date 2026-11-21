@@ -514,6 +514,22 @@ bool BroadwayCpu::execute_one() {
             state_.cr = (state_.cr & ~mask) | (result << shift);
             break;
         }
+        case 14: // fctiw: convert to signed word using current rounding mode
+        case 15: { // fctiwz: convert to signed word toward zero
+            const double source = b;
+            std::int32_t converted = std::numeric_limits<std::int32_t>::min();
+            if (std::isfinite(source)) {
+                const double rounded = xo == 14u ? std::nearbyint(source)
+                                                  : std::trunc(source);
+                if (rounded >= static_cast<double>(std::numeric_limits<std::int32_t>::min()) &&
+                    rounded <= static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
+                    converted = static_cast<std::int32_t>(rounded);
+                }
+            }
+            state_.fpr[frt] = 0xfff8000000000000ull |
+                static_cast<std::uint32_t>(converted);
+            break;
+        }
         case 12: // frsp: round to single precision, retain in FPR
             write_fpr(static_cast<double>(static_cast<float>(b)));
             break;
