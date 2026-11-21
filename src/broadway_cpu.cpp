@@ -760,7 +760,8 @@ bool BroadwayCpu::execute_one() {
             break;
         }
         case 64: { // mcrfs: move an FPSCR field to a CR field
-            if ((instruction & 1u) != 0u) return false;
+            // Bits 9-20 of the PowerPC instruction format are reserved here.
+            if ((instruction & 0x007ff801u) != 0u) return false;
             const std::uint32_t bf = (instruction >> 23) & 7u;
             const std::uint32_t bfa = (instruction >> 18) & 7u;
             const std::uint32_t source_shift = 28u - bfa * 4u;
