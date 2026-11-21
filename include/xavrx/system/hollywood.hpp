@@ -1,7 +1,7 @@
 #pragma once
 #include "xavrx/memory/memory.hpp"
 #include "xavrx/system/hardware.hpp"
-#include <array>
+#include <cstddef>
 #include <cstdint>
 namespace xavrx::system {
 enum class HollywoodCpu : std::uint8_t { Broadway, Starlet };
@@ -17,6 +17,20 @@ public:
  [[nodiscard]] bool asserted(HollywoodCpu cpu) const noexcept;
 private:
  std::uint32_t ppc_flags_{0},ppc_mask_{0},arm_flags_{0},arm_mask_{0};
+};
+class HollywoodTimer final {
+public:
+ static constexpr std::uint32_t timer_register=0x10,alarm_register=0x14;
+ explicit HollywoodTimer(HollywoodInterrupts& irq) noexcept:irq_(irq){}
+ [[nodiscard]] std::uint32_t counter() const noexcept{return counter_;}
+ [[nodiscard]] bool write_alarm(std::uint32_t deadline) noexcept;
+ void advance(std::uint64_t ticks) noexcept;
+ void reset() noexcept{counter_=0;alarm_=0;armed_=false;}
+ [[nodiscard]] bool armed() const noexcept{return armed_;}
+private:
+ HollywoodInterrupts& irq_;
+ std::uint32_t counter_{0},alarm_{0};
+ bool armed_{false};
 };
 class HollywoodIpc final {
 public:
@@ -43,25 +57,38 @@ private:
  void refresh_interrupts() noexcept;
  HollywoodInterrupts& irq_;
  std::uint32_t input_{0},straps_{0},owner_{0},enable_{0x00ffffffU};
- std::uint32_t b_out_{0},b_dir_{0},b_level_{0},b_flags_{0},b_mask_{0};
- std::uint32_t a_out_{0},a_dir_{0},a_level_{0},a_flags_{0},a_mask_{0};
+ std::uint32_t output_{0},direction_{0},interrupt_level_{0},interrupt_flags_{0},interrupt_mask_{0};
 };
 class HollywoodHardware final : public memory::MemoryMappedDevice {
 public:
  static constexpr std::uint32_t base=0x0d000000U,mirror=0x0d800000U,window_size=0x400U;
- HollywoodHardware() noexcept:ipc_(interrupts_),gpio_(interrupts_){}
+ class CpuBusView final : public memory::MemoryMappedDevice {
+ public:
+  CpuBusView(HollywoodHardware& hardware,HollywoodCpu cpu) noexcept:hardware_(hardware),cpu_(cpu){}
+  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
+  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
+ private:
+  HollywoodHardware& hardware_;
+  HollywoodCpu cpu_;
+ };
+ HollywoodHardware() noexcept:ipc_(interrupts_),gpio_(interrupts_),timer_(interrupts_),broadway_view_(*this,HollywoodCpu::Broadway),starlet_view_(*this,HollywoodCpu::Starlet){}
  [[nodiscard]] HollywoodInterrupts& interrupts() noexcept{return interrupts_;}
  [[nodiscard]] HollywoodIpc& ipc() noexcept{return ipc_;}
  [[nodiscard]] HollywoodGpio& gpio() noexcept{return gpio_;}
+ [[nodiscard]] HollywoodTimer& timer() noexcept{return timer_;}
+ void advance_timer(std::uint64_t ticks) noexcept{timer_.advance(ticks);}
  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
  [[nodiscard]] bool read_as(HollywoodCpu cpu,std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept;
  [[nodiscard]] bool write_as(HollywoodCpu cpu,std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept;
- [[nodiscard]] bool map_into(memory::Memory& bus) noexcept;
+ [[nodiscard]] bool map_into(memory::Memory& broadway_bus,memory::Memory& starlet_bus) noexcept;
  void reset() noexcept;
 private:
  HollywoodInterrupts interrupts_{};
  HollywoodIpc ipc_;
  HollywoodGpio gpio_;
+ HollywoodTimer timer_;
+ CpuBusView broadway_view_;
+ CpuBusView starlet_view_;
 };
 }
