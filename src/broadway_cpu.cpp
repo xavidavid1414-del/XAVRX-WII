@@ -34,6 +34,17 @@ std::uint32_t ppc_mask(std::uint32_t begin, std::uint32_t end) noexcept {
     }
     return mask;
 }
+
+template <typename State, typename Operation>
+auto record_dar_on_fault(State& state, std::uint32_t address,
+                         Operation&& operation) -> decltype(operation()) {
+    try {
+        return operation();
+    } catch (const std::out_of_range&) {
+        state.dar = address;
+        throw;
+    }
+}
 }
 
 BroadwayCpu::BroadwayCpu(Memory& memory, std::uint32_t entry) noexcept
@@ -124,6 +135,31 @@ bool BroadwayCpu::step() {
 }
 
 bool BroadwayCpu::execute_one() {
+    const auto read8 = [&](std::uint32_t address) {
+        return record_dar_on_fault(state_, address, [&] { return memory_.read8(address); });
+    };
+    const auto read16 = [&](std::uint32_t address) {
+        return record_dar_on_fault(state_, address, [&] { return memory_.read16_be(address); });
+    };
+    const auto read32 = [&](std::uint32_t address) {
+        return record_dar_on_fault(state_, address, [&] { return memory_.read32_be(address); });
+    };
+    const auto read64 = [&](std::uint32_t address) {
+        return record_dar_on_fault(state_, address, [&] { return memory_.read64_be(address); });
+    };
+    const auto write8 = [&](std::uint32_t address, std::uint8_t value) {
+        record_dar_on_fault(state_, address, [&] { memory_.write8(address, value); });
+    };
+    const auto write16 = [&](std::uint32_t address, std::uint16_t value) {
+        record_dar_on_fault(state_, address, [&] { memory_.write16_be(address, value); });
+    };
+    const auto write32 = [&](std::uint32_t address, std::uint32_t value) {
+        record_dar_on_fault(state_, address, [&] { memory_.write32_be(address, value); });
+    };
+    const auto write64 = [&](std::uint32_t address, std::uint64_t value) {
+        record_dar_on_fault(state_, address, [&] { memory_.write64_be(address, value); });
+    };
+
     const std::uint32_t instruction = memory_.read32_be(state_.pc);
     const std::uint32_t opcode = instruction >> 26;
     const std::uint32_t rt = (instruction >> 21) & 31u;
@@ -161,9 +197,9 @@ bool BroadwayCpu::execute_one() {
             throw std::invalid_argument("unaligned floating-point load");
         }
         if (is_double) {
-            state_.fpr[frt] = memory_.read64_be(address);
+            state_.fpr[frt] = read64(address);
         } else {
-            const float value = std::bit_cast<float>(memory_.read32_be(address));
+            const float value = std::bit_cast<float>(read32(address));
             state_.fpr[frt] = std::bit_cast<std::uint64_t>(static_cast<double>(value));
         }
         if (update) state_.gpr[ra] = address;
@@ -186,9 +222,9 @@ bool BroadwayCpu::execute_one() {
         const double value = std::bit_cast<double>(state_.fpr[frs]);
         invalidate_reservation(address, is_double ? 8u : 4u);
         if (is_double) {
-            memory_.write64_be(address, state_.fpr[frs]);
+            write64(address, state_.fpr[frs]);
         } else {
-            memory_.write32_be(address, std::bit_cast<std::uint32_t>(
+            write32(address, std::bit_cast<std::uint32_t>(
                 static_cast<float>(value)));
         }
         if (update) state_.gpr[ra] = address;
@@ -355,7 +391,7 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t address = base + static_cast<std::uint32_t>(
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) throw std::invalid_argument("unaligned lwz");
-        const std::uint32_t value = memory_.read32_be(address);
+        const std::uint32_t value = read32(address);
         state_.gpr[rt] = value;
         if (update) state_.gpr[ra] = address;
         break;
@@ -375,9 +411,9 @@ bool BroadwayCpu::execute_one() {
         }
         std::uint32_t value = 0;
         if (opcode == 34u || opcode == 35u) {
-            value = memory_.read8(address);
+            value = read8(address);
         } else {
-            const std::uint16_t half = memory_.read16_be(address);
+            const std::uint16_t half = read16(address);
             value = (opcode == 42u || opcode == 43u)
                 ? static_cast<std::uint32_t>(static_cast<std::int32_t>(
                     static_cast<std::int16_t>(half)))
@@ -400,9 +436,9 @@ bool BroadwayCpu::execute_one() {
             throw std::invalid_argument("unaligned halfword store");
         }
         invalidate_reservation(address, halfword ? 2u : 1u);
-        if (halfword) memory_.write16_be(address,
+        if (halfword) write16(address,
             static_cast<std::uint16_t>(state_.gpr[rt]));
-        else memory_.write8(address, static_cast<std::uint8_t>(state_.gpr[rt]));
+        else write8(address, static_cast<std::uint8_t>(state_.gpr[rt]));
         if (update) state_.gpr[ra] = address;
         break;
     }
@@ -417,17 +453,18 @@ bool BroadwayCpu::execute_one() {
         const std::size_t word_count = 32u - rt;
         const std::size_t byte_count = word_count * 4u;
         if (!memory_.contains(address, byte_count)) {
+            state_.dar = address;
             throw std::out_of_range("multiple-word access outside memory");
         }
         if (opcode == 46u) {
             for (std::uint32_t reg = rt; reg < 32u; ++reg) {
-                state_.gpr[reg] = memory_.read32_be(
+                state_.gpr[reg] = read32(
                     address + (reg - rt) * 4u);
             }
         } else {
             invalidate_reservation(address, static_cast<std::uint32_t>(byte_count));
             for (std::uint32_t reg = rt; reg < 32u; ++reg) {
-                memory_.write32_be(address + (reg - rt) * 4u,
+                write32(address + (reg - rt) * 4u,
                                    state_.gpr[reg]);
             }
         }
@@ -441,7 +478,7 @@ bool BroadwayCpu::execute_one() {
             sign_extend_16(immediate));
         if ((address & 3u) != 0u) throw std::invalid_argument("unaligned stw");
         invalidate_reservation(address, 4u);
-        memory_.write32_be(address, state_.gpr[rt]);
+        write32(address, state_.gpr[rt]);
         if (update) state_.gpr[ra] = address;
         break;
     }
@@ -813,9 +850,9 @@ bool BroadwayCpu::execute_one() {
             }
             if (load) {
                 if (is_double) {
-                    state_.fpr[rt] = memory_.read64_be(address);
+                    state_.fpr[rt] = read64(address);
                 } else {
-                    const float value = std::bit_cast<float>(memory_.read32_be(address));
+                    const float value = std::bit_cast<float>(read32(address));
                     state_.fpr[rt] = std::bit_cast<std::uint64_t>(
                         static_cast<double>(value));
                 }
@@ -823,9 +860,9 @@ bool BroadwayCpu::execute_one() {
                 const double value = std::bit_cast<double>(state_.fpr[rs]);
                 invalidate_reservation(address, is_double ? 8u : 4u);
                 if (is_double) {
-                    memory_.write64_be(address, state_.fpr[rs]);
+                    write64(address, state_.fpr[rs]);
                 } else {
-                    memory_.write32_be(address, std::bit_cast<std::uint32_t>(
+                    write32(address, std::bit_cast<std::uint32_t>(
                         static_cast<float>(value)));
                 }
             }
@@ -838,7 +875,7 @@ bool BroadwayCpu::execute_one() {
                 throw std::invalid_argument("unaligned stfiwx");
             }
             invalidate_reservation(address, 4u);
-            memory_.write32_be(address,
+            write32(address,
                 static_cast<std::uint32_t>(state_.fpr[rs]));
             break;
         }
@@ -847,7 +884,7 @@ bool BroadwayCpu::execute_one() {
             if ((address & 3u) != 0u) {
                 throw std::invalid_argument("unaligned lwarx");
             }
-            state_.gpr[rt] = memory_.read32_be(address);
+            state_.gpr[rt] = read32(address);
             state_.reservation_address = address;
             state_.reservation_valid = true;
             break;
@@ -865,7 +902,7 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t field = (success ? 2u : 0u) | so;
             state_.cr = (state_.cr & 0x0fffffffu) | (field << 28);
             if (success) {
-                memory_.write32_be(address, state_.gpr[rs]);
+                write32(address, state_.gpr[rs]);
             }
             break;
         }
@@ -895,9 +932,9 @@ bool BroadwayCpu::execute_one() {
             if (load) {
                 std::uint32_t value = 0;
                 if (byte_access) {
-                    value = memory_.read8(address);
+                    value = read8(address);
                 } else if (half_access) {
-                    const std::uint16_t half = memory_.read16_be(address);
+                    const std::uint16_t half = read16(address);
                     if (reverse) {
                         value = static_cast<std::uint32_t>((half >> 8) | (half << 8)) & 0xffffu;
                     } else if (xo == 343u || xo == 375u) {
@@ -907,7 +944,7 @@ bool BroadwayCpu::execute_one() {
                         value = half;
                     }
                 } else {
-                    const std::uint32_t word = memory_.read32_be(address);
+                    const std::uint32_t word = read32(address);
                     value = reverse ? ((word & 0x000000ffu) << 24) |
                         ((word & 0x0000ff00u) << 8) |
                         ((word & 0x00ff0000u) >> 8) |
@@ -919,19 +956,19 @@ bool BroadwayCpu::execute_one() {
                 invalidate_reservation(address, byte_access ? 1u :
                     half_access ? 2u : 4u);
                 if (byte_access) {
-                    memory_.write8(address, static_cast<std::uint8_t>(value));
+                    write8(address, static_cast<std::uint8_t>(value));
                 } else if (half_access) {
                     const std::uint16_t half = static_cast<std::uint16_t>(value);
                     const std::uint16_t stored = reverse
                         ? static_cast<std::uint16_t>((half >> 8) | (half << 8)) : half;
-                    memory_.write16_be(address, stored);
+                    write16(address, stored);
                 } else {
                     const std::uint32_t stored = reverse
                         ? ((value & 0x000000ffu) << 24) |
                           ((value & 0x0000ff00u) << 8) |
                           ((value & 0x00ff0000u) >> 8) |
                           ((value & 0xff000000u) >> 24) : value;
-                    memory_.write32_be(address, stored);
+                    write32(address, stored);
                 }
             }
             if (update) state_.gpr[ra] = address;
@@ -1105,7 +1142,7 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t block = address & ~31u;
             invalidate_reservation(block, 32u);
             for (std::uint32_t offset = 0; offset < 32u; ++offset) {
-                memory_.write8(block + offset, 0u);
+                write8(block + offset, 0u);
             }
             break;
         }
