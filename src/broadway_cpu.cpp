@@ -745,6 +745,11 @@ bool BroadwayCpu::execute_one() {
         const std::uint32_t xo = (instruction >> 1) & 0x3ffu;
         const std::uint32_t a = state_.gpr[ra];
         const std::uint32_t b = state_.gpr[rb];
+        const auto set_overflow = [&](bool overflow) {
+            state_.xer = (state_.xer & ~(1u << 30)) |
+                         (overflow ? (1u << 30) : 0u);
+            if (overflow) state_.xer |= 1u << 31;
+        };
         switch (xo) {
         case 535: case 567: case 599: case 631:
         case 663: case 695: case 727: case 759: { // Indexed floating-point loads/stores
@@ -884,6 +889,52 @@ bool BroadwayCpu::execute_one() {
                 }
             }
             if (update) state_.gpr[ra] = address;
+            break;
+        }
+        case 778: { // addo: signed add with overflow enabled
+            const std::uint32_t result = a + b;
+            state_.gpr[rt] = result;
+            const bool overflow = ((~(a ^ b) & (a ^ result)) >> 31) != 0u;
+            set_overflow(overflow);
+            if ((instruction & 1u) != 0u) update_cr0(state_, result);
+            break;
+        }
+        case 552: { // subfo: RB - RA with signed overflow enabled
+            const std::uint32_t result = b - a;
+            state_.gpr[rt] = result;
+            const bool overflow = (((b ^ a) & (b ^ result)) >> 31) != 0u;
+            set_overflow(overflow);
+            if ((instruction & 1u) != 0u) update_cr0(state_, result);
+            break;
+        }
+        case 747: { // mullwo: signed multiply low word with overflow enabled
+            const std::int64_t product =
+                static_cast<std::int64_t>(static_cast<std::int32_t>(a)) *
+                static_cast<std::int64_t>(static_cast<std::int32_t>(b));
+            const std::int32_t result = static_cast<std::int32_t>(
+                static_cast<std::uint32_t>(product));
+            state_.gpr[rt] = static_cast<std::uint32_t>(result);
+            set_overflow(product < std::numeric_limits<std::int32_t>::min() ||
+                         product > std::numeric_limits<std::int32_t>::max());
+            if ((instruction & 1u) != 0u) update_cr0(state_, state_.gpr[rt]);
+            break;
+        }
+        case 1003: { // divwo: signed divide with overflow enabled
+            const std::int32_t dividend = static_cast<std::int32_t>(a);
+            const std::int32_t divisor = static_cast<std::int32_t>(b);
+            const bool overflow = divisor == 0 ||
+                (dividend == std::numeric_limits<std::int32_t>::min() &&
+                 divisor == -1);
+            state_.gpr[rt] = overflow ? 0u :
+                static_cast<std::uint32_t>(dividend / divisor);
+            set_overflow(overflow);
+            if ((instruction & 1u) != 0u) update_cr0(state_, state_.gpr[rt]);
+            break;
+        }
+        case 616: { // nego: negate with signed overflow enabled
+            state_.gpr[rt] = 0u - a;
+            set_overflow(a == 0x80000000u);
+            if ((instruction & 1u) != 0u) update_cr0(state_, state_.gpr[rt]);
             break;
         }
         case 512: { // mcrxr: move XER summary bits into a CR field and clear them
