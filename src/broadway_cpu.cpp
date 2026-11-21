@@ -434,22 +434,41 @@ bool BroadwayCpu::execute_one() {
         };
         // A-form arithmetic encodes a five-bit XO; FRC occupies the
         // adjacent field and must not be included in that decode.
-        if (a_xo == 18u || a_xo == 20u || a_xo == 21u || a_xo == 25u) {
-            const double rhs = a_xo == 25u
-                ? std::bit_cast<double>(state_.fpr[frc]) : b;
+        if (a_xo == 18u || a_xo == 20u || a_xo == 21u ||
+            a_xo == 25u || a_xo == 28u || a_xo == 29u ||
+            a_xo == 30u || a_xo == 31u) {
+            const double c_value = std::bit_cast<double>(state_.fpr[frc]);
             if (opcode == 59u) {
-                const float lhs_single = static_cast<float>(a);
-                const float rhs_single = static_cast<float>(rhs);
-                const float value_single = a_xo == 18u ? lhs_single / rhs_single
-                    : a_xo == 20u ? lhs_single - rhs_single
-                    : a_xo == 21u ? lhs_single + rhs_single
-                    : lhs_single * rhs_single;
-                write_fpr(static_cast<double>(value_single));
+                const float lhs = static_cast<float>(a);
+                const float rhs = static_cast<float>(b);
+                const float third = static_cast<float>(c_value);
+                float result = 0.0f;
+                switch (a_xo) {
+                case 18: result = lhs / rhs; break;       // fdivs
+                case 20: result = lhs - rhs; break;       // fsubs
+                case 21: result = lhs + rhs; break;       // fadds
+                case 25: result = lhs * third; break;     // fmuls
+                case 28: result = std::fma(lhs, third, -rhs); break; // fmsubs
+                case 29: result = std::fma(lhs, third, rhs); break;  // fmadds
+                case 30: result = -std::fma(lhs, third, -rhs); break; // fnmsubs
+                case 31: result = -std::fma(lhs, third, rhs); break;  // fnmadds
+                default: return false;
+                }
+                write_fpr(static_cast<double>(result));
             } else {
-                const double value = a_xo == 18u ? a / rhs
-                    : a_xo == 20u ? a - rhs
-                    : a_xo == 21u ? a + rhs : a * rhs;
-                write_fpr(value);
+                double result = 0.0;
+                switch (a_xo) {
+                case 18: result = a / b; break;             // fdiv
+                case 20: result = a - b; break;             // fsub
+                case 21: result = a + b; break;             // fadd
+                case 25: result = a * c_value; break;       // fmul
+                case 28: result = std::fma(a, c_value, -b); break; // fmsub
+                case 29: result = std::fma(a, c_value, b); break;  // fmadd
+                case 30: result = -std::fma(a, c_value, -b); break; // fnmsub
+                case 31: result = -std::fma(a, c_value, b); break;  // fnmadd
+                default: return false;
+                }
+                write_fpr(result);
             }
             break;
         }
@@ -470,6 +489,15 @@ bool BroadwayCpu::execute_one() {
         case 12: // frsp: round to single precision, retain in FPR
             write_fpr(static_cast<double>(static_cast<float>(b)));
             break;
+        case 22: // fsqrt
+            write_fpr(std::sqrt(b));
+            break;
+        case 23: { // fsel: select FRC for nonnegative FRA, otherwise FRB
+            const std::uint32_t selected = a >= -0.0
+                ? frc : frb;
+            state_.fpr[frt] = state_.fpr[selected];
+            break;
+        }
         case 40: // fneg
             write_fpr(-b);
             break;
