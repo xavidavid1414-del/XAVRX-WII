@@ -60,7 +60,10 @@ bool BroadwayCpu::step() {
         return false;
     }
     try {
-        if (execute_one()) return true;
+        if (execute_one()) {
+            ++state_.time_base;
+            return true;
+        }
         state_.exception = Exception::IllegalInstruction;
         return false;
     } catch (const std::invalid_argument&) {
@@ -654,6 +657,17 @@ bool BroadwayCpu::execute_one() {
             case 8: state_.gpr[rt] = state_.lr; break;  // LR
             case 9: state_.gpr[rt] = state_.ctr; break; // CTR
             default: return false;
+            }
+            break;
+        }
+        case 371: { // mftb: move time-base register to GPR
+            const std::uint32_t spr = ra | (rb << 5);
+            if (spr == 268u) {
+                state_.gpr[rt] = static_cast<std::uint32_t>(state_.time_base);
+            } else if (spr == 269u) {
+                state_.gpr[rt] = static_cast<std::uint32_t>(state_.time_base >> 32);
+            } else {
+                return false;
             }
             break;
         }
