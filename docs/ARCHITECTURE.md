@@ -18,7 +18,7 @@ Build a Nintendo Wii emulator from a clean, testable C++ codebase. The target co
 | --- | --- |
 | Core | Lifecycle, configuration, timing coordination, errors |
 | CPU | Gekko / PowerPC instruction execution, registers, exceptions |
-| Memory | Address space, mappings, access rules, memory-mapped devices |
+| Memory | Configurable RAM, big-endian aligned accesses, non-overlapping memory-mapped devices |
 | System | Boot flow, interrupts, timers, hardware registers |
 | GPU | Hollywood / GX command processing and rendering |
 | Audio | DSP behavior, audio timing, output interface |
@@ -28,4 +28,4 @@ Build a Nintendo Wii emulator from a clean, testable C++ codebase. The target co
 
 ## Current implementation boundary
 
-Phase 1 only establishes the build, a minimal core API, executable entry point, smoke tests, and CI. It does not execute Wii instructions, boot games, render graphics, or provide playable emulation.
+The project has an initial CPU execution foundation and configurable memory bus. The memory layer does not yet model the complete Wii address map, MMU, device registers, DMA, or cache aliases. The emulator cannot boot games or provide playable emulation yet.
