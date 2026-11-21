@@ -1068,12 +1068,12 @@ int main() {
     assert(memory.read8(496) == 0xefu);
     assert(cpu.state().gpr[3] == 496u);
 
-    // Update-form stores reject RA=0 and RA=RS without changing CPU state.
+    // Update-form stores reject RA=0 without changing CPU state.
     auto invalid_narrow_update = cpu.state();
     invalid_narrow_update.pc = 476;
     invalid_narrow_update.gpr[3] = 500u;
     cpu.set_state(invalid_narrow_update);
-    memory.write32_be(476, (39u << 26) | (3u << 21) | (3u << 16) | 4u);
+    memory.write32_be(476, (39u << 26) | (3u << 21) | 4u);
     assert(!cpu.step());
     assert(cpu.state().pc == 476u);
     assert(cpu.state().gpr[3] == 500u);
