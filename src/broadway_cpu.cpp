@@ -671,10 +671,23 @@ bool BroadwayCpu::execute_one() {
         case 598: // sync: memory synchronization barrier
         case 854: // eieio: I/O ordering barrier
         case 566: // tlbsync: translation-lookaside-buffer synchronization
-            // The current interpreter is single-threaded and has no modeled
-            // cache/TLB hierarchy, so these ordering instructions retire as
-            // architectural no-ops while preserving instruction sequencing.
+        case 54:  // dcbst: data cache block store
+        case 86:  // dcbf: data cache block flush
+        case 246: // dcbtst: data cache block touch for store
+        case 278: // dcbt: data cache block touch
+        case 470: // dcbi: data cache block invalidate
+        case 982: // icbi: instruction cache block invalidate
+            // No cache/TLB hierarchy is modeled by this interpreter.
             break;
+        case 1014: { // dcbz: zero one 32-byte data-cache block
+            const std::uint32_t address = (ra == 0u ? 0u : a) + b;
+            const std::uint32_t block = address & ~31u;
+            invalidate_reservation(block, 32u);
+            for (std::uint32_t offset = 0; offset < 32u; ++offset) {
+                memory_.write8(block + offset, 0u);
+            }
+            break;
+        }
         case 528: { // bctr: conditional branch to CTR
             const std::uint32_t bo = rt;
             const std::uint32_t bi = ra;
