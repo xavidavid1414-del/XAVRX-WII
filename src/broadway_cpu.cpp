@@ -1154,7 +1154,7 @@ bool BroadwayCpu::execute_one() {
             break;
         }
         case 210: { // mtsr: move GPR to segment register
-            if ((instruction & 0x0000f801u) != 0u) return false;
+            if ((instruction & 0x0010f801u) != 0u) return false;
             constexpr std::uint32_t msr_pr = 1u << (31u - 14u);
             if ((state_.msr & msr_pr) != 0u) {
                 state_.exception = Exception::PrivilegedInstruction;
