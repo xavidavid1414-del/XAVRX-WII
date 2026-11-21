@@ -641,6 +641,7 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t shift = 28u - field * 4u;
             const std::uint32_t mask = 0xfu << shift;
             state_.fpscr = (state_.fpscr & ~mask) | (immediate << shift);
+            refresh_fpscr_summaries();
             if ((instruction & 1u) != 0u) {
                 const std::uint32_t cr1 = (state_.fpscr >> 28) & 0xfu;
                 state_.cr = (state_.cr & 0x00ffffffu) | (cr1 << 24);
@@ -653,6 +654,7 @@ bool BroadwayCpu::execute_one() {
             const std::uint32_t mask = 1u << (31u - bit);
             if (xo == 38u) state_.fpscr |= mask;
             else state_.fpscr &= ~mask;
+            refresh_fpscr_summaries();
             if ((instruction & 1u) != 0u) {
                 const std::uint32_t cr1 = (state_.fpscr >> 28) & 0xfu;
                 state_.cr = (state_.cr & 0x0fffffffu) | (cr1 << 24);
@@ -671,6 +673,7 @@ bool BroadwayCpu::execute_one() {
                 const std::uint32_t mask = 0xfu << shift;
                 state_.fpscr = (state_.fpscr & ~mask) | (source & mask);
             }
+            refresh_fpscr_summaries();
             break;
         }
         case 14: // fctiw: convert to signed word using current rounding mode
