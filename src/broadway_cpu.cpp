@@ -514,6 +514,18 @@ bool BroadwayCpu::execute_one() {
             state_.cr = (state_.cr & ~mask) | (result << shift);
             break;
         }
+        case 38:  // mtfsb1: set selected FPSCR bit
+        case 70: { // mtfsb0: clear selected FPSCR bit
+            const std::uint32_t bit = (instruction >> 21) & 31u;
+            const std::uint32_t mask = 1u << (31u - bit);
+            if (xo == 38u) state_.fpscr |= mask;
+            else state_.fpscr &= ~mask;
+            if ((instruction & 1u) != 0u) {
+                const std::uint32_t cr1 = (state_.fpscr >> 28) & 0xfu;
+                state_.cr = (state_.cr & 0x0fffffffu) | (cr1 << 24);
+            }
+            break;
+        }
         case 583: // mffs: move FPSCR to FPR
             state_.fpr[frt] = 0xfff8000000000000ull | state_.fpscr;
             break;
