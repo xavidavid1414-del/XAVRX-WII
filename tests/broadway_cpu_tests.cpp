@@ -1686,8 +1686,8 @@ int main() {
     fpscr_summary_state.pc = 932u;
     fpscr_summary_state.fpscr = (1u << 26); // ZX sticky, ZE/VE disabled
     cpu.set_state(fpscr_summary_state);
-    memory.write32_be(932u, (63u << 26) | (24u << 21) | (38u << 1)); // mtfsb1 VE
-    memory.write32_be(936u, (63u << 26) | (24u << 21) | (70u << 1)); // mtfsb0 VE
+    memory.write32_be(932u, (63u << 26) | (27u << 21) | (38u << 1)); // mtfsb1 ZE
+    memory.write32_be(936u, (63u << 26) | (27u << 21) | (70u << 1)); // mtfsb0 ZE
     assert(cpu.step());
     assert((cpu.state().fpscr & (1u << 30)) != 0u); // FEX asserted immediately
     assert(cpu.step());
