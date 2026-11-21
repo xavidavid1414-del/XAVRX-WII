@@ -1578,6 +1578,8 @@ int main() {
     assert(static_cast<std::uint32_t>(cpu.state().fpr[5]) == 0xfffffffdu);
     assert(cpu.step());
     assert(static_cast<std::uint32_t>(cpu.state().fpr[6]) == 0x80000000u);
+    assert((cpu.state().fpscr & ((1u << 31) | (1u << 29) | (1u << 8))) ==
+           ((1u << 31) | (1u << 29) | (1u << 8)));
 
     // fctiw obeys the PowerPC FPSCR rounding-mode field (RN).
     auto fp_round_up_state = cpu.state();
