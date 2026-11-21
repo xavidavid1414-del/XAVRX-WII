@@ -432,6 +432,13 @@ bool BroadwayCpu::execute_one() {
         auto write_fpr = [&](double value) {
             state_.fpr[frt] = std::bit_cast<std::uint64_t>(value);
         };
+        // fsel is an A-form instruction: its low five XO bits must be
+        // decoded separately because FRB/FRC share the upper XO bits.
+        if (opcode == 63u && a_xo == 23u) {
+            const std::uint32_t selected = a >= -0.0 ? frc : frb;
+            state_.fpr[frt] = state_.fpr[selected];
+            break;
+        }
         // A-form arithmetic encodes a five-bit XO; FRC occupies the
         // adjacent field and must not be included in that decode.
         if (a_xo == 18u || a_xo == 20u || a_xo == 21u ||
