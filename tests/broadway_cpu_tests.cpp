@@ -1325,7 +1325,8 @@ int main() {
     cpu.set_state(tlbie_state);
     memory.write32_be(628u, xform(1u, 0u, 3u, 306u)); // reserved RT field
     assert(!cpu.step());
-    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::None);
+    assert(cpu.state().exception ==
+           xavrx::BroadwayCpu::Exception::IllegalInstruction);
     assert(cpu.state().pc == 628u);
 
     // lwarx/stwcx. implement the foundational reservation protocol.
