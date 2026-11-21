@@ -2,9 +2,9 @@
 Nintendo Wii emulator project built from scratch in C++20 with CMake.
 
 ## Status
-**Current phase: 2 / 20 — CPU foundation complete.**
+**Current phase: 3 / 20 — PowerPC integer execution in progress.**
 
-The project now has a Gekko architectural register/state model and an instruction identity decoder for an initial documented subset of PowerPC encodings. This is not yet a playable emulator: instructions are not executed and Wii games cannot boot.
+The CPU has an architectural state model, a decode layer, and an initial integer executor. This is not yet a playable emulator: graphics, memory, boot integration, peripherals, and many CPU instructions remain unimplemented.
 
 ## Build
 ```sh
@@ -15,4 +15,4 @@ ctest --test-dir build --output-on-failure
 Run xavrx-wii --version to print the project version.
 
 ## Development
-See [the architecture document](docs/ARCHITECTURE.md), [CPU foundation notes](docs/CPU.md), and [the 20-phase roadmap](docs/ROADMAP.md). A phase advances only after implementation, testing, corrections, and repeat verification.
+See [architecture](docs/ARCHITECTURE.md), [CPU notes](docs/CPU.md), and [the 20-phase roadmap](docs/ROADMAP.md). A phase advances only after implementation, testing, corrections, and repeat verification.
