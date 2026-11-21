@@ -475,11 +475,11 @@ bool BroadwayCpu::execute_one() {
             if (invalid) state_.fpscr |= fpscr_vx;
             else state_.fpscr &= ~fpscr_vx;
 
-            constexpr std::uint32_t ve = 1u << 8;
-            constexpr std::uint32_t oe = 1u << 7;
-            constexpr std::uint32_t ue = 1u << 6;
-            constexpr std::uint32_t ze = 1u << 5;
-            constexpr std::uint32_t xe = 1u << 4;
+            constexpr std::uint32_t ve = 1u << 7;
+            constexpr std::uint32_t oe = 1u << 6;
+            constexpr std::uint32_t ue = 1u << 5;
+            constexpr std::uint32_t ze = 1u << 4;
+            constexpr std::uint32_t xe = 1u << 3;
             const bool enabled =
                 (invalid && (state_.fpscr & ve) != 0u) ||
                 ((state_.fpscr & fpscr_ox) != 0u && (state_.fpscr & oe) != 0u) ||
@@ -696,7 +696,7 @@ bool BroadwayCpu::execute_one() {
                     invalid_conversion = true;
                 }
             }
-            if (invalid_conversion) raise_fpscr_exception(1u << 9); // VXCVI
+            if (invalid_conversion) raise_fpscr_exception(1u << 8); // VXCVI
             state_.fpr[frt] = 0xfff8000000000000ull |
                 static_cast<std::uint32_t>(converted);
             break;
@@ -706,7 +706,7 @@ bool BroadwayCpu::execute_one() {
             break;
         case 22: // fsqrt
             if (std::isless(b, 0.0))
-                raise_fpscr_exception(1u << 10); // VXSQRT
+                raise_fpscr_exception(1u << 9); // VXSQRT
             write_fpr(std::sqrt(b));
             break;
         case 26: // frsqrte: reciprocal square-root estimate
