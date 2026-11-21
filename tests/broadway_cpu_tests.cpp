@@ -1213,5 +1213,21 @@ int main() {
     assert(cpu.state().reservation_valid);
     assert(cpu.state().pc == 640u);
 
+    // mfmsr and mtmsr round-trip the modeled machine-state register.
+    auto msr_state = cpu.state();
+    msr_state.pc = 700u;
+    msr_state.msr = 0x0000a032u;
+    msr_state.gpr[10] = 0x00001830u;
+    cpu.set_state(msr_state);
+    memory.write32_be(700u, xform(11, 0, 0, 83));  // mfmsr r11
+    memory.write32_be(704u, xform(10, 0, 0, 146)); // mtmsr r10
+    memory.write32_be(708u, xform(12, 0, 0, 83));  // mfmsr r12
+    assert(cpu.step());
+    assert(cpu.state().gpr[11] == 0x0000a032u);
+    assert(cpu.step());
+    assert(cpu.state().msr == 0x00001830u);
+    assert(cpu.step());
+    assert(cpu.state().gpr[12] == 0x00001830u);
+
     return 0;
 }
