@@ -2195,5 +2195,39 @@ int main() {
            xavrx::BroadwayCpu::Exception::FloatingPointUnavailable);
     assert(cpu.state().pc == 1072u);
 
+
+    // twi and tw raise the program exception only when a selected compare matches.
+    auto trap_imm_state = cpu.state();
+    trap_imm_state.pc = 1080u;
+    trap_imm_state.gpr[3] = 0xffffffffu;
+    cpu.set_state(trap_imm_state);
+    memory.write32_be(1080u, (3u << 26) | (0x10u << 21) |
+        (3u << 16) | 1u); // twi LT,r3,1
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Program);
+    assert(cpu.state().pc == 1080u);
+    assert(cpu.enter_exception());
+    assert(cpu.state().pc == 0x700u);
+    assert(cpu.state().srr0 == 1080u);
+
+    auto trap_reg_state = cpu.state();
+    trap_reg_state.pc = 1084u;
+    trap_reg_state.gpr[3] = 7u;
+    trap_reg_state.gpr[4] = 7u;
+    cpu.set_state(trap_reg_state);
+    memory.write32_be(1084u, xform(0x04u, 3u, 4u, 4u)); // tw EQ,r3,r4
+    assert(!cpu.step());
+    assert(cpu.state().exception == xavrx::BroadwayCpu::Exception::Program);
+    assert(cpu.state().pc == 1084u);
+
+    auto no_trap_state = cpu.state();
+    no_trap_state.pc = 1088u;
+    no_trap_state.gpr[3] = 7u;
+    no_trap_state.gpr[4] = 8u;
+    cpu.set_state(no_trap_state);
+    memory.write32_be(1088u, xform(0x04u, 3u, 4u, 4u)); // tw EQ,r3,r4 (false)
+    assert(cpu.step());
+    assert(cpu.state().pc == 1092u);
+
     return 0;
 }
