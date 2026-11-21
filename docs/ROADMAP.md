@@ -1,10 +1,9 @@
 # XAVRX-WII — 20-Phase Roadmap
+A phase is complete only after implementation, automated checks, correction of discovered defects, and repeat verification. No phase is skipped.
 
-A phase is complete only after implementation, automated checks, correction of discovered defects, and a repeat verification. No phase is skipped.
-
-1. **Project foundation** — repository structure, C++20/CMake, architecture boundaries, smoke tests, CI.
-2. **CPU foundation** — Gekko register model, CPU state, instruction decode framework.
-3. **PowerPC integer execution** — core integer instructions and focused unit tests.
+1. **Project foundation** — COMPLETE. Repository structure, C++20/CMake, architecture boundaries, smoke tests, CI.
+2. **CPU foundation** — COMPLETE. Gekko register model, CPU architectural state, condition-register access, and an initial instruction decode framework with focused tests.
+3. **PowerPC integer execution** — NEXT. Implement selected integer instructions and focused unit tests.
 4. **CPU control flow and exceptions** — branches, traps, interrupts, and exception state.
 5. **Memory subsystem** — address space, access widths, alignment, and memory-mapped I/O contracts.
 6. **System hardware model** — clocks, timers, interrupt controller, and boot-state model.
