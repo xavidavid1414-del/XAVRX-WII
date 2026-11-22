@@ -80,7 +80,7 @@ void UsbHostController::advance_microframes(std::uint32_t count)noexcept{
  }
 }
 bool UsbHostController::take_completed_transfer(Transfer& transfer){if(completed_.empty())return false;transfer=std::move(completed_.front());completed_.pop_front();return true;}
-void UsbHostController::reset()noexcept{RegisterWindow::reset();command_=cmd_reset;status_=sts_halted;interrupt_enable_=0;frame_index_=0;periodic_base_=0;async_list_=0;config_flag_=0;port_status_=0;pending_.clear();completed_.clear();}
+void UsbHostController::reset()noexcept{RegisterWindow::reset();command_=0;status_=sts_halted;interrupt_enable_=0;frame_index_=0;periodic_base_=0;async_list_=0;config_flag_=0;port_status_=0;pending_.clear();completed_.clear();}
 DriveInterface::DriveInterface()noexcept:RegisterWindow(0x40U,di_offsets,std::size(di_offsets),false){}
 WirelessLanController::WirelessLanController()noexcept:RegisterWindow(0x200U,sd_offsets,std::size(sd_offsets),true){}
 bool BluetoothHciTransport::valid_host_packet(std::span<const std::uint8_t> p)noexcept{if(p.empty())return false;if(p[0]==hci_command)return p.size()>=4U&&static_cast<std::size_t>(p[3])==p.size()-4U;return valid_acl(p);}
