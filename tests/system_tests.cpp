@@ -1,5 +1,7 @@
 #include "xavrx/system/hardware.hpp"
 #include "xavrx/system/wii_system.hpp"
+#include "xavrx/system/reset_controller.hpp"
+#include "xavrx/system/dsp_gpu.hpp"
 #include <array>
 #include <cstdint>
 #include <iostream>
@@ -74,6 +76,22 @@ int main(){using namespace xavrx::system;
  check(wii.take_bluetooth_host_packet(HollywoodCpu::Starlet,hci_packet)&&hci_packet.size()==hci_event.size()&&hci_packet[0]==0x04U,"Bluetooth HCI event delivered to host side");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000064U,4,1U<<31U)==xavrx::memory::AccessResult::Success,"WiiSystem exposes PPCKERN control");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000190U,4,3U)==xavrx::memory::AccessResult::Success,"WiiSystem exposes Hollywood clock controls");
+
+ // WiiSystem wires the reset register to the DSP scheduler and GPU FIFO.
+ const std::uint32_t dsp_gpu_release=(1U<<26U)|(1U<<17U)|(1U<<16U);
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000194U,4,dsp_gpu_release)==xavrx::memory::AccessResult::Success,"Starlet releases DSP and graphics reset lines");
+ wii.advance_broadway_cycles(0U);
+ check(wii.reset_controller().released(HardwareResetLine::DSP)&&wii.reset_controller().released(HardwareResetLine::GFX),"WiiSystem synchronizes reset line state");
+ check(wii.dsp().submit({0x55U,2U}),"WiiSystem accepts DSP task after reset release");
+ const std::array<std::uint32_t,2> system_gx_words{{0x61000000U,0x00000003U}};
+ check(wii.gpu().submit(system_gx_words),"WiiSystem accepts GPU command words");
+ wii.advance_broadway_cycles(12U);
+ check(wii.dsp().completed_tasks()==1U&&wii.dsp().last_completed_opcode()==0x55U,"WiiSystem advances DSP tasks from scheduled DSP clocks");
+ check(wii.gpu().queued_words()==2U,"WiiSystem retains GPU FIFO while graphics reset is released");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000194U,4,1U<<26U)==xavrx::memory::AccessResult::Success,"Starlet asserts graphics reset while keeping DSP released");
+ wii.advance_broadway_cycles(0U);
+ check(wii.gpu().empty(),"asserting graphics reset clears GPU command FIFO");
+
  wii.reset();std::uint32_t reset_word=0;std::uint64_t reset_value=0;
  check(wii.initialized(),"WiiSystem remains mapped after reset");
  check(wii.memory().read32(0x80000000U,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears MEM1 contents");
@@ -84,4 +102,29 @@ int main(){using namespace xavrx::system;
  check(!wii.submit_bluetooth_host_packet(HollywoodCpu::Starlet,hci_command),"WiiSystem reset clears USB1 permission");
  check(!wii.take_bluetooth_host_packet(HollywoodCpu::Starlet,hci_packet),"WiiSystem reset clears Bluetooth HCI queues");
  check(wii.memory().write32(0x80000000U,0x2468ace0U)==xavrx::memory::AccessResult::Success,"WiiSystem remains operational after reset");
+
+ // Hardware reset controller: reset is active-low and reserved bit 31 is masked.
+ HardwareResetController reset_controller;
+ check(reset_controller.asserted(HardwareResetLine::DSP)&&reset_controller.asserted(HardwareResetLine::GFX),"hardware reset lines start asserted");
+ const std::uint32_t released_lines=(1U<<26U)|(1U<<17U)|(1U<<16U)|(1U<<21U)|(1U<<14U);
+ reset_controller.set_register(released_lines|0x80000000U);
+ check(reset_controller.register_value()==released_lines&&reset_controller.released(HardwareResetLine::DSP)&&reset_controller.released(HardwareResetLine::GFX)&&reset_controller.released(HardwareResetLine::GFXTCPE),"reset controller releases selected lines and masks reserved bit");
+ check(reset_controller.asserted(HardwareResetLine::IOP)&&reset_controller.released(HardwareResetLine::IODI)==false,"reset controller tracks independent active-low lines");
+ reset_controller.reset();check(reset_controller.register_value()==0U&&reset_controller.asserted(HardwareResetLine::DSP),"reset controller reset reasserts all modeled lines");
+ // DSP task scheduler is deterministic scaffolding, not DSP instruction execution.
+ DspDevice dsp_device;
+ check(!dsp_device.submit({0x10U,0U}),"DSP rejects zero-cycle task");
+ check(dsp_device.submit({0x1234U,5U})&&dsp_device.busy(),"DSP accepts bounded task");
+ dsp_device.advance(2U);check(dsp_device.active_cycles_remaining()==3U&&dsp_device.completed_tasks()==0U,"DSP task retains remaining cycles");
+ dsp_device.advance(3U);check(!dsp_device.busy()&&dsp_device.completed_tasks()==1U&&dsp_device.last_completed_opcode()==0x1234U,"DSP task completes at exact cycle boundary");
+ dsp_device.reset();check(!dsp_device.busy()&&dsp_device.completed_tasks()==0U,"DSP reset clears task and completion state");
+ // GPU command processor preserves FIFO order and rejects over-capacity batches atomically.
+ GpuCommandProcessor gpu_device;const std::array<std::uint32_t,3> gx_words{{0x61000000U,0x00000001U,0x00000002U}};
+ check(gpu_device.submit(gx_words)&&gpu_device.queued_words()==3U,"GPU accepts command words");
+ std::uint32_t gx_word=0U;check(gpu_device.take(gx_word)&&gx_word==gx_words[0],"GPU command FIFO preserves first word");
+ check(gpu_device.take(gx_word)&&gx_word==gx_words[1]&&gpu_device.take(gx_word)&&gx_word==gx_words[2],"GPU command FIFO preserves remaining order");
+ check(!gpu_device.take(gx_word)&&gpu_device.empty(),"GPU empty FIFO rejects reads");
+ const std::array<std::uint32_t,GpuCommandProcessor::fifo_capacity+1U> too_many{};
+ check(!gpu_device.submit(too_many)&&gpu_device.empty(),"GPU rejects oversized command batch without partial enqueue");
+
  if(failures){std::cerr<<failures<<" system hardware test(s) failed\n";return 1;}std::cout<<"All XAVRX-WII system hardware tests passed\n";return 0;}
