@@ -28,7 +28,7 @@ bool DriveResetView::write(std::uint32_t offset,std::uint8_t width,std::uint64_t
  if(control_.di_io_reset_asserted()||control_.di_reset_b_asserted())return false;
  const auto normalized=(offset==0x1cU&&width==4U)?(value&7U):value;
  if(!device_.write(offset,width,normalized))return false;
- if(offset!=0x1cU||width!=4U||(normalized&1U)==0U)return true;
+ if(offset!=0x1cU||width!=4U||(normalized&1U)==0U){if(device_.interrupt_pending())interrupts_.raise(18U,IrqRoute::Both);return true;}
  bool completed=false;
  if((normalized&2U)!=0U){
   std::uint64_t command=0U,source=0U,length=0U,destination=0U,requested=0U;
@@ -41,6 +41,7 @@ bool DriveResetView::write(std::uint32_t offset,std::uint8_t width,std::uint64_t
  }
  if((normalized&1U)!=0U){if(completed)device_.signal_transfer_complete();else device_.signal_device_error();}
  (void)device_.write(0x1cU,4U,static_cast<std::uint32_t>(normalized)&~1U);
+ if(device_.interrupt_pending())interrupts_.raise(18U,IrqRoute::Both);
  return completed;
 }
 WiiSystem::WiiSystem()
@@ -52,8 +53,8 @@ WiiSystem::WiiSystem()
   usb_starlet_(usb_host_,hollywood_.system_control(),HollywoodCpu::Starlet,HollywoodEngine::Ehci),
   wlan_broadway_(wlan_,hollywood_.system_control(),HollywoodCpu::Broadway,HollywoodEngine::Sd1),
   wlan_starlet_(wlan_,hollywood_.system_control(),HollywoodCpu::Starlet,HollywoodEngine::Sd1),
-  drive_broadway_(drive_,hollywood_.system_control(),memory_,WiiMemoryCpu::Broadway),
-  drive_starlet_(drive_,hollywood_.system_control(),memory_,WiiMemoryCpu::Starlet){}
+  drive_broadway_(drive_,hollywood_.system_control(),hollywood_.interrupts(),memory_,WiiMemoryCpu::Broadway),
+  drive_starlet_(drive_,hollywood_.system_control(),hollywood_.interrupts(),memory_,WiiMemoryCpu::Starlet){}
 GameInputState WiiSystem::route_controller_inputs()const noexcept{
  GameInputState combined{};
  const auto merge=[this,&combined](const ControllerInputFrame& frame){
