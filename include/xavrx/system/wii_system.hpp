@@ -2,6 +2,7 @@
 #include "xavrx/system/hardware.hpp"
 #include "xavrx/system/reset_controller.hpp"
 #include "xavrx/system/dsp_gpu.hpp"
+#include "xavrx/system/broadway_devices.hpp"
 #include "xavrx/system/hollywood.hpp"
 #include "xavrx/system/peripherals.hpp"
 #include "xavrx/system/wii_memory.hpp"
@@ -30,6 +31,11 @@ private:
  DriveInterface& device_;
  HollywoodSystemControl& control_;
 };
+class DeniedDeviceView final : public memory::MemoryMappedDevice {
+public:
+ [[nodiscard]] bool read(std::uint32_t,std::uint8_t,std::uint64_t&) noexcept override{return false;}
+ [[nodiscard]] bool write(std::uint32_t,std::uint8_t,std::uint64_t) noexcept override{return false;}
+};
 class WiiSystem final {
 public:
  WiiSystem();
@@ -46,6 +52,8 @@ public:
  [[nodiscard]] HardwareResetController& reset_controller() noexcept{return reset_controller_;}
  [[nodiscard]] DspDevice& dsp() noexcept{return dsp_;}
  [[nodiscard]] GpuCommandProcessor& gpu() noexcept{return gpu_;}
+ [[nodiscard]] DspMailboxInterface& dsp_mailbox() noexcept{return dsp_mailbox_;}
+ [[nodiscard]] ProcessorInterruptInterface& processor_interrupts() noexcept{return processor_interrupts_;}
  [[nodiscard]] bool submit_bluetooth_host_packet(HollywoodCpu cpu,std::span<const std::uint8_t> packet);
  [[nodiscard]] bool take_bluetooth_device_packet(HollywoodCpu cpu,std::vector<std::uint8_t>& packet);
  [[nodiscard]] bool submit_bluetooth_device_packet(std::span<const std::uint8_t> packet);
@@ -68,6 +76,10 @@ private:
  HardwareResetController reset_controller_{};
  DspDevice dsp_{};
  GpuCommandProcessor gpu_{};
+ DspMailboxInterface dsp_mailbox_{};
+ ProcessorInterruptInterface processor_interrupts_{};
+ GxWriteGatherPort gx_fifo_{gpu_};
+ DeniedDeviceView dsp_denied_{},pi_denied_{},gx_denied_{};
  ProtectedRegisterView nand_broadway_,nand_starlet_;
  ProtectedRegisterView sd_broadway_,sd_starlet_;
  ProtectedRegisterView usb_broadway_,usb_starlet_;
