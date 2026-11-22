@@ -33,6 +33,16 @@ int main(){
  check(hw.write_as(HollywoodCpu::Broadway,4,4,(1U<<4U)|(1U<<2U)),"Broadway clears Y1");
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))==0U,"clearing Y1 deasserts IPC IRQ");
 
+ check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,value)&&value==0U,"Starlet reads Hollywood clock control");
+ check(hw.hollywood_clock_hz()==243000000ULL,"Hollywood starts in Wii clock mode");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,3U),"Starlet writes FX and SPEED clock controls");
+ check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,value)&&value==3U,"Hollywood clock control readback");
+ check(hw.system_control().fx_enabled()&&hw.hollywood_clock_hz()==162000000ULL,"clock control exposes documented mode");
+ check(!hw.write_as(HollywoodCpu::Broadway,HollywoodSystemControl::clocks_register,4,0U),"Broadway cannot access Starlet clock control");
+ check(!hw.read_as(HollywoodCpu::Broadway,HollywoodSystemControl::resets_register,4,value),"Broadway cannot access Starlet reset control");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,0xffffffffU),"Starlet writes reset control register");
+ check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,value)&&value==HollywoodSystemControl::resets_writable_mask,"reserved reset bit is masked");
+ check(hw.system_control().reset_released(1U),"reset line state can be inspected");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodTimer::alarm_register,4,3U),"Starlet programs timer alarm");
  check(!hw.write_as(HollywoodCpu::Broadway,HollywoodTimer::alarm_register,4,9U),"Broadway cannot program Starlet alarm");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodTimer::timer_register,4,value)&&value==0U,"Starlet reads timer counter");
@@ -91,6 +101,7 @@ int main(){
  hw.reset();
  check(hw.interrupts().flags(HollywoodCpu::Broadway)==0U&&hw.interrupts().flags(HollywoodCpu::Starlet)==0U,"Hollywood reset clears IRQ state");
  check(hw.timer().counter()==0U&&!hw.timer().armed(),"Hollywood reset clears timer");
+ check(hw.hollywood_clock_hz()==243000000ULL&&!hw.system_control().fx_enabled()&&hw.system_control().reset_register()==0U,"Hollywood reset clears clock/reset control state");
  check(hw.gpio().read(HollywoodCpu::Starlet,0xf0,word)&&word==0U,"Hollywood reset leaves GPIO flags clear");
  hw.advance_timer(0xfffffffeULL);
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodTimer::alarm_register,4,1U),"Program alarm across timer wraparound");
