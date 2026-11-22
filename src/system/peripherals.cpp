@@ -1,6 +1,7 @@
 #include "xavrx/system/peripherals.hpp"
 #include <algorithm>
 #include <limits>
+#include <iterator>
 namespace xavrx::system {
 namespace {
 constexpr std::uint32_t nand_offsets[]={0x00U,0x04U,0x08U,0x0cU,0x10U,0x14U};
@@ -38,7 +39,7 @@ bool NandInterface::erase_block(std::uint32_t block)noexcept{
 }
 SdHostController::SdHostController()noexcept:RegisterWindow(0x200U,sd_offsets,std::size(sd_offsets),true){}
 bool SdHostController::attach_card(std::vector<std::uint8_t> image){if(image.empty()||image.size()%block_size!=0U||image.size()/block_size>std::numeric_limits<std::uint32_t>::max())return false;card_=std::move(image);return true;}
-void SdHostController::detach_card()noexcept{card_.clear();card_.shrink_to_fit();}
+void SdHostController::detach_card()noexcept{card_.clear();}
 bool SdHostController::read_blocks(std::uint32_t first,std::uint32_t count,std::span<std::uint8_t> output)const noexcept{
  if(card_.empty()||count==0U||output.size()!=static_cast<std::size_t>(count)*block_size||first>block_count()||count>block_count()-first)return false;
  const auto offset=static_cast<std::size_t>(first)*block_size;std::copy_n(card_.begin()+static_cast<std::ptrdiff_t>(offset),output.size(),output.begin());return true;
@@ -55,6 +56,7 @@ bool UsbHostController::read(std::uint32_t off,std::uint8_t width,std::uint64_t&
 bool UsbHostController::write(std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{
  if(width!=4U||value>0xffffffffULL)return false;const auto v=static_cast<std::uint32_t>(value);
  switch(off){
+ case 0x00U:case 0x04U:case 0x08U:case 0x0cU:return false;
  case 0x10U:command_=v;if((v&cmd_reset)!=0U){reset();return true;}if((v&cmd_run)!=0U)status_&=~sts_halted;else status_|=sts_halted;return true;
  case 0x14U:status_&=~v;return true;
  case 0x18U:interrupt_enable_=v;return true;

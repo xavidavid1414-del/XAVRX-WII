@@ -68,7 +68,7 @@ public:
  void reset() noexcept;
 private:
  static constexpr std::uint32_t cmd_run=1U,cmd_reset=1U<<1U;
- static constexpr std::uint32_t sts_halted=1U,sts_usbint=1U<<0U;
+ static constexpr std::uint32_t sts_halted=1U<<12U,sts_usbint=1U<<0U;
  std::uint32_t command_{cmd_reset},status_{sts_halted},interrupt_enable_{0},frame_index_{0},periodic_base_{0},async_list_{0},config_flag_{0},port_status_{0};
  std::deque<Transfer> pending_,completed_;
 };

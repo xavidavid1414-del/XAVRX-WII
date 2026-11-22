@@ -29,14 +29,14 @@ int main(){
  check(usb.aperture_size()==0x100U&&usb.little_endian(),"USB EHCI aperture and little-endian register view");
  check(usb.read(0x00U,4,value)&&value==0x01000020U,"EHCI capability register is read-only hardware identity");
  check(!usb.write(0x00U,4,0U),"EHCI rejects writes to capability registers");
- check(usb.write(0x10U,4,1U)&&usb.read(0x14U,4,value)&&(value&1U)==0U,"EHCI run clears halted status");
+ check(usb.write(0x10U,4,1U)&&usb.read(0x14U,4,value)&&(value&(1U<<12U))==0U,"EHCI run clears halted status");
  usb.connect_device(true);const std::array<std::uint8_t,3> payload{{1U,2U,3U}};
  check(usb.enqueue_transfer(0x1234U,payload)&&usb.pending_transfers()==1U,"EHCI accepts bounded transfer");
  usb.advance_microframes(1U);UsbHostController::Transfer transfer;
  check(usb.take_completed_transfer(transfer)&&transfer.token==0x1234U&&transfer.payload.size()==3U,"EHCI completes queued transfer on active connected frame");
- check(usb.read(0x14U,4,value)&&(value&2U)!=0U,"EHCI raises USB interrupt status on completion");
- check(usb.write(0x14U,4,2U)&&usb.read(0x14U,4,value)&&(value&2U)==0U,"EHCI interrupt status is write-one-to-clear");
- check(usb.write(0x10U,4,2U)&&usb.read(0x14U,4,value)&&(value&1U)!=0U,"EHCI controller reset halts controller");
+ check(usb.read(0x14U,4,value)&&(value&1U)!=0U,"EHCI raises USB interrupt status on completion");
+ check(usb.write(0x14U,4,1U)&&usb.read(0x14U,4,value)&&(value&1U)==0U,"EHCI interrupt status is write-one-to-clear");
+ check(usb.write(0x10U,4,2U)&&usb.read(0x14U,4,value)&&(value&(1U<<12U))!=0U,"EHCI controller reset halts controller");
  check(usb.pending_transfers()==0U&&usb.completed_transfers()==0U,"EHCI reset clears transfer queues");
  check(di.aperture_size()==0x40U&&!di.little_endian(),"DI aperture and big-endian registers");
  check(di.write(0x08U,4,0x11223344U)&&di.read(0x08U,4,value)&&value==0x11223344U,"DI register access");
