@@ -35,6 +35,30 @@ int main(){
  classic.set_triggers(-0.5F,1.5F);
  check(classic.state().trigger_l==0.0F&&classic.state().trigger_r==1.0F,"Classic Controller analog trigger range");
  classic.reset();check(classic.state().buttons==0U&&classic.state().trigger_r==0.0F,"Classic Controller reset");
+
+ ClassicControllerPro pro;
+ check(pro.set_button(ClassicButton::L,true)&&pro.button(ClassicButton::L),"Classic Controller Pro digital L shoulder");
+ check(pro.set_button(ClassicButton::R,true)&&pro.button(ClassicButton::R),"Classic Controller Pro digital R shoulder");
+ pro.set_sticks(-0.5F,0.5F,0.75F,-0.75F);
+ check(pro.state().left_x==-0.5F&&pro.state().right_y==-0.75F,"Classic Controller Pro dual sticks");
+ check(!pro.set_button(static_cast<ClassicButton>(255),true),"Classic Controller Pro rejects invalid buttons");
+ pro.reset();check(pro.state().buttons==0U&&pro.state().left_x==0.0F,"Classic Controller Pro reset");
+
+ WiiBalanceBoard board;
+ for(unsigned i=0;i<4U;++i)
+  check(board.set_corner_calibration(static_cast<BalanceBoardCorner>(i),0.0F,0.01F),"Balance Board corner calibration");
+ board.set_sensor_readings(1000.0F,1000.0F,1000.0F,1000.0F);
+ check(std::fabs(board.state().total_weight_kg-40.0F)<0.001F,"Balance Board sums four calibrated load sensors");
+ check(board.state().has_load&&std::fabs(board.state().center_x)<0.001F&&std::fabs(board.state().center_y)<0.001F,"Balance Board centered load");
+ board.set_sensor_readings(2000.0F,0.0F,0.0F,0.0F);
+ check(std::fabs(board.state().total_weight_kg-20.0F)<0.001F&&board.state().center_x==-1.0F&&board.state().center_y==-1.0F,"Balance Board top-left center of pressure");
+ board.tare();
+ check(board.state().total_weight_kg==0.0F&&!board.state().has_load,"Balance Board tare");
+ board.set_sensor_readings(10.0F,std::numeric_limits<float>::quiet_NaN(),-5.0F,10.0F);
+ check(board.state().raw_sensor[1]==0.0F&&board.state().raw_sensor[2]==0.0F,"Balance Board sanitizes invalid sensor readings");
+ check(!board.set_corner_calibration(static_cast<BalanceBoardCorner>(9),0.0F,1.0F),"Balance Board rejects invalid corner");
+ check(!board.set_corner_calibration(BalanceBoardCorner::TopLeft,0.0F,0.0F),"Balance Board rejects invalid calibration scale");
+ board.reset();check(board.state().total_weight_kg==0.0F&&!board.state().has_load,"Balance Board reset");
  if(failures){std::cerr<<failures<<" controller test(s) failed\n";return 1;}
  std::cout<<"All XAVRX-WII controller tests passed\n";return 0;
 }

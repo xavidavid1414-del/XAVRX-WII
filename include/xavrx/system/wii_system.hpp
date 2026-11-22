@@ -53,6 +53,8 @@ public:
  [[nodiscard]] WiiRemoteController& wii_remote() noexcept{return wii_remote_;}
  [[nodiscard]] NunchukController& nunchuk() noexcept{return nunchuk_;}
  [[nodiscard]] ClassicController& classic_controller() noexcept{return classic_controller_;}
+ [[nodiscard]] ClassicControllerPro& classic_controller_pro() noexcept{return classic_controller_pro_;}
+ [[nodiscard]] WiiBalanceBoard& balance_board() noexcept{return balance_board_;}
  [[nodiscard]] HardwareResetController& reset_controller() noexcept{return reset_controller_;}
  [[nodiscard]] DspDevice& dsp() noexcept{return dsp_;}
  [[nodiscard]] GpuCommandProcessor& gpu() noexcept{return gpu_;}
@@ -79,6 +81,8 @@ private:
  WiiRemoteController wii_remote_{};
  NunchukController nunchuk_{};
  ClassicController classic_controller_{};
+ ClassicControllerPro classic_controller_pro_{};
+ WiiBalanceBoard balance_board_{};
  ClockDomainScheduler clock_scheduler_;
  HardwareResetController reset_controller_{};
  DspDevice dsp_{};

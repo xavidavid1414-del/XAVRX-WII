@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 
 namespace xavrx::system {
@@ -77,6 +78,55 @@ public:
  void reset() noexcept { state_=ClassicControllerState{}; }
 private:
  ClassicControllerState state_{};
+};
+
+// The Pro revision uses digital L/R shoulder buttons and keeps the same
+// two-stick and face-button layout. It is a distinct profile from the
+// pressure-sensitive shoulder triggers represented by ClassicController.
+struct ClassicControllerProState {
+ std::uint16_t buttons{0};
+ float left_x{0.0F}, left_y{0.0F};
+ float right_x{0.0F}, right_y{0.0F};
+};
+
+class ClassicControllerPro final {
+public:
+ [[nodiscard]] bool set_button(ClassicButton button, bool pressed) noexcept;
+ [[nodiscard]] bool button(ClassicButton button) const noexcept;
+ void set_sticks(float left_x, float left_y, float right_x, float right_y) noexcept;
+ [[nodiscard]] const ClassicControllerProState& state() const noexcept { return state_; }
+ void reset() noexcept { state_=ClassicControllerProState{}; }
+private:
+ ClassicControllerProState state_{};
+};
+
+enum class BalanceBoardCorner : std::uint8_t { TopLeft, TopRight, BottomLeft, BottomRight };
+
+struct WiiBalanceBoardState {
+ std::array<float,4> raw_sensor{};
+ std::array<float,4> corner_weight_kg{};
+ float total_weight_kg{0.0F};
+ // Center of pressure in normalized board coordinates [-1,1].
+ float center_x{0.0F}, center_y{0.0F};
+ bool has_load{false};
+};
+
+class WiiBalanceBoard final {
+public:
+ // Each sensor converts (raw - offset) into kilograms using kg_per_unit.
+ [[nodiscard]] bool set_corner_calibration(BalanceBoardCorner corner, float offset,
+                                           float kg_per_unit) noexcept;
+ void set_sensor_readings(float top_left, float top_right,
+                          float bottom_left, float bottom_right) noexcept;
+ // Tare makes the current readings the unloaded baseline for all four sensors.
+ void tare() noexcept;
+ [[nodiscard]] const WiiBalanceBoardState& state() const noexcept { return state_; }
+ void reset() noexcept;
+private:
+ void recalculate() noexcept;
+ std::array<float,4> offsets_{};
+ std::array<float,4> kg_per_unit_{{1.0F,1.0F,1.0F,1.0F}};
+ WiiBalanceBoardState state_{};
 };
 
 } // namespace xavrx::system
