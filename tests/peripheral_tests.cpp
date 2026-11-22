@@ -47,6 +47,12 @@ int main(){
  check(usb.write(0x10U,4,1U)&&usb.read(0x14U,4,value)&&(value&(1U<<12U))==0U,"EHCI run clears halted status");
  usb.connect_device(true);
  check(usb.read(0x54U,4,value)&&(value&0x3U)==0x3U&&(value&0x4U)==0U,"EHCI connection sets CCS and CSC without prematurely enabling port");
+ check(usb.write(0x54U,4,0x2U),"EHCI clears initial connection-change notification");
+ usb.connect_device(true);
+ check(usb.read(0x54U,4,value)&&(value&0x2U)==0U,"EHCI repeated connect notification does not create a false change");
+ usb.connect_device(false);
+ check(usb.read(0x54U,4,value)&&(value&0x3U)==0x2U,"EHCI disconnect clears CCS and records CSC");
+ usb.connect_device(true);
  check(usb.write(0x54U,4,0x2U)&&usb.read(0x54U,4,value)&&(value&0x2U)==0U&&(value&0x1U)!=0U,"EHCI PORTSC clears connect-change using write-one-to-clear");
  check(usb.write(0x54U,4,0x100U)&&usb.complete_port_reset(true)&&usb.read(0x54U,4,value)&&(value&0x4U)!=0U,"EHCI high-speed port reset completion enables connected port");
  const std::array<std::uint8_t,3> payload{{1U,2U,3U}};
