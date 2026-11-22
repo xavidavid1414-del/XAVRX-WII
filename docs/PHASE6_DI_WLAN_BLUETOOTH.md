@@ -13,3 +13,7 @@ Hardware references:
 - [WiiBrew: Drive Interface](https://wiibrew.org/wiki/Hardware/Drive_Interface)
 - [WiiBrew: 802.11 Wireless](https://wiibrew.org/wiki/Hardware/802.11_Wireless)
 - [WiiBrew: Bluetooth Card](https://wiibrew.org/wiki/Hardware/Bluetooth_Card)
+
+
+## IPC interrupt latching correction
+Hollywood IPC control writes now latch IRQ 30/31 when an enabled Y/X flag is acknowledged, including a write that clears the flag. The source flags remain pending in the Hollywood interrupt controller until the owning CPU clears the corresponding IRQ flag register with write-one-to-clear. Regression tests cover Broadway and Starlet acknowledgement paths and clearing the latched IRQ.

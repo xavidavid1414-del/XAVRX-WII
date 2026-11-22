@@ -26,14 +26,21 @@ int main(){
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<31U))==0U,"X1 IRQ not routed to Broadway");
  check(hw.write_as(HollywoodCpu::Starlet,12,4,4U),"Starlet clears X1");
  check(hw.read_as(HollywoodCpu::Broadway,4,4,value)&&(value&1U)==0U,"X1 clear reflected to Broadway");
- check((hw.interrupts().flags(HollywoodCpu::Starlet)&(1U<<31U))==0U,"clearing X1 deasserts IPC IRQ");
+ check((hw.interrupts().flags(HollywoodCpu::Starlet)&(1U<<31U))!=0U,"clearing X1 leaves the Starlet IPC IRQ latched");
+ check(hw.write_as(HollywoodCpu::Starlet,0x38U,4,1U<<31U),"Starlet clears its latched IPC IRQ through IRQ flags");
 
  check(hw.write_as(HollywoodCpu::Starlet,12,4,1U),"Starlet sets Y1");
  check(hw.write_as(HollywoodCpu::Broadway,4,4,1U<<4U),"Broadway enables Y1 IRQ");
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))!=0U,"Y1 IRQ routes to Broadway");
  check((hw.interrupts().flags(HollywoodCpu::Starlet)&(1U<<30U))==0U,"Y1 IRQ not routed to Starlet");
  check(hw.write_as(HollywoodCpu::Broadway,4,4,(1U<<4U)|(1U<<2U)),"Broadway clears Y1");
- check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))==0U,"clearing Y1 deasserts IPC IRQ");
+ check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))!=0U,"clearing Y1 leaves the Broadway IPC IRQ latched");
+ check(hw.write_as(HollywoodCpu::Broadway,0x30U,4,1U<<30U),"Broadway clears its latched IPC IRQ through IRQ flags");
+ check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))==0U,"Broadway IPC IRQ clears only after IRQ flag W1C");
+
+ check(hw.write_as(HollywoodCpu::Broadway,4,4,(1U<<4U)|(1U<<2U)),"Broadway clear pulse with IY1 enabled");
+ check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))!=0U,"IPC clear write itself latches IRQ even if Y1 is already clear");
+ check(hw.write_as(HollywoodCpu::Broadway,0x30U,4,1U<<30U),"Broadway clears IPC clear-write pulse");
 
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,value)&&value==0U,"Starlet reads Hollywood clock control");
  check(hw.system_control().hollywood_clock_hz()==243000000ULL,"Hollywood starts in Wii clock mode");
