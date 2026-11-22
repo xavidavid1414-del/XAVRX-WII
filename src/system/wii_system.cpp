@@ -7,6 +7,9 @@ constexpr std::uint32_t usb_base=0x0d040000U;
 constexpr std::uint32_t sd_base=0x0d070000U;
 constexpr std::uint32_t wlan_base=0x0d080000U;
 constexpr std::uint32_t drive_base=0x0d806000U;
+constexpr std::uint32_t pi_base=0x0c003000U;
+constexpr std::uint32_t dsp_base=0x0c005000U;
+constexpr std::uint32_t gx_fifo_base=0x0c008000U;
 }
 bool ProtectedRegisterView::read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value)noexcept{
  if(!protection_.engine_access_allowed(cpu_,engine_))return false;
@@ -52,12 +55,15 @@ void WiiSystem::advance_broadway_cycles(std::uint64_t cycles)noexcept{
 bool WiiSystem::initialize()noexcept{
  if(initialized_)return true;
  if(!hollywood_.map_into(memory_))return false;
- const std::array<DualDeviceMapping,5> mappings{{
+ const std::array<DualDeviceMapping,8> mappings{{
   {nand_base,nand_.aperture_size(),&nand_broadway_,&nand_starlet_},
   {usb_base,usb_host_.aperture_size(),&usb_broadway_,&usb_starlet_},
   {sd_base,sd_host_.aperture_size(),&sd_broadway_,&sd_starlet_},
   {wlan_base,wlan_.aperture_size(),&wlan_broadway_,&wlan_starlet_},
-  {drive_base,drive_.aperture_size(),&drive_broadway_,&drive_starlet_}
+  {drive_base,drive_.aperture_size(),&drive_broadway_,&drive_starlet_},
+  {pi_base,0x100U,&processor_interrupts_,&pi_denied_},
+  {dsp_base,0x200U,&dsp_mailbox_,&dsp_denied_},
+  {gx_fifo_base,4U,&gx_fifo_,&gx_denied_}
  }};
  if(!memory_.map_devices_dual(mappings.data(),mappings.size()))return false;
  initialized_=true;return true;
@@ -75,6 +81,6 @@ bool WiiSystem::take_bluetooth_host_packet(HollywoodCpu cpu,std::vector<std::uin
 void WiiSystem::reset()noexcept{
  memory_.reset();hardware_.reset();hollywood_.reset();
  nand_.reset();sd_host_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();clock_scheduler_.reset();
- reset_controller_.reset();dsp_.reset();gpu_.reset();
+ reset_controller_.reset();dsp_.reset();gpu_.reset();dsp_mailbox_.reset();processor_interrupts_.reset();
 }
 }
