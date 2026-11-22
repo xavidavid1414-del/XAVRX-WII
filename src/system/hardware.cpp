@@ -22,6 +22,34 @@ std::uint64_t SystemClock::nanoseconds_for_cycles(ClockDomain domain,std::uint64
  if(base>std::numeric_limits<std::uint64_t>::max()-fraction)return std::numeric_limits<std::uint64_t>::max();
  return base+fraction;
 }
+ClockDomainScheduler::Frequencies ClockDomainScheduler::advance(std::uint64_t source_cycles,std::uint64_t source_hz,const Frequencies& target_hz)noexcept{
+ Frequencies produced{};
+ if(source_hz==0U||source_cycles==0U)return produced;
+ const auto whole=source_cycles/source_hz;
+ const auto part=source_cycles%source_hz;
+ for(std::size_t i=0;i<domain_count;++i){
+  const auto target=target_hz[i];if(target==0U)continue;
+  std::uint64_t base=0U;
+  if(whole!=0U&&target>std::numeric_limits<std::uint64_t>::max()/whole)base=std::numeric_limits<std::uint64_t>::max();
+  else base=whole*target;
+  std::uint64_t fractional=0U;
+  if(part!=0U){
+   if(target>(std::numeric_limits<std::uint64_t>::max()-remainders_[i])/part){
+    fractional=std::numeric_limits<std::uint64_t>::max();remainders_[i]=0U;
+   }else{
+    const auto numerator=part*target+remainders_[i];
+    fractional=numerator/source_hz;remainders_[i]=numerator%source_hz;
+   }
+  }
+  const auto delta=base>std::numeric_limits<std::uint64_t>::max()-fractional?std::numeric_limits<std::uint64_t>::max():base+fractional;
+  produced[i]=delta;
+  totals_[i]=totals_[i]>std::numeric_limits<std::uint64_t>::max()-delta?std::numeric_limits<std::uint64_t>::max():totals_[i]+delta;
+ }
+ return produced;
+}
+std::uint64_t ClockDomainScheduler::total_cycles(ClockDomain domain)const noexcept{
+ const auto i=index(domain);return i<totals_.size()?totals_[i]:0U;
+}
 void InterruptController::raise(std::size_t line)noexcept{if(line<line_count)pending_|=static_cast<std::uint32_t>(bit(line));}
 void InterruptController::clear(std::size_t line)noexcept{if(line<line_count)pending_&=~static_cast<std::uint32_t>(bit(line));}
 void InterruptController::set_enabled(std::size_t line,bool value)noexcept{
