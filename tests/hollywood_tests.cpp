@@ -107,6 +107,18 @@ int main(){
 
  check(hw.read_as(HollywoodCpu::Broadway,HollywoodSystemControl::ahb_prot_register,4,value)&&value==0U,"Broadway can inspect AHB protection state");
  check(!hw.write_as(HollywoodCpu::Broadway,HollywoodSystemControl::ahb_prot_register,4,1U<<31U),"Broadway cannot grant itself privileged access");
+ check(!hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Sd0),"Broadway SD0 denied before AHB permission");
+ check(!hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Sd0),"Starlet SD0 denied before AHB permission");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::ahb_prot_register,4,(1U<<31U)|(1U<<10U)|(1U<<28U)|(1U<<8U)|(1U<<26U)|(1U<<6U)|(1U<<24U)|(1U<<5U)|(1U<<23U)|(1U<<4U)|(1U<<22U)),"Starlet enables documented AHB engine permissions");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Sd0),"PPCSD0EN grants Broadway SD0");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Sd0),"IOPSD0EN grants Starlet SD0");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Usb0),"PPCOH0EN grants Broadway USB0");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Usb0),"IOPOH0EN grants Starlet USB0");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Sha),"PPCSHAEN grants Broadway SHA");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Sha),"IOPSHAEN grants Starlet SHA");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Aes),"PPCAESEN grants Broadway AES");
+ check(hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Aes),"IOPAESEN grants Starlet AES");
+ check(!hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Sd1),"unselected SD1 remains denied");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::ahb_prot_register,4,1U<<31U),"Starlet grants PPCKERN access");
  check(hw.read_as(HollywoodCpu::Broadway,12,4,value),"PPCKERN grants Broadway ARMCTRL visibility");
  check(hw.read_as(HollywoodCpu::Broadway,0x38,4,value),"PPCKERN grants Broadway Starlet IRQ register visibility");
