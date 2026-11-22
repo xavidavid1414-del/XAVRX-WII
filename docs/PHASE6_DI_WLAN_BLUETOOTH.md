@@ -36,3 +36,9 @@ The supported read-DMA command now rejects a non-read transfer direction, source
 The documented inbound DSP mailbox halfwords at offsets 0x00 and 0x02 support 16-bit CPU readback and writes. A high-halfword write alone does not publish a message: the low-halfword write commits it only when the high-halfword Set bit (bit 15) is set. The Set bit remains asserted while the message is pending and is cleared when the DSP-side consumer receives the assembled 32-bit payload exactly once. Regression coverage verifies the pre-commit state, commit ordering, Set-bit persistence until receive, clearing on receive, duplicate-consumption rejection, and ignored data when Set is clear.
 
 Reference: [WiiBrew Hardware/DSP — DSP Interface](https://wiibrew.org/wiki/Hardware/DSP).
+
+
+## DI status and cover register model
+The DI MMIO device now models DISR (DEINT/TCINT/BRKINT flags and masks), DICVR (read-only cover state, cover interrupt mask and W1C flag), and DICR (DMA/direction bits with TSTART readback clear). Successful synchronous 0xA8 DMA latches TCINT; rejected/failed started commands latch DEINT. The new dedicated DI test target checks mask gating, W1C behavior, cover-state readback, reset behavior and the end-to-end MMIO DMA completion path. The processor/Starlet IRQ line routing and asynchronous command timing are still not implemented.
+
+Reference: [Dolphin DVDInterface register definitions and interrupt update logic](https://github.com/dolphin-emu/dolphin/blob/a76221bc3109da6147d7e22b941c64712103dd6e/Source/Core/Core/HW/DVD/DVDInterface.h) and [DVDInterface.cpp](https://github.com/dolphin-emu/dolphin/blob/a76221bc3109da6147d7e22b941c64712103dd6e/Source/Core/Core/HW/DVD/DVDInterface.cpp).
