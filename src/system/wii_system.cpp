@@ -85,6 +85,9 @@ bool WiiSystem::initialize()noexcept{
  if(!memory_.map_devices_dual(mappings.data(),mappings.size()))return false;
  initialized_=true;return true;
 }
+bool WiiSystem::process_bluetooth_host_command(HollywoodCpu cpu,std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event){
+ return hollywood_.system_control().engine_access_allowed(cpu,HollywoodEngine::Usb1)&&bluetooth_hci_.process_host_command(command,event);
+}
 bool WiiSystem::submit_bluetooth_host_packet(HollywoodCpu cpu,std::span<const std::uint8_t> packet){
  return hollywood_.system_control().engine_access_allowed(cpu,HollywoodEngine::Usb1)&&bluetooth_hci_.submit_host_packet(packet);
 }
