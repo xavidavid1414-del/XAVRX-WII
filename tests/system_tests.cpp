@@ -7,6 +7,14 @@
 namespace {int failures=0;void check(bool ok,const char* message){if(!ok){std::cerr<<"FAIL: "<<message<<'\n';++failures;}}}
 int main(){using namespace xavrx::system;
  SystemClock clock;check(clock.valid(),"default clock valid");check(clock.frequency(ClockDomain::Cpu)==729000000ULL,"CPU clock frequency");check(clock.frequency(ClockDomain::Gpu)==243000000ULL,"GPU clock frequency");check(clock.frequency(ClockDomain::Bus)==162000000ULL,"bus clock frequency");check(clock.frequency(ClockDomain::Dsp)==121500000ULL,"DSP clock frequency");check(clock.frequency(ClockDomain::Starlet)==243000000ULL,"Starlet clock frequency");check(clock.nanoseconds_for_cycles(ClockDomain::Cpu,729000ULL)==1000000ULL,"cycle to nanosecond conversion");
+ ClockDomainScheduler scheduler;
+ const ClockDomainScheduler::Frequencies clock_rates{{729000000ULL,243000000ULL,162000000ULL,121500000ULL,243000000ULL}};
+ const auto first_ticks=scheduler.advance(3U,729000000ULL,clock_rates);
+ check(first_ticks[static_cast<std::size_t>(ClockDomain::Gpu)]==1U&&first_ticks[static_cast<std::size_t>(ClockDomain::Bus)]==0U,"clock scheduler preserves fractional domain ticks");
+ const auto second_ticks=scheduler.advance(6U,729000000ULL,clock_rates);
+ check(second_ticks[static_cast<std::size_t>(ClockDomain::Gpu)]==2U&&second_ticks[static_cast<std::size_t>(ClockDomain::Bus)]==2U&&second_ticks[static_cast<std::size_t>(ClockDomain::Dsp)]==1U,"clock scheduler carries fractions across advances");
+ check(scheduler.total_cycles(ClockDomain::Starlet)==3U&&scheduler.total_cycles(ClockDomain::Cpu)==9U,"clock scheduler accumulates domain cycle totals");
+ scheduler.reset();check(scheduler.total_cycles(ClockDomain::Gpu)==0U,"clock scheduler reset clears counters and phase");
  SystemClock invalid(std::array<std::uint64_t,5>{1,0,2,3,4});check(!invalid.valid()&&invalid.nanoseconds_for_cycles(ClockDomain::Gpu,100)==0U,"invalid clock domain frequency handled");
  InterruptController irq;irq.raise(3);irq.raise(1);check(irq.pending(3)&&irq.pending(1),"interrupt pending bits");check(irq.active_mask()==0U,"interrupts disabled by default");irq.set_enabled(3,true);irq.set_enabled(1,true);check(irq.active_mask()==((1U<<3U)|(1U<<1U)),"enabled pending mask");check(irq.claim_highest_priority()==1,"lowest numbered interrupt has priority");check(!irq.pending(1)&&irq.pending(3),"claim acknowledges only selected interrupt");irq.clear(3);check(irq.claim_highest_priority()==-1,"no active interrupt");irq.raise(32);irq.set_enabled(32,true);check(irq.pending_mask()==0U,"out-of-range interrupt ignored");
  TimerBank timers;InterruptController timer_irq;timers.enable(0,true);timers.advance(10,timer_irq);check(!timers.is_enabled(0)&&timers.expirations(0)==0U,"unconfigured timer cannot be enabled");check(!timers.configure(0,0,false,true),"zero reload rejected");check(!timers.configure(4,10,false,true),"invalid timer index rejected");check(timers.configure(0,10,false,true),"one-shot timer configured");timers.advance(9,timer_irq);check(timers.remaining(0)==1U&&timers.expirations(0)==0U,"timer counts down deterministically");timers.advance(1,timer_irq);check(timers.expirations(0)==1U&&!timers.is_enabled(0)&&timer_irq.pending(8),"one-shot expiry raises interrupt");timers.advance(100,timer_irq);check(timers.expirations(0)==1U,"one-shot does not repeat");
@@ -17,6 +25,12 @@ int main(){using namespace xavrx::system;
  // WiiSystem composition, peripheral MMIO routing and independent AHB gates.
  WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes shared bus and peripherals");
  check(wii.memory().write32(0x80000000U,0x13579bdfU)==xavrx::memory::AccessResult::Success,"WiiSystem exposes MEM1");
+ wii.advance_broadway_cycles(9U);
+ check(wii.scheduled_cycles(ClockDomain::Starlet)==3U&&wii.hollywood().timer().counter()==3U,"WiiSystem derives Starlet ticks from Broadway cycles at 243 MHz");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000190U,4,2U)==xavrx::memory::AccessResult::Success,"WiiSystem switches Hollywood Starlet clock mode");
+ wii.advance_broadway_cycles(9U);
+ check(wii.scheduled_cycles(ClockDomain::Starlet)==5U&&wii.hollywood().timer().counter()==5U,"WiiSystem follows the 162 MHz Starlet clock mode");
+ check(wii.scheduled_cycles(ClockDomain::Gpu)==6U&&wii.scheduled_cycles(ClockDomain::Dsp)==3U&&wii.scheduled_cycles(ClockDomain::Bus)==4U,"WiiSystem schedules GPU DSP and bus domains deterministically");
  std::uint64_t value=0;const std::uint32_t nand_addr=0x0d010000U,sd_addr=0x0d070008U,usb_addr=0x0d040010U;
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,nand_addr,4,0x11223344U)==xavrx::memory::AccessResult::DeviceError,"NAND denied while Starlet AHB permission is clear");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,sd_addr,4,0x55667788U)==xavrx::memory::AccessResult::DeviceError,"SD0 denied while Starlet AHB permission is clear");
@@ -65,6 +79,7 @@ int main(){using namespace xavrx::system;
  check(wii.memory().read32(0x80000000U,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears MEM1 contents");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000064U,4,reset_value)==xavrx::memory::AccessResult::Success&&reset_value==0U,"WiiSystem reset clears AHB protection");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000190U,4,reset_value)==xavrx::memory::AccessResult::Success&&reset_value==0U,"WiiSystem reset clears Hollywood clocks");
+ check(wii.scheduled_cycles(ClockDomain::Starlet)==0U&&wii.scheduled_cycles(ClockDomain::Gpu)==0U,"WiiSystem reset clears scheduler phase and counters");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,di_addr,4,1U)==xavrx::memory::AccessResult::DeviceError,"WiiSystem reset reasserts DI reset gates");
  check(!wii.submit_bluetooth_host_packet(HollywoodCpu::Starlet,hci_command),"WiiSystem reset clears USB1 permission");
  check(!wii.take_bluetooth_host_packet(HollywoodCpu::Starlet,hci_packet),"WiiSystem reset clears Bluetooth HCI queues");
