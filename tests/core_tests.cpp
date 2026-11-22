@@ -21,8 +21,10 @@ int main(){
   check(system->memory().write32(xavrx::system::WiiMemory::mem1_cached,0x12345678U)==xavrx::memory::AccessResult::Success,"write through cached MEM1 alias");
   std::uint32_t word=0;
   check(system->memory().read32(xavrx::system::WiiMemory::mem1_physical,word)==xavrx::memory::AccessResult::Success&&word==0x12345678U,"MEM1 physical alias shares backing");
-  check(system->broadway_io_bus().write32(xavrx::system::HollywoodHardware::base,0x87654321U)==xavrx::memory::AccessResult::Success,"Broadway reaches Hollywood MMIO");
-  check(system->starlet_io_bus().read32(xavrx::system::HollywoodHardware::mirror,word)==xavrx::memory::AccessResult::Success&&word==0x87654321U,"Starlet sees shared Hollywood message register");
+  check(system->memory().write_as(xavrx::system::WiiMemoryCpu::Broadway,xavrx::system::HollywoodHardware::base,4,0x87654321U)==xavrx::memory::AccessResult::Success,"Broadway reaches Hollywood MMIO through Wii bus");
+  check(system->memory().read_as(xavrx::system::WiiMemoryCpu::Starlet,xavrx::system::HollywoodHardware::mirror,4,value)==xavrx::memory::AccessResult::Success&&value==0x87654321U,"Starlet sees shared Hollywood message register");
+  check(system->memory().write_as(xavrx::system::WiiMemoryCpu::Broadway,xavrx::system::HollywoodHardware::mirror+12U,4,1U)==xavrx::memory::AccessResult::DeviceError,"Broadway cannot access Starlet-private ARMCTRL through mirror");
+  check(system->memory().read_as(xavrx::system::WiiMemoryCpu::Starlet,xavrx::system::HollywoodHardware::base+12U,4,value)==xavrx::memory::AccessResult::Success,"Starlet has full Hollywood register access through shared window");
   check(system->hollywood().write_as(xavrx::system::HollywoodCpu::Starlet,xavrx::system::HollywoodTimer::alarm_register,4,2U),"Starlet timer alarm configured");
   system->advance_starlet_ticks(2U);
   check((system->hollywood().interrupts().flags(xavrx::system::HollywoodCpu::Starlet)&1U)!=0U,"system scheduler advances Starlet timer");
