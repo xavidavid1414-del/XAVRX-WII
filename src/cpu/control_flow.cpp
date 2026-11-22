@@ -36,21 +36,25 @@ ControlFlowResult ControlFlowExecutor::execute(std::uint32_t word,CpuState& stat
  switch(decoded.id){
  case InstructionId::Branch:{
   const auto disp=sign_extend((word>>2U)&0x00FFFFFFU,24U)*4;
-  if(lk)state.set_lr(pc+4U);state.set_pc(target(pc,disp,(word&2U)!=0U));return ControlFlowResult::Executed;
+  if(lk) state.set_lr(pc+4U);
+   state.set_pc(target(pc,disp,(word&2U)!=0U));return ControlFlowResult::Executed;
  }
  case InstructionId::BranchConditional:{
   const auto disp=sign_extend((word>>2U)&0x3FFFU,14U)*4;const bool taken=conditional_taken(word,state);
-  if(lk)state.set_lr(pc+4U);state.set_pc(taken?target(pc,disp,(word&2U)!=0U):pc+4U);return ControlFlowResult::Executed;
+  if(lk) state.set_lr(pc+4U);
+   state.set_pc(taken?target(pc,disp,(word&2U)!=0U):pc+4U);return ControlFlowResult::Executed;
  }
  case InstructionId::BranchLinkRegister:{
   const auto destination=state.lr()&~3U;const bool taken=conditional_taken(word,state);
-  if(lk)state.set_lr(pc+4U);state.set_pc(taken?destination:pc+4U);return ControlFlowResult::Executed;
+  if(lk) state.set_lr(pc+4U);
+   state.set_pc(taken?destination:pc+4U);return ControlFlowResult::Executed;
  }
  case InstructionId::BranchCountRegister:{
   const auto bo=field(word,21U,5U);if((bo&0x04U)==0U)return ControlFlowResult::UnsupportedEncoding;
   const auto destination=state.ctr()&~3U;const auto bi=field(word,16U,5U);
   const bool cr_ok=(bo&0x10U)!=0U||(((state.condition_register()>>(31U-bi))&1U)==static_cast<std::uint32_t>((bo&0x08U)!=0U));
-  if(lk)state.set_lr(pc+4U);state.set_pc(cr_ok?destination:pc+4U);return ControlFlowResult::Executed;
+  if(lk) state.set_lr(pc+4U);
+   state.set_pc(cr_ok?destination:pc+4U);return ControlFlowResult::Executed;
  }
  case InstructionId::SystemCall:return raise_exception(ExceptionKind::SystemCall,state);
  case InstructionId::ReturnFromInterrupt:return return_from_interrupt(state);
