@@ -110,7 +110,7 @@ bool BluetoothHciTransport::process_host_command(std::span<const std::uint8_t> c
  if(command.size()<4U||command[0]!=hci_command||static_cast<std::size_t>(command[3])!=command.size()-4U)return false;
  const std::uint16_t opcode=static_cast<std::uint16_t>(command[1])|static_cast<std::uint16_t>(static_cast<std::uint16_t>(command[2])<<8U);
  std::uint8_t status=0U;std::vector<std::uint8_t> parameters;
- if(opcode==0x0c03U){if(command.size()!=4U)return false;}
+ if(opcode==0x0c03U){if(command.size()!=4U)return false;host_to_device_.clear();device_to_host_.clear();}
  else if(opcode==0x1009U){if(command.size()!=4U)return false;parameters={0x02U,0x00U,0x00U,0x00U,0x00U,0x01U};}
  else status=0x01U;
  event.clear();event.reserve(7U+parameters.size());event.push_back(hci_event);event.push_back(0x0eU);
