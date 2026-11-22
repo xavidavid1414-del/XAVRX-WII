@@ -7,8 +7,8 @@ enum class CpuStepResult : std::uint8_t { Executed, InterruptTaken, InvalidInstr
 class BroadwayCpu final {
 public:
  [[nodiscard]] CpuStepResult step(system::WiiSystem& system) noexcept;
- [[nodiscard]] CpuState& state() noexcept{return state_;}
- [[nodiscard]] const CpuState& state() const noexcept{return state_;}
+ [[nodiscard]] cpu::CpuState& state() noexcept{return state_;}
+ [[nodiscard]] const cpu::CpuState& state() const noexcept{return state_;}
  void reset() noexcept{state_.reset();}
 private:
  cpu::CpuState state_{};
