@@ -12,6 +12,14 @@ constexpr std::uint32_t usb_offsets[]={
  0x98U,0x9cU,0xa0U,0xa4U,0xa8U,0xacU,0xb0U,0xb4U,0xc4U,0xc8U,0xccU,
  0xd0U,0xd4U,0xd8U,0xdcU,0xe0U,0xe4U,0xe8U,0xecU,0xf0U,0xf4U,0xf8U,0xfcU
 };
+constexpr std::uint32_t di_offsets[]={0x00U,0x04U,0x08U,0x0cU,0x10U,0x14U,0x18U,0x1cU,0x20U,0x24U};
+constexpr std::uint8_t hci_command=0x01U;
+constexpr std::uint8_t hci_acl=0x02U;
+constexpr std::uint8_t hci_event=0x04U;
+bool valid_acl(std::span<const std::uint8_t> p) noexcept {
+ return p.size()>=5U && p[0]==hci_acl &&
+        (static_cast<std::size_t>(p[3]) | (static_cast<std::size_t>(p[4])<<8U))==p.size()-5U;
+}
 }
 RegisterWindow::RegisterWindow(std::uint32_t aperture,const std::uint32_t* offsets,std::size_t count,bool little) noexcept
  :aperture_size_(aperture),little_endian_(little){
@@ -34,4 +42,34 @@ void RegisterWindow::reset()noexcept{registers_.fill(0U);}
 NandInterface::NandInterface()noexcept:RegisterWindow(0x1cU,nand_offsets,sizeof(nand_offsets)/sizeof(nand_offsets[0]),false){}
 SdHostController::SdHostController()noexcept:RegisterWindow(0x200U,sd_offsets,sizeof(sd_offsets)/sizeof(sd_offsets[0]),true){}
 UsbHostController::UsbHostController()noexcept:RegisterWindow(0x100U,usb_offsets,sizeof(usb_offsets)/sizeof(usb_offsets[0]),true){}
+DriveInterface::DriveInterface()noexcept:RegisterWindow(0x40U,di_offsets,sizeof(di_offsets)/sizeof(di_offsets[0]),false){}
+WirelessLanController::WirelessLanController()noexcept:RegisterWindow(0x200U,sd_offsets,sizeof(sd_offsets)/sizeof(sd_offsets[0]),true){}
+
+bool BluetoothHciTransport::valid_host_packet(std::span<const std::uint8_t> p) noexcept {
+ if(p.empty())return false;
+ if(p[0]==hci_command)return p.size()>=4U&&static_cast<std::size_t>(p[3])==p.size()-4U;
+ return valid_acl(p);
+}
+bool BluetoothHciTransport::valid_device_packet(std::span<const std::uint8_t> p) noexcept {
+ if(p.empty())return false;
+ if(p[0]==hci_event)return p.size()>=3U&&static_cast<std::size_t>(p[2])==p.size()-3U;
+ return valid_acl(p);
+}
+bool BluetoothHciTransport::submit_host_packet(std::span<const std::uint8_t> p){
+ if(!valid_host_packet(p)||host_to_device_.size()>=queue_capacity)return false;
+ host_to_device_.emplace_back(p.begin(),p.end());return true;
+}
+bool BluetoothHciTransport::take_device_packet(std::vector<std::uint8_t>& p){
+ if(host_to_device_.empty())return false;
+ p=std::move(host_to_device_.front());host_to_device_.pop_front();return true;
+}
+bool BluetoothHciTransport::submit_device_packet(std::span<const std::uint8_t> p){
+ if(!valid_device_packet(p)||device_to_host_.size()>=queue_capacity)return false;
+ device_to_host_.emplace_back(p.begin(),p.end());return true;
+}
+bool BluetoothHciTransport::take_host_packet(std::vector<std::uint8_t>& p){
+ if(device_to_host_.empty())return false;
+ p=std::move(device_to_host_.front());device_to_host_.pop_front();return true;
+}
+void BluetoothHciTransport::reset()noexcept{host_to_device_.clear();device_to_host_.clear();}
 }
