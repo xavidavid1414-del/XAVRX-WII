@@ -88,6 +88,7 @@ public:
  void signal_transfer_complete() noexcept{disr_|=1U<<4U;}
  void signal_device_error() noexcept{disr_|=1U<<2U;}
  void signal_break_interrupt() noexcept{disr_|=1U<<6U;}
+ void signal_cover_interrupt() noexcept{dicvr_|=1U<<2U;}
  [[nodiscard]] bool interrupt_pending() const noexcept;
  void reset() noexcept;
 private:
