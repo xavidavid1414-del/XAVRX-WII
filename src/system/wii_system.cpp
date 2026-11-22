@@ -32,7 +32,7 @@ bool DriveResetView::write(std::uint32_t offset,std::uint8_t width,std::uint64_t
  if((value&2U)!=0U){
   std::uint64_t command=0U,source=0U,length=0U,destination=0U,requested=0U;
   if(device_.read(0x08U,4U,command)&&device_.read(0x0cU,4U,source)&&device_.read(0x10U,4U,length)&&device_.read(0x14U,4U,destination)&&device_.read(0x18U,4U,requested)&&
-     (static_cast<std::uint32_t>(command)>>24U)==0xa8U&&length==requested&&length>0U&&length<=0xffffffffULL){
+     (static_cast<std::uint32_t>(command)>>24U)==0xa8U&&(static_cast<std::uint32_t>(value)&4U)==0U&&length==requested&&length>0U&&length<=0xffffffffULL&&(length%32U)==0U&&(source%32U)==0U&&(destination%32U)==0U){
    std::vector<std::uint8_t> bytes;
    try{bytes.resize(static_cast<std::size_t>(length));}catch(...){bytes.clear();}
    if(bytes.size()==length&&device_.read_disc_bytes(source,bytes)&&memory_.write_bytes_as(cpu_,static_cast<std::uint32_t>(destination),bytes)==memory::AccessResult::Success)completed=true;

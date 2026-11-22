@@ -17,3 +17,6 @@ These three components are still not sufficient to boot or play Wii software. Co
 - [WiiBrew: NAND flash geometry](https://wiibrew.org/wiki/Hardware/NAND)
 - [WiiBrew: SD Host Controller](https://wiibrew.org/wiki/Hardware/SD_Host_Controller)
 - [WiiBrew: USB Host Controller / EHCI](https://wiibrew.org/wiki/Hardware/USB_Host_Controller)
+
+
+The initial DI command path is limited to the documented read-DMA direction. It now validates 32-byte alignment for the source offset, destination address and transfer length, and rejects write-to-disc direction rather than treating it as a read. The test fixture uses an aligned 32-byte transfer.

@@ -37,7 +37,8 @@ int main(){using namespace xavrx::system;
  // WiiSystem composition, peripheral MMIO routing and independent AHB gates.
  WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes shared bus and peripherals");
  // DI image reads copy bytes into the shared memory map for both processors.
- const std::vector<std::uint8_t> di_image{0x10U,0x32U,0x54U,0x76U,0x98U,0xbaU,0xdcU,0xfeU};
+ std::vector<std::uint8_t> di_image(32U);
+ for(std::size_t i=0;i<di_image.size();++i)di_image[i]=static_cast<std::uint8_t>(i+1U);
  check(wii.drive_interface().mount_disc_image(di_image),"WiiSystem mounts DI image for DMA");
  check(wii.read_disc_to_memory(WiiMemoryCpu::Broadway,0U,0x80001000U,8U),"DI transfers image bytes into Broadway MEM1");
  std::uint64_t di_byte=0U;
@@ -113,12 +114,19 @@ int main(){using namespace xavrx::system;
  // A documented DI 0xA8 read command is dispatched by DICR and DMA-writes shared MEM1.
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806008U,4,0xa8000000U)==xavrx::memory::AccessResult::Success,"DI command buffer 0 accepts read command");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80600cU,4,0U)==xavrx::memory::AccessResult::Success,"DI command buffer 1 sets image byte offset");
- check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806010U,4,8U)==xavrx::memory::AccessResult::Success,"DI command buffer 2 sets transfer size");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806010U,4,32U)==xavrx::memory::AccessResult::Success,"DI command buffer 2 sets transfer size");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806014U,4,0x80004000U)==xavrx::memory::AccessResult::Success,"DI DMA destination configured");
- check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4,8U)==xavrx::memory::AccessResult::Success,"DI DMA length configured");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4,32U)==xavrx::memory::AccessResult::Success,"DI DMA length configured");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::Success,"DI DICR starts supported read DMA command");
- check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x80004000U,4,value)==xavrx::memory::AccessResult::Success&&value==0x10325476U,"DI register command transfers image bytes into shared MEM1");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x80004000U,4,value)==xavrx::memory::AccessResult::Success&&value==0x01020304U,"DI register command transfers image bytes into shared MEM1");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,value)==xavrx::memory::AccessResult::Success&&(value&1U)==0U,"DI command start bit self-clears after synchronous completion");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4,8U)==xavrx::memory::AccessResult::Success,"DI non-aligned transfer length configured");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::DeviceError,"DI rejects non-32-byte DMA length");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4,32U)==xavrx::memory::AccessResult::Success,"DI restores aligned transfer length");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806014U,4,0x80004004U)==xavrx::memory::AccessResult::Success,"DI unaligned DMA destination configured");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::DeviceError,"DI rejects unaligned DMA destination");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806014U,4,0x80004000U)==xavrx::memory::AccessResult::Success,"DI restores aligned DMA destination");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,7U)==xavrx::memory::AccessResult::DeviceError,"DI rejects unsupported memory-to-disc DMA direction");
  // Unsupported command and invalid destination are rejected without changing RAM.
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806008U,4,0x12000000U)==xavrx::memory::AccessResult::Success,"DI stores an unsupported command for rejection test");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::DeviceError,"DI rejects unsupported command opcode");
