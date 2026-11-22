@@ -39,6 +39,7 @@ bool DriveResetView::write(std::uint32_t offset,std::uint8_t width,std::uint64_t
    if(bytes.size()==length&&device_.read_disc_bytes(source,bytes)&&memory_.write_bytes_as(cpu_,static_cast<std::uint32_t>(destination),bytes)==memory::AccessResult::Success)completed=true;
   }
  }
+ if((normalized&1U)!=0U){if(completed)device_.signal_transfer_complete();else device_.signal_device_error();}
  (void)device_.write(0x1cU,4U,static_cast<std::uint32_t>(normalized)&~1U);
  return completed;
 }
