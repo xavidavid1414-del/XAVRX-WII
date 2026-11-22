@@ -51,7 +51,10 @@ public:
 
         if (index == 0U) { reset(); out.accepted = true; out.r1 = 0x01U; return out; }
         if (index == 8U) {
-            if (state_ != State::idle) return illegal(out);
+            // This model represents an SDHC card using the standard 2.7-3.6 V range.
+            // CMD8 reserves bits 31:12 and carries VHS in 11:8 plus the host check pattern.
+            if (state_ != State::idle || (argument & 0xfffff000U) != 0U ||
+                ((argument >> 8U) & 0x0fU) != 0x01U) return illegal(out);
             out.accepted = true; out.r1 = 0x01U; out.value = argument & 0xfffU; return out;
         }
         if (index == 55U) {
