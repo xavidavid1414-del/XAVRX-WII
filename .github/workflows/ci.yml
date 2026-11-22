@@ -22,3 +22,25 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  build-3dsx:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:20260610
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Nintendo 3DS homebrew
+        run: make -f 3ds/Makefile
+
+      - name: Verify 3DSX output
+        run: test -s XAVRX-WII.3dsx
+
+      - name: Upload 3DSX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: XAVRX-WII-3DSX
+          path: XAVRX-WII.3dsx
+          if-no-files-found: error
+          retention-days: 14
