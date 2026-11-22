@@ -41,7 +41,7 @@ private:
 class HollywoodSystemControl final {
 public:
  static constexpr std::uint32_t srnprot_register=0x60,ahb_prot_register=0x64,boot0_register=0x18c,clocks_register=0x190,resets_register=0x194;
- static constexpr std::uint32_t fx_bit=1U<<0U,speed_bit=1U<<1U,resets_writable_mask=0x7fffffffU,di_reset_bit=1U<<10U;
+ static constexpr std::uint32_t fx_bit=1U<<0U,speed_bit=1U<<1U,resets_writable_mask=0x7fffffffU,di_io_reset_bit=1U<<10U,di_reset_b_bit=1U<<3U;
  [[nodiscard]] bool read(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t& value)const noexcept;
  [[nodiscard]] bool write(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t value)noexcept;
  [[nodiscard]] bool ppc_full_access()const noexcept{return (ahb_prot_&(1U<<31U))!=0U;}
@@ -51,7 +51,7 @@ public:
  [[nodiscard]] bool fx_enabled()const noexcept{return (clocks_&fx_bit)!=0U;}
  [[nodiscard]] std::uint32_t reset_register()const noexcept{return resets_;}
  [[nodiscard]] bool reset_released(std::uint32_t mask)const noexcept{return (resets_&mask)==mask;}
- [[nodiscard]] bool di_reset_asserted()const noexcept{return (resets_&di_reset_bit)==0U;}
+ [[nodiscard]] bool di_io_reset_asserted()const noexcept{return (resets_&di_io_reset_bit)==0U;}\n [[nodiscard]] bool di_reset_b_asserted()const noexcept{return (resets_&di_reset_b_bit)==0U;}
  void reset()noexcept{ahb_prot_=0;clocks_=0;resets_=0;}
 private:
  std::uint32_t ahb_prot_{0},clocks_{0},resets_{0};
