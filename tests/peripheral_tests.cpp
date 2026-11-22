@@ -9,6 +9,10 @@ int main(){
  using namespace xavrx::system;NandInterface nand;SdHostController sd;UsbHostController usb;DriveInterface di;WirelessLanController wlan;std::uint64_t value=0;
  check(nand.aperture_size()==0x1cU&&!nand.little_endian(),"NAND aperture and big-endian bus");
  check(nand.write(0x00U,4,0x12345678U)&&nand.read(0x00U,4,value)&&value==0x12345678U,"NAND register readback");
+ check(nand.write(0x10U,4,0x80001000U)&&nand.read(0x10U,4,value)&&value==0x80001000U,"NAND data DMA buffer accepts 16-byte-aligned address");
+ check(nand.write(0x14U,4,0x80002000U)&&nand.read(0x14U,4,value)&&value==0x80002000U,"NAND spare/ECC DMA buffer accepts 16-byte-aligned address");
+ check(!nand.write(0x10U,4,0x80001001U)&&nand.read(0x10U,4,value)&&value==0x80001000U,"NAND data DMA buffer rejects unaligned address without changing register");
+ check(!nand.write(0x14U,4,0x8000200fU)&&nand.read(0x14U,4,value)&&value==0x80002000U,"NAND spare/ECC DMA buffer rejects unaligned address without changing register");
  check(nand.write(0x18U,4,0x12345678U)&&nand.read(0x18U,4,value)&&value==0x12345678U,"NAND exposes documented opaque NAND_UNK register without assigning semantics");
  check(!nand.read(0x1cU,4,value)&&!nand.write(0x04U,2,0x1234U),"NAND rejects out-of-aperture and non-word accesses");
  std::array<std::uint8_t,NandInterface::page_size> page{},readback{};std::array<std::uint8_t,NandInterface::spare_size> spare{},spare_out{};
