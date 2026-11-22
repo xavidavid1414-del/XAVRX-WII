@@ -42,6 +42,7 @@ ControllerInputFrame make_input_frame(const WiiRemoteState& s) noexcept {
   InputControl::RemoteMinus,InputControl::RemoteHome};
  for(unsigned i=0;i<11U;++i) button(f,controls[i],(s.buttons&(1U<<i))!=0U);
  f.set(InputControl::PointerX,s.pointer.x*2.0F-1.0F); f.set(InputControl::PointerY,s.pointer.y*2.0F-1.0F);
+ button(f,InputControl::PointerVisible,s.pointer.visible);
  return f;
 }
 ControllerInputFrame make_input_frame(const NunchukState& s) noexcept {

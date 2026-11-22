@@ -28,14 +28,18 @@ int main(){using namespace xavrx::system;
  WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes shared bus and peripherals");
  // The composed system routes live states from every controller profile to game actions.
  check(wii.input_router().add_binding({ControllerType::WiiRemote,InputControl::RemoteA,GameAction::Confirm}),"WiiSystem registers Wii Remote binding");
+ check(wii.input_router().add_binding({ControllerType::WiiRemote,InputControl::PointerVisible,GameAction::PointerVisible}),"WiiSystem registers pointer visibility binding");
  check(wii.input_router().add_binding({ControllerType::Nunchuk,InputControl::NunchukStickX,GameAction::MoveX,1.0F,0.0F,false}),"WiiSystem registers Nunchuk axis binding");
  check(wii.input_router().add_binding({ControllerType::Classic,InputControl::ClassicLeftX,GameAction::MoveX,1.0F,0.0F,false}),"WiiSystem registers Classic Controller axis binding");
+ check(wii.input_router().add_binding({ControllerType::ClassicPro,InputControl::ProRightX,GameAction::CameraX,1.0F,0.0F,false}),"WiiSystem registers Classic Pro axis binding");
  check(wii.input_router().add_binding({ControllerType::BalanceBoard,InputControl::BalanceWeightKg,GameAction::WeightKg,1.0F,0.0F,false}),"WiiSystem registers Balance Board weight binding");
- (void)wii.wii_remote().set_button(WiiRemoteButton::A,true);wii.nunchuk().set_stick(-0.9F,0.0F);wii.classic_controller().set_sticks(-0.5F,0.0F,0.0F,0.0F);
+ (void)wii.wii_remote().set_button(WiiRemoteButton::A,true);wii.wii_remote().set_pointer(0.2F,0.8F,true);wii.nunchuk().set_stick(-0.9F,0.0F);wii.classic_controller().set_sticks(-0.5F,0.0F,0.0F,0.0F);wii.classic_controller_pro().set_sticks(0.0F,0.0F,0.75F,0.0F);
  for(unsigned i=0;i<4U;++i)(void)wii.balance_board().set_corner_calibration(static_cast<BalanceBoardCorner>(i),0.0F,0.01F);
  wii.balance_board().set_sensor_readings(1000.0F,1000.0F,1000.0F,1000.0F);
  const auto routed_inputs=wii.route_controller_inputs();
  check(routed_inputs.pressed(GameAction::Confirm),"WiiSystem routes live Wii Remote buttons");
+ check(routed_inputs.pressed(GameAction::PointerVisible),"WiiSystem routes live Wii Remote pointer visibility");
+ check(routed_inputs.value(GameAction::CameraX)>0.74F&&routed_inputs.value(GameAction::CameraX)<0.76F,"WiiSystem routes Classic Pro right stick");
  check(routed_inputs.value(GameAction::MoveX)<-0.89F&&routed_inputs.value(GameAction::MoveX)>-0.91F,"WiiSystem selects the strongest absolute analog axis across profiles");
  check(routed_inputs.value(GameAction::WeightKg)>0.26F&&routed_inputs.value(GameAction::WeightKg)<0.27F,"WiiSystem routes calibrated Balance Board weight");
  // Broadway-only DSP mailbox, PI interrupt and GX write-gather mappings.

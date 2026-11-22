@@ -15,12 +15,12 @@ enum class InputControl : std::uint8_t {
  ClassicL, ClassicR, ClassicZL, ClassicZR, ClassicPlus, ClassicMinus, ClassicHome,
  ClassicLeftX, ClassicLeftY, ClassicRightX, ClassicRightY, ClassicTriggerL, ClassicTriggerR,
  ProLeftX, ProLeftY, ProRightX, ProRightY,
- PointerX, PointerY, BalanceWeightKg, BalanceCenterX, BalanceCenterY,
+ PointerX, PointerY, PointerVisible, BalanceWeightKg, BalanceCenterX, BalanceCenterY,
  Count
 };
 enum class GameAction : std::uint8_t {
  Confirm, Cancel, Menu, Pause, Up, Down, Left, Right, Primary, Secondary,
- MoveX, MoveY, CameraX, CameraY, PointerX, PointerY, WeightKg, BalanceX, BalanceY,
+ MoveX, MoveY, CameraX, CameraY, PointerX, PointerY, PointerVisible, WeightKg, BalanceX, BalanceY,
  Count
 };
 

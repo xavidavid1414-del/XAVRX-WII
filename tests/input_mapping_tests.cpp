@@ -6,6 +6,7 @@ int main(){
  using namespace xavrx::system;
  ControllerInputRouter router;
  check(router.add_binding({ControllerType::WiiRemote,InputControl::RemoteA,GameAction::Confirm}),"add Wii Remote mapping");
+ check(router.add_binding({ControllerType::WiiRemote,InputControl::PointerVisible,GameAction::PointerVisible}),"add Wii Remote pointer visibility mapping");
  check(router.add_binding({ControllerType::Nunchuk,InputControl::NunchukStickX,GameAction::MoveX,1.0F,0.1F,false}),"add Nunchuk axis mapping");
  check(router.add_binding({ControllerType::Classic,InputControl::ClassicTriggerL,GameAction::Primary,1.0F,0.2F,true}),"add Classic trigger mapping");
  check(router.add_binding({ControllerType::ClassicPro,InputControl::ProRightY,GameAction::CameraY,1.0F,0.1F,false}),"add Pro stick mapping");
@@ -15,6 +16,10 @@ int main(){
  WiiRemoteController remote; (void)remote.set_button(WiiRemoteButton::A,true);
  auto state=router.route(make_input_frame(remote.state()));
  check(state.pressed(GameAction::Confirm),"Wii Remote A routes to confirm");
+ remote.set_pointer(0.25F,0.75F,true);
+ state=router.route(make_input_frame(remote.state()));
+ check(state.pressed(GameAction::PointerVisible),"Wii Remote pointer visibility routes as a digital action");
+ check(!router.route(make_input_frame(WiiRemoteState{})).pressed(GameAction::PointerVisible),"hidden Wii Remote pointer is not reported visible");
  NunchukController nunchuk; nunchuk.set_stick(0.5F,-0.8F);
  state=router.route(make_input_frame(nunchuk.state()));
  check(std::fabs(state.value(GameAction::MoveX)-((0.5F-0.1F)/0.9F))<0.001F,"Nunchuk axis deadzone and normalization");

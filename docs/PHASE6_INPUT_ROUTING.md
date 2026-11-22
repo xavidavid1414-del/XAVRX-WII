@@ -3,6 +3,8 @@
 This batch adds a shared mapping layer between the five controller state models and game-facing actions.
 
 - Converts Wii Remote, Nunchuk, Classic Controller, Classic Controller Pro, and Balance Board states into normalized input frames.
+- Routes Wii Remote pointer coordinates plus an explicit pointer-visible digital action, distinguishing a hidden pointer from one at the screen origin.
+- Includes system-level aggregation tests for Classic Pro analog input and Wii Remote pointer visibility.
 - Supports configurable digital and analog bindings, per-binding scale, and analog deadzones.
 - Keeps controller profiles separate so identically named controls on different devices cannot collide.
 - Exposes Balance Board total load as a normalized game input; raw kilograms remain available from the Balance Board state model.
