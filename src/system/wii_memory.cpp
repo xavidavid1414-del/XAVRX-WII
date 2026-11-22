@@ -53,6 +53,7 @@ bool WiiMemory::translate(std::uint32_t address,std::uint8_t width,std::vector<s
 memory::AccessResult WiiMemory::read(std::uint32_t address,std::uint8_t width,std::uint64_t& value)noexcept{return read_as(WiiMemoryCpu::Broadway,address,width,value);}
 memory::AccessResult WiiMemory::write(std::uint32_t address,std::uint8_t width,std::uint64_t value)noexcept{return write_as(WiiMemoryCpu::Broadway,address,width,value);}
 memory::AccessResult WiiMemory::read_as(WiiMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t& value)noexcept{
+ if(cpu!=WiiMemoryCpu::Broadway&&cpu!=WiiMemoryCpu::Starlet)return memory::AccessResult::InvalidConfiguration;
  if(!supported_width(width))return memory::AccessResult::InvalidWidth;
  if((address&(static_cast<std::uint32_t>(width)-1U))!=0U)return memory::AccessResult::Misaligned;
  std::vector<std::uint8_t>* bank=nullptr;std::size_t offset=0;
@@ -68,6 +69,7 @@ memory::AccessResult WiiMemory::read_as(WiiMemoryCpu cpu,std::uint32_t address,s
  return memory::AccessResult::Unmapped;
 }
 memory::AccessResult WiiMemory::write_as(WiiMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t value)noexcept{
+ if(cpu!=WiiMemoryCpu::Broadway&&cpu!=WiiMemoryCpu::Starlet)return memory::AccessResult::InvalidConfiguration;
  if(!supported_width(width))return memory::AccessResult::InvalidWidth;
  if((address&(static_cast<std::uint32_t>(width)-1U))!=0U)return memory::AccessResult::Misaligned;
  std::vector<std::uint8_t>* bank=nullptr;std::size_t offset=0;

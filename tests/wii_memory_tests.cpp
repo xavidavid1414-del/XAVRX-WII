@@ -11,6 +11,10 @@ public:
 };
 int main(){using namespace xavrx::system;using xavrx::memory::AccessResult;
  WiiMemory memory;
+ const auto invalid_cpu=static_cast<WiiMemoryCpu>(0xffU);
+ std::uint64_t invalid_probe=0xfeedfaceU;
+ check(memory.read_as(invalid_cpu,WiiMemory::mem1_cached,4U,invalid_probe)==AccessResult::InvalidConfiguration&&invalid_probe==0xfeedfaceU,"invalid CPU identity is rejected without changing read output");
+ check(memory.write_as(invalid_cpu,WiiMemory::mem1_cached,4U,0x12345678U)==AccessResult::InvalidConfiguration,"invalid CPU identity is rejected before memory writes");
  TestDevice existing_device,fresh_device;
  check(memory.map_device_dual(0x20000000U,0x1000U,existing_device,existing_device),"register initial MMIO device");
  const std::array<DualDeviceMapping,2> conflicting_batch{{
