@@ -2,6 +2,7 @@
 #include "xavrx/memory/memory.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <cstddef>
 #include <vector>
 namespace xavrx::system {
