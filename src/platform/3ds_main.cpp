@@ -214,7 +214,7 @@ int main() {
     consoleInit(GFX_BOTTOM, &bottomConsole);
 
     xavrx::Emulator emulator;
-    const bool initialized = emulator.initialize();
+    (void)emulator.initialize();
 
     int selected = 0;
     int controllerSelected = 0;
