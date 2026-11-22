@@ -38,8 +38,12 @@ int main(){
  check(system.memory().write_as(WiiMemoryCpu::Starlet,0x0d806014U,4U,0x80004000U)==xavrx::memory::AccessResult::Success,"configure integrated DI destination");
  check(system.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4U,32U)==xavrx::memory::AccessResult::Success,"configure integrated DI DMA length");
  check(system.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4U,3U)==xavrx::memory::AccessResult::Success,"start integrated DI read DMA");
- check(system.memory().read_as(WiiMemoryCpu::Starlet,0x0d806000U,4U,value)==xavrx::memory::AccessResult::Success&&(value&(1U<<4U))!=0U&&system.drive_interface().interrupt_pending(),"successful DI DMA latches masked transfer-complete interrupt");
+ check(system.memory().read_as(WiiMemoryCpu::Starlet,0x0d806000U,4U,value)==xavrx::memory::AccessResult::Success&&(value&(1U<<4U))!=0U&&system.drive_interface().interrupt_pending()&&(system.hollywood().interrupts().flags(HollywoodCpu::Broadway)&(1U<<18U))!=0U&&(system.hollywood().interrupts().flags(HollywoodCpu::Starlet)&(1U<<18U))!=0U,"successful DI DMA latches TCINT and routes Hollywood IRQ 18 to both CPUs");
  check(system.memory().write_as(WiiMemoryCpu::Starlet,0x0d806000U,4U,1U<<4U)==xavrx::memory::AccessResult::Success&&!system.drive_interface().interrupt_pending(),"MMIO write clears integrated DI completion interrupt");
+ check((system.hollywood().interrupts().flags(HollywoodCpu::Broadway)&(1U<<18U))!=0U&&(system.hollywood().interrupts().flags(HollywoodCpu::Starlet)&(1U<<18U))!=0U,"Hollywood DI IRQ flags remain latched until CPU acknowledgement");
+ system.hollywood().interrupts().clear(HollywoodCpu::Broadway,1U<<18U);
+ system.hollywood().interrupts().clear(HollywoodCpu::Starlet,1U<<18U);
+ check((system.hollywood().interrupts().flags(HollywoodCpu::Broadway)&(1U<<18U))==0U&&(system.hollywood().interrupts().flags(HollywoodCpu::Starlet)&(1U<<18U))==0U,"Broadway and Starlet independently acknowledge DI IRQ 18");
  if(failures){std::cerr<<failures<<" DI register test(s) failed\n";return 1;}
  std::cout<<"All DI register tests passed\n";return 0;
 }
