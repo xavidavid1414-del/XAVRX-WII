@@ -4,6 +4,20 @@ namespace xavrx::system {
 namespace {
 constexpr std::size_t index(ClockDomain d) noexcept{return static_cast<std::size_t>(d);}
 constexpr std::uint64_t nanoseconds_per_second=1000000000ULL;
+// Computes floor(a * b / d) without overflowing when a < d.
+constexpr std::uint64_t multiply_divide_fraction(std::uint64_t a,std::uint64_t b,std::uint64_t d) noexcept {
+ std::uint64_t quotient=0U,remainder=0U;
+ for(int bit_index=63;bit_index>=0;--bit_index){
+  quotient*=2U;
+  if(remainder>=d-remainder){remainder-=d-remainder;++quotient;}
+  else remainder+=remainder;
+  if(((b>>static_cast<unsigned>(bit_index))&1U)!=0U){
+   if(remainder>=d-a){remainder-=d-a;++quotient;}
+   else remainder+=a;
+  }
+ }
+ return quotient;
+}
 constexpr std::uint64_t bit(std::size_t line) noexcept{return std::uint32_t{1}<<line;}
 }
 SystemClock::SystemClock() noexcept:hz_{729000000ULL,243000000ULL,162000000ULL,121500000ULL,243000000ULL},valid_(true){}
@@ -18,7 +32,7 @@ std::uint64_t SystemClock::nanoseconds_for_cycles(ClockDomain domain,std::uint64
  const auto whole=cycles/hz,part=cycles%hz;
  if(whole>std::numeric_limits<std::uint64_t>::max()/nanoseconds_per_second)return std::numeric_limits<std::uint64_t>::max();
  const auto base=whole*nanoseconds_per_second;
- const auto fraction=(part*nanoseconds_per_second)/hz;
+ const auto fraction=multiply_divide_fraction(part,nanoseconds_per_second,hz);
  if(base>std::numeric_limits<std::uint64_t>::max()-fraction)return std::numeric_limits<std::uint64_t>::max();
  return base+fraction;
 }
