@@ -86,6 +86,19 @@ bool StarletMemory::write_as(StarletMemoryCpu cpu,std::uint32_t address,std::uin
  if(cpu==StarletMemoryCpu::Broadway&&(srnprot_&broadway_sram_bit)==0U)return false;
  return write_region(translate(address),width,value);
 }
+bool StarletMemory::master_access_allowed(StarletSramMaster master)const noexcept{
+ static constexpr std::uint32_t permission_bits[]={1U<<3U,1U<<4U,1U<<2U,1U<<1U,1U<<0U};
+ const auto index=static_cast<std::size_t>(master);
+ return index<5U&&(srnprot_&permission_bits[index])!=0U;
+}
+bool StarletMemory::read_for_master(StarletSramMaster master,std::uint32_t address,std::uint8_t width,std::uint64_t& value)noexcept{
+ if(!master_access_allowed(master)||(width!=1U&&width!=2U&&width!=4U&&width!=8U)||(address&(width-1U))!=0U)return false;
+ return read_region(translate(address),width,value);
+}
+bool StarletMemory::write_for_master(StarletSramMaster master,std::uint32_t address,std::uint8_t width,std::uint64_t value)noexcept{
+ if(!master_access_allowed(master)||(width!=1U&&width!=2U&&width!=4U&&width!=8U)||(address&(width-1U))!=0U)return false;
+ return write_region(translate(address),width,value);
+}
 bool StarletMemory::read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept {
  return read_as(StarletMemoryCpu::Broadway,sram_base+offset,width,value);
 }
