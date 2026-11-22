@@ -44,3 +44,5 @@ The DI MMIO device now models DISR (DEINT/TCINT/BRKINT flags and masks), DICVR (
 Reference: [Dolphin DVDInterface register definitions and interrupt update logic](https://github.com/dolphin-emu/dolphin/blob/a76221bc3109da6147d7e22b941c64712103dd6e/Source/Core/Core/HW/DVD/DVDInterface.h) and [DVDInterface.cpp](https://github.com/dolphin-emu/dolphin/blob/a76221bc3109da6147d7e22b941c64712103dd6e/Source/Core/Core/HW/DVD/DVDInterface.cpp).
 
 The DI interrupt source is also connected to Hollywood IRQ 18 for both Broadway and Starlet. The IRQ flags remain latched in the Hollywood interrupt controller until each CPU acknowledges its own flag register; the DI source flags are independently cleared through DISR/DICVR W1C writes. WiiBrew's Hollywood IRQ table identifies source 18 as the Drive Interface and documents the independent per-CPU flag/mask registers.
+
+DI cover transitions are event-driven: mounting a disc changes CVR from open to closed and latches CVRINT; ejecting a mounted disc changes CVR to open and latches CVRINT. Repeating an insertion/ejection operation without a cover-state transition does not create another event.
