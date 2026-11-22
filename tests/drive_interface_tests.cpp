@@ -13,6 +13,8 @@ int main(){
  check(di.write(0x04U,4U,2U)&&di.interrupt_pending(),"DI cover interrupt asserts when enabled");
  check(di.write(0x04U,4U,6U)&&di.read(0x04U,4U,value)&&(value&4U)==0U&&!di.interrupt_pending(),"DI cover interrupt clears write-one-to-clear");
  check(di.mount_disc_image(std::vector<std::uint8_t>(64U,0x5aU))&&di.read(0x04U,4U,value)&&(value&1U)==0U,"DI cover state reports closed with mounted disc");
+ check(di.interrupt_pending()&&di.read(0x04U,4U,value)&&(value&4U)!=0U,"disc insertion latches enabled DI cover interrupt");
+ check(di.write(0x04U,4U,6U)&&!di.interrupt_pending(),"cover interrupt acknowledgement preserves mask");
  check(di.write(0x00U,4U,(1U<<1U)|(1U<<3U)|(1U<<5U)),"DI DISR enables device-error transfer-complete and break masks");
  di.signal_transfer_complete();check(di.read(0x00U,4U,value)&&(value&(1U<<4U))!=0U&&di.interrupt_pending(),"DI transfer-complete flag latches and asserts masked IRQ");
  check(di.write(0x00U,4U,(1U<<1U)|(1U<<3U)|(1U<<5U)|(1U<<4U))&&di.read(0x00U,4U,value)&&(value&(1U<<4U))==0U,"DI transfer-complete flag clears with W1C while retaining masks");
