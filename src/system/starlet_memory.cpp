@@ -19,7 +19,7 @@ StarletMemory::Translation StarletMemory::translate(std::uint32_t address) const
  enum class Window : std::uint8_t { Main, Fffe, Ffff };
  Window window=Window::Main;std::uint32_t offset=0;
  if(address>=sram_base&&address<sram_base+0x20000U)offset=address-sram_base;
- else if(address>=mirror_base&&address<mirror_base+mirror_size) {
+ else if(address>=mirror_base&&static_cast<std::uint64_t>(address)<static_cast<std::uint64_t>(mirror_base)+mirror_size) {
   const auto relative=address-mirror_base;
   if(relative<0xe0000U)offset=relative&0x1ffffU;
   else if(relative<0xf0000U){window=Window::Fffe;offset=relative-0xe0000U;}
