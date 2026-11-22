@@ -65,7 +65,11 @@ public:
             return illegal(out);
         }
         if (was_app && index == 41U) {
-            if (state_ != State::idle && state_ != State::ready) return illegal(out);
+            constexpr std::uint32_t supported_voltage_window = 0x00ff8000U;
+            constexpr std::uint32_t host_capacity_support = 1U << 30U;
+            if ((state_ != State::idle && state_ != State::ready) ||
+                (argument & supported_voltage_window) == 0U ||
+                (argument & host_capacity_support) == 0U) return illegal(out);
             state_ = State::ready; out.accepted = true; out.r1 = 0x00U; out.value = 0xC0FF8000U; return out;
         }
         switch (index) {
