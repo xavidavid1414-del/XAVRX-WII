@@ -19,3 +19,9 @@ This is an initial execution model, not a complete Gekko implementation. Privile
 
 ## Testing
 Tests cover integer operations and CR updates; signed/absolute/conditional branches; CTR decrement; LR/CTR indirect branches; link behavior; TWI/TW conditions; system-call, program, and external exception entry; interrupt masking; and RFI restoration.
+
+
+## Broadway execution integration
+The emulator now has a Broadway stepping path that fetches 32-bit instructions from the Wii memory bus, routes the implemented integer/control-flow/load-store subset to its executor, and advances the system scheduler by one reference CPU cycle after a successful step. LWZ and STW use the CPU-aware Wii memory bus and preserve big-endian word semantics. Pending enabled PI interrupt causes enter the external-interrupt vector when MSR[EE] permits it.
+
+This is intentionally a first integration slice: it is not a complete Gekko interpreter, does not model precise bus exceptions or instruction-specific cycle costs, and does not execute Starlet ARM code. Unsupported instructions are reported rather than silently treated as successful.
