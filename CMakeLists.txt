@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(XAVRX_WII VERSION 0.1.0 LANGUAGES CXX)
 option(XAVRX_BUILD_TESTS "Build the test suite" ON)
-add_library(xavrx_core src/core/emulator.cpp src/cpu/cpu_state.cpp src/cpu/decoder.cpp src/cpu/executor.cpp src/cpu/control_flow.cpp src/memory/memory.cpp src/system/hardware.cpp src/system/wii_memory.cpp src/system/hollywood.cpp src/system/starlet_memory.cpp src/system/wii_system.cpp src/system/peripherals.cpp)
+add_library(xavrx_core src/core/emulator.cpp src/cpu/cpu_state.cpp src/cpu/decoder.cpp src/cpu/executor.cpp src/cpu/control_flow.cpp src/memory/memory.cpp src/system/hardware.cpp src/system/wii_memory.cpp src/system/hollywood.cpp src/system/starlet_memory.cpp src/system/wii_system.cpp src/system/peripherals.cpp src/system/reset_controller.cpp src/system/dsp_gpu.cpp)
 target_include_directories(xavrx_core PUBLIC include)
 target_compile_features(xavrx_core PUBLIC cxx_std_20)
 if(MSVC)
