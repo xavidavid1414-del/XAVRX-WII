@@ -88,6 +88,8 @@ bool WiiSystem::initialize()noexcept{
 bool WiiSystem::read_disc_to_memory(WiiMemoryCpu cpu,std::uint64_t disc_offset,std::uint32_t destination,std::uint32_t byte_count){
  if(cpu!=WiiMemoryCpu::Broadway&&cpu!=WiiMemoryCpu::Starlet)return false;
  if(byte_count==0U)return true;
+ const auto last_destination=static_cast<std::uint64_t>(destination)+static_cast<std::uint64_t>(byte_count)-1U;
+ if(last_destination>0xffffffffULL)return false;
  std::vector<std::uint8_t> transfer;
  try{transfer.resize(byte_count);}catch(...){return false;}
  if(!drive_.read_disc_bytes(disc_offset,transfer))return false;
