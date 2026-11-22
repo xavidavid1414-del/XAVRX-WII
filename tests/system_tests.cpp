@@ -19,10 +19,10 @@ int main(){using namespace xavrx::system;
  check(wii.memory().write32(0x80000000U,0x13579bdfU)==xavrx::memory::AccessResult::Success,"WiiSystem exposes MEM1");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000064U,4,(1U<<31U))==xavrx::memory::AccessResult::Success,"WiiSystem exposes Starlet AHB protection");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000190U,4,3U)==xavrx::memory::AccessResult::Success,"WiiSystem exposes Hollywood clock controls");
- wii.reset();std::uint32_t reset_word=0;
+ wii.reset();std::uint32_t reset_word=0;std::uint64_t reset_value=0;
  check(wii.initialized(),"WiiSystem remains mapped after reset");
  check(wii.memory().read32(0x80000000U,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears MEM1 contents");
- check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000064U,4,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears AHB protection");
- check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000190U,4,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears Hollywood clocks");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000064U,4,reset_value)==xavrx::memory::AccessResult::Success&&reset_value==0U,"WiiSystem reset clears AHB protection");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000190U,4,reset_value)==xavrx::memory::AccessResult::Success&&reset_value==0U,"WiiSystem reset clears Hollywood clocks");
  check(wii.memory().write32(0x80000000U,0x2468ace0U)==xavrx::memory::AccessResult::Success,"WiiSystem remains operational after reset");
  if(failures){std::cerr<<failures<<" system hardware test(s) failed\n";return 1;}std::cout<<"All XAVRX-WII system hardware tests passed\n";return 0;}
