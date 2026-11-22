@@ -64,7 +64,7 @@ public:
  [[nodiscard]] GpuCommandProcessor& gpu() noexcept{return gpu_;}
  [[nodiscard]] DspMailboxInterface& dsp_mailbox() noexcept{return dsp_mailbox_;}
  [[nodiscard]] ProcessorInterruptInterface& processor_interrupts() noexcept{return processor_interrupts_;}
- [[nodiscard]] bool process_bluetooth_host_command(HollywoodCpu cpu,std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event);
+ [[nodiscard]] bool read_disc_to_memory(WiiMemoryCpu cpu,std::uint64_t disc_offset,std::uint32_t destination,std::uint32_t byte_count);\n [[nodiscard]] bool process_bluetooth_host_command(HollywoodCpu cpu,std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event);
  [[nodiscard]] bool submit_bluetooth_host_packet(HollywoodCpu cpu,std::span<const std::uint8_t> packet);
  [[nodiscard]] bool take_bluetooth_device_packet(HollywoodCpu cpu,std::vector<std::uint8_t>& packet);
  [[nodiscard]] bool submit_bluetooth_device_packet(std::span<const std::uint8_t> packet);

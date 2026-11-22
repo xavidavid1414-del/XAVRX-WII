@@ -36,6 +36,18 @@ int main(){using namespace xavrx::system;
  check(!starlet_memory.master_access_allowed(static_cast<StarletSramMaster>(0xffU)),"Starlet SRAM master permission rejects invalid master identity");
  // WiiSystem composition, peripheral MMIO routing and independent AHB gates.
  WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes shared bus and peripherals");
+ // DI image reads copy bytes into the shared memory map for both processors.
+ const std::vector<std::uint8_t> di_image{0x10U,0x32U,0x54U,0x76U,0x98U,0xbaU,0xdcU,0xfeU};
+ check(wii.drive_interface().mount_disc_image(di_image),"WiiSystem mounts DI image for DMA");
+ check(wii.read_disc_to_memory(WiiMemoryCpu::Broadway,0U,0x80001000U,8U),"DI transfers image bytes into Broadway MEM1");
+ std::uint64_t di_byte=0U;
+ check(wii.memory().read_as(WiiMemoryCpu::Broadway,0x80001000U,4U,di_byte)==xavrx::memory::AccessResult::Success&&di_byte==0x10325476U,"DI DMA preserves big-endian byte order");
+ check(wii.read_disc_to_memory(WiiMemoryCpu::Starlet,4U,0x80002000U,4U),"DI transfers image bytes into Starlet-visible MEM1");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x80002000U,4U,di_byte)==xavrx::memory::AccessResult::Success&&di_byte==0x98badcfeU,"Starlet observes DI DMA data in shared MEM1");
+ check(!wii.read_disc_to_memory(WiiMemoryCpu::Broadway,7U,0x80003000U,2U),"DI DMA rejects reads past image end");
+ check(!wii.read_disc_to_memory(static_cast<WiiMemoryCpu>(0xffU),0U,0x80003000U,1U),"DI DMA rejects invalid CPU identity");
+ check(wii.memory().read_as(WiiMemoryCpu::Broadway,0x80003000U,1U,di_byte)==xavrx::memory::AccessResult::Success&&di_byte==0U,"rejected DI DMA does not alter destination");
+
  // The composed system routes live states from every controller profile to game actions.
  check(wii.input_router().add_binding({ControllerType::WiiRemote,InputControl::RemoteA,GameAction::Confirm}),"WiiSystem registers Wii Remote binding");
  check(wii.input_router().add_binding({ControllerType::WiiRemote,InputControl::PointerVisible,GameAction::PointerVisible}),"WiiSystem registers pointer visibility binding");
