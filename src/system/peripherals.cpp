@@ -66,11 +66,24 @@ bool UsbHostController::write(std::uint32_t off,std::uint8_t width,std::uint64_t
  case 0x24U:if((v&0xfffU)!=0U)return false;periodic_base_=v;return true;
  case 0x28U:if((v&0x1fU)!=0U)return false;async_list_=v;return true;
  case 0x50U:config_flag_=v&1U;return true;
- case 0x54U:port_status_=(port_status_&~0x0000002aU)|(v&0x0000002aU);return true;
+ case 0x54U:port_status_&=~(v&0x0000002aU);if((v&0x00000100U)!=0U&&(port_status_&0x1U)!=0U)port_status_|=0x00000100U;return true;
  default:return RegisterWindow::write(off,width,value);
  }
 }
-void UsbHostController::connect_device(bool connected)noexcept{if(connected)port_status_|=0x5U;else port_status_&=~0x5U;}
+void UsbHostController::connect_device(bool connected)noexcept{
+ const bool was_enabled=(port_status_&0x4U)!=0U;
+ if(connected){port_status_|=0x3U;return;}
+ port_status_&=~0x5U;port_status_|=0x2U;
+ if(was_enabled){port_status_&=~0x4U;port_status_|=0x8U;}
+}
+bool UsbHostController::complete_port_reset(bool high_speed_device)noexcept{
+ if((port_status_&0x1U)==0U||(port_status_&0x100U)==0U)return false;
+ port_status_&=~0x100U;
+ const bool was_enabled=(port_status_&0x4U)!=0U;
+ if(high_speed_device)port_status_|=0x4U;else port_status_&=~0x4U;
+ if(was_enabled!=((port_status_&0x4U)!=0U))port_status_|=0x8U;
+ return true;
+}
 bool UsbHostController::enqueue_transfer(std::uint32_t token,std::span<const std::uint8_t> payload){
  if(pending_.size()>=transfer_capacity||completed_.size()>=transfer_capacity)return false;
  pending_.push_back({token,std::vector<std::uint8_t>(payload.begin(),payload.end())});return true;
