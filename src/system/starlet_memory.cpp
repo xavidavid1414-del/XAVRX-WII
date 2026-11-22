@@ -61,7 +61,7 @@ StarletMemory::Translation StarletMemory::translate(std::uint32_t address) const
  return {};
 }
 bool StarletMemory::read_region(Translation m,std::uint8_t width,std::uint64_t& value) const noexcept {
- if(m.region==Region::None||m.region==Region::BootRom&&!boot_rom_loaded_)return false;
+ if(m.region==Region::None||(m.region==Region::BootRom&&!boot_rom_loaded_))return false;
  const std::uint8_t* bytes=nullptr;std::size_t size=0;
  switch(m.region){case Region::SramA:bytes=sram_a_.data();size=sram_a_.size();break;case Region::SramB:bytes=sram_b_.data();size=sram_b_.size();break;case Region::BootRom:bytes=boot_rom_.data();size=boot_rom_.size();break;default:return false;}
  if(static_cast<std::uint64_t>(m.offset)+width>size)return false;
