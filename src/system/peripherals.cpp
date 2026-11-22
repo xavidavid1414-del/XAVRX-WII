@@ -77,7 +77,7 @@ bool UsbHostController::enqueue_transfer(std::uint32_t token,std::span<const std
 }
 void UsbHostController::advance_microframes(std::uint32_t count)noexcept{
  for(std::uint32_t i=0;i<count;++i){frame_index_=(frame_index_+1U)&0x3fffU;
-  if((command_&cmd_run)==0U||(status_&sts_halted)!=0U||(port_status_&0x4U)==0U||pending_.empty())continue;
+  if((command_&cmd_run)==0U||(status_&sts_halted)!=0U||(port_status_&0x4U)==0U||pending_.empty()||completed_.size()>=transfer_capacity)continue;
   completed_.push_back(std::move(pending_.front()));pending_.pop_front();status_|=sts_usbint;
  }
 }

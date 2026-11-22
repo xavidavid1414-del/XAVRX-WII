@@ -61,6 +61,14 @@ int main(){
  check(usb.pending_transfers()==0U&&usb.completed_transfers()==UsbHostController::transfer_capacity,"EHCI moves bounded pending queue into completion queue");
  check(!usb.enqueue_transfer(0xffffffffU,payload),"EHCI backpressure applies while completion queue is full");
  for(std::size_t i=0;i<UsbHostController::transfer_capacity;++i)check(usb.take_completed_transfer(transfer),"EHCI completion queue drains in bounded order");
+ for(std::size_t i=0;i+1U<UsbHostController::transfer_capacity;++i){check(usb.enqueue_transfer(static_cast<std::uint32_t>(0x1000U+i),payload),"EHCI fills completion queue to one slot remaining");usb.advance_microframes(1U);}
+ for(std::size_t i=0;i<UsbHostController::transfer_capacity;++i)check(usb.enqueue_transfer(static_cast<std::uint32_t>(0x2000U+i),payload),"EHCI queues pending transfers while completion queue is almost full");
+ usb.advance_microframes(static_cast<std::uint32_t>(UsbHostController::transfer_capacity));
+ check(usb.completed_transfers()==UsbHostController::transfer_capacity&&usb.pending_transfers()==UsbHostController::transfer_capacity-1U,"EHCI never overfills completion queue");
+ for(std::size_t i=0;i<UsbHostController::transfer_capacity;++i)check(usb.take_completed_transfer(transfer),"EHCI drains exactly one full completion queue");
+ usb.advance_microframes(static_cast<std::uint32_t>(UsbHostController::transfer_capacity));
+ check(usb.pending_transfers()==0U&&usb.completed_transfers()==UsbHostController::transfer_capacity-1U,"EHCI resumes pending completions after backpressure clears");
+ for(std::size_t i=0;i+1U<UsbHostController::transfer_capacity;++i)check(usb.take_completed_transfer(transfer),"EHCI drains remaining completions after backpressure");
  check(usb.enqueue_transfer(0xabcdefU,payload),"EHCI accepts transfers after completion queue drains");
 
  check(usb.read(0x14U,4,value)&&(value&1U)!=0U,"EHCI raises USB interrupt status on completion");
