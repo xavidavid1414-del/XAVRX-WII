@@ -16,33 +16,48 @@ bool StarletMemory::load_boot_rom(const std::array<std::uint8_t,boot_rom_size>& 
  boot_rom_=image;boot_rom_loaded_=true;return true;
 }
 StarletMemory::Translation StarletMemory::translate(std::uint32_t address) const noexcept {
- std::uint32_t offset=0;
+ enum class Window : std::uint8_t { Main, Fffe, Ffff };
+ Window window=Window::Main;std::uint32_t offset=0;
  if(address>=sram_base&&address<sram_base+0x20000U)offset=address-sram_base;
  else if(address>=mirror_base&&address<mirror_base+mirror_size) {
   const auto relative=address-mirror_base;
   if(relative<0xe0000U)offset=relative&0x1ffffU;
-  else offset=relative-0xe0000U+0x10000U;
+  else if(relative<0xf0000U){window=Window::Fffe;offset=relative-0xe0000U;}
+  else {window=Window::Ffff;offset=relative-0xf0000U;}
  } else return {};
  const bool sm=(srnprot_&sm_bit)!=0U;
  const bool boot_disabled=(boot0_&boot0_disable_bit)!=0U;
- if(!boot_disabled) {
-  if(!sm) {
+ if(window==Window::Main) {
+  if(!boot_disabled&&!sm) {
    if(offset<0x10000U)return {Region::SramA,offset};
    if(offset<0x18000U)return {Region::SramB,offset-0x10000U};
-   if(offset>=0x10000U&&offset<0x20000U)return {Region::BootRom,(offset-0x10000U)%boot_rom_size};
    return {};
   }
-  if(offset<0x20000U)return {Region::BootRom,offset%boot_rom_size};
+  if(!boot_disabled&&sm)return {Region::BootRom,offset%boot_rom_size};
+  if(boot_disabled&&!sm) {
+   if(offset<0x10000U)return {Region::SramA,offset};
+   if(offset<0x18000U)return {Region::SramB,offset-0x10000U};
+   return {};
+  }
+  if(offset<0x8000U)return {Region::SramB,offset};
   if(offset>=0x10000U&&offset<0x20000U)return {Region::SramA,offset-0x10000U};
   return {};
  }
- if(!sm) {
-  if(offset<0x10000U)return {Region::SramA,offset};
-  if(offset<0x18000U)return {Region::SramB,offset-0x10000U};
- } else {
-  if(offset<0x8000U)return {Region::SramB,offset};
-  if(offset>=0x10000U&&offset<0x20000U)return {Region::SramA,offset-0x10000U};
+ if(window==Window::Fffe) {
+  if(!boot_disabled)return sm?Translation{Region::BootRom,offset%boot_rom_size}:Translation{Region::SramA,offset};
+  if(!sm) {
+   if(offset<0x10000U)return {Region::SramA,offset};
+   if(offset<0x18000U)return {Region::SramB,offset-0x10000U};
+  } else {
+   if(offset<0x8000U)return {Region::SramB,offset};
+   if(offset>=0x10000U)return {Region::SramA,offset-0x10000U};
+  }
+  return {};
  }
+ if(!boot_disabled)return sm?Translation{Region::SramA,offset}:Translation{Region::BootRom,offset%boot_rom_size};
+ if(!sm)return offset<0x10000U?Translation{Region::SramA,offset}:Translation{};
+ if(offset<0x8000U)return {Region::SramB,offset};
+ if(offset>=0x10000U)return {Region::SramA,offset-0x10000U};
  return {};
 }
 bool StarletMemory::read_region(Translation m,std::uint8_t width,std::uint64_t& value) const noexcept {
