@@ -1,6 +1,7 @@
 #pragma once
 #include "xavrx/memory/memory.hpp"
 #include "xavrx/system/hardware.hpp"
+#include "xavrx/system/wii_memory.hpp"
 #include <cstddef>
 #include <cstdint>
 namespace xavrx::system {
@@ -83,6 +84,7 @@ public:
  [[nodiscard]] bool read_as(HollywoodCpu cpu,std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept;
  [[nodiscard]] bool write_as(HollywoodCpu cpu,std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept;
  [[nodiscard]] bool map_into(memory::Memory& broadway_bus,memory::Memory& starlet_bus) noexcept;
+ [[nodiscard]] bool map_into(WiiMemory& shared_bus) noexcept;
  void reset() noexcept;
 private:
  HollywoodInterrupts interrupts_{};
