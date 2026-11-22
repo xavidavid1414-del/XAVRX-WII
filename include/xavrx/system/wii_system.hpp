@@ -45,7 +45,8 @@ public:
  [[nodiscard]] bool take_bluetooth_device_packet(HollywoodCpu cpu,std::vector<std::uint8_t>& packet);
  [[nodiscard]] bool submit_bluetooth_device_packet(std::span<const std::uint8_t> packet);
  [[nodiscard]] bool take_bluetooth_host_packet(HollywoodCpu cpu,std::vector<std::uint8_t>& packet);
- void advance_broadway_cycles(std::uint64_t cycles) noexcept{hardware_.advance(cycles);}
+ void advance_broadway_cycles(std::uint64_t cycles) noexcept;
+ [[nodiscard]] std::uint64_t scheduled_cycles(ClockDomain domain) const noexcept{return clock_scheduler_.total_cycles(domain);}
  void advance_starlet_ticks(std::uint64_t ticks) noexcept{hollywood_.advance_timer(ticks);}
  void reset() noexcept;
 private:
@@ -58,6 +59,7 @@ private:
  DriveInterface drive_;
  WirelessLanController wlan_;
  BluetoothHciTransport bluetooth_hci_;
+ ClockDomainScheduler clock_scheduler_;
  ProtectedRegisterView nand_broadway_,nand_starlet_;
  ProtectedRegisterView sd_broadway_,sd_starlet_;
  ProtectedRegisterView usb_broadway_,usb_starlet_;
