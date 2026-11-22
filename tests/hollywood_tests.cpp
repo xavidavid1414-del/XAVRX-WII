@@ -34,7 +34,7 @@ int main(){
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))==0U,"clearing Y1 deasserts IPC IRQ");
 
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,value)&&value==0U,"Starlet reads Hollywood clock control");
- check(hw.hollywood_clock_hz()==243000000ULL,"Hollywood starts in Wii clock mode");
+ check(hw.system_control().hollywood_clock_hz()==243000000ULL,"Hollywood starts in Wii clock mode");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,3U),"Starlet writes FX and SPEED clock controls");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,value)&&value==3U,"Hollywood clock control readback");
  check(hw.system_control().fx_enabled()&&hw.hollywood_clock_hz()==162000000ULL,"clock control exposes documented mode");
