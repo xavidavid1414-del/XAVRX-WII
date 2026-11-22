@@ -185,7 +185,7 @@ bool HollywoodHardware::write_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t
  if(off==StarletMemory::boot0_register){if(access_cpu!=HollywoodCpu::Starlet)return false;starlet_memory_.set_boot0(v);return true;}
  if(off>=0x30U&&off<=0x3cU){
   if((off>=0x38U)&&access_cpu!=HollywoodCpu::Starlet)return false;
-  switch(off){case 0x30:interrupts_.clear(HollywoodCpu::Broadway,v);break;case 0x34:interrupts_.set_mask(HollywoodCpu::Broadway,v);break;case 0x38:interrupts_.clear(HollywoodCpu::Starlet,v);break;case 0x3c:interrupts_.set_mask(HollywoodCpu::Starlet,v);break;default:return false;}
+  switch(off){case 0x30:interrupts_.clear(HollywoodCpu::Broadway,v);gpio_.refresh_interrupts();break;case 0x34:interrupts_.set_mask(HollywoodCpu::Broadway,v);break;case 0x38:interrupts_.clear(HollywoodCpu::Starlet,v);gpio_.refresh_interrupts();break;case 0x3c:interrupts_.set_mask(HollywoodCpu::Starlet,v);break;default:return false;}
   return true;
  }
  if(off>=0xc0U&&off<=0xfcU)return gpio_.write(access_cpu,off,v);

@@ -76,10 +76,10 @@ public:
  explicit HollywoodGpio(HollywoodInterrupts& irq) noexcept:irq_(irq){}
  [[nodiscard]] bool read(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t& value) const noexcept;
  [[nodiscard]] bool write(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t value) noexcept;
+ void refresh_interrupts() noexcept;
  void set_inputs(std::uint32_t levels) noexcept;
  void reset() noexcept;
 private:
- void refresh_interrupts() noexcept;
  HollywoodInterrupts& irq_;
  std::uint32_t input_{0},straps_{0},owner_{0},enable_{0x00ffffffU};
  bool inputs_initialized_{false};

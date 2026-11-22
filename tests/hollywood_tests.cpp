@@ -96,6 +96,8 @@ int main(){
  hw.gpio().set_inputs(1U);
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<10U))!=0U,"owned GPIO pin raises IRQ 10");
  check((hw.interrupts().flags(HollywoodCpu::Starlet)&(1U<<10U))==0U,"GPIOB IRQ is Broadway-only");
+ check(hw.write_as(HollywoodCpu::Broadway,0x30U,4,1U<<10U),"Broadway acknowledges active GPIO IRQ");
+ check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<10U))!=0U,"active GPIO level immediately reasserts IRQ after acknowledgement");
  check(hw.write_as(HollywoodCpu::Broadway,0xd0,4,1U),"GPIO W1C write accepted");
  check((hw.gpio().read(HollywoodCpu::Broadway,0xd0,word)&&word==1U),"GPIO flag cannot clear while pin is active");
  hw.gpio().set_inputs(0U);

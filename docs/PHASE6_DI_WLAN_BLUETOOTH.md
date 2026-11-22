@@ -17,3 +17,7 @@ Hardware references:
 
 ## IPC interrupt latching correction
 Hollywood IPC control writes now latch IRQ 30/31 when an enabled Y/X flag is acknowledged, including a write that clears the flag. The source flags remain pending in the Hollywood interrupt controller until the owning CPU clears the corresponding IRQ flag register with write-one-to-clear. Regression tests cover Broadway and Starlet acknowledgement paths and clearing the latched IRQ.
+
+
+## GPIO level-sensitive IRQ reassertion
+When Broadway or Starlet acknowledges its Hollywood IRQ flag register, the GPIO interrupt outputs are reevaluated immediately. A still-active, enabled and unmasked GPIO level therefore reasserts its routed IRQ without waiting for another input transition. Regression coverage acknowledges IRQ 10 while its source pin remains active.
