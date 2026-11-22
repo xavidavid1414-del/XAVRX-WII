@@ -13,11 +13,14 @@ public:
  void raise(std::uint8_t source,IrqRoute route=IrqRoute::Both) noexcept;
  void clear(HollywoodCpu cpu,std::uint32_t bits) noexcept;
  void set_mask(HollywoodCpu cpu,std::uint32_t bits) noexcept;
+ void set_fiq_mask(std::uint32_t bits) noexcept{arm_fiq_mask_=bits;}
  [[nodiscard]] std::uint32_t flags(HollywoodCpu cpu) const noexcept;
  [[nodiscard]] std::uint32_t mask(HollywoodCpu cpu) const noexcept;
  [[nodiscard]] bool asserted(HollywoodCpu cpu) const noexcept;
+ [[nodiscard]] std::uint32_t fiq_mask()const noexcept{return arm_fiq_mask_;}
+ [[nodiscard]] bool fiq_asserted()const noexcept{return (arm_flags_&arm_fiq_mask_)!=0U;}
 private:
- std::uint32_t ppc_flags_{0},ppc_mask_{0},arm_flags_{0},arm_mask_{0};
+ std::uint32_t ppc_flags_{0},ppc_mask_{0},arm_flags_{0},arm_mask_{0},arm_fiq_mask_{0};
 };
 class HollywoodTimer final {
 public:
