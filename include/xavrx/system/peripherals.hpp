@@ -64,12 +64,13 @@ public:
  [[nodiscard]] bool enqueue_transfer(std::uint32_t token,std::span<const std::uint8_t> payload);
  void advance_microframes(std::uint64_t count) noexcept;
  [[nodiscard]] bool take_completed_transfer(Transfer& transfer);
+ [[nodiscard]] bool interrupt_pending() const noexcept{return (status_&interrupt_enable_&(sts_usbint|sts_port_change))!=0U;}
  [[nodiscard]] std::size_t pending_transfers() const noexcept{return pending_.size();}
  [[nodiscard]] std::size_t completed_transfers() const noexcept{return completed_.size();}
  void reset() noexcept;
 private:
  static constexpr std::uint32_t cmd_run=1U,cmd_reset=1U<<1U;
- static constexpr std::uint32_t sts_halted=1U<<12U,sts_usbint=1U<<0U;
+ static constexpr std::uint32_t sts_halted=1U<<12U,sts_usbint=1U<<0U,sts_port_change=1U<<2U;
  std::uint32_t command_{0},status_{sts_halted},interrupt_enable_{0},frame_index_{0},periodic_base_{0},async_list_{0},config_flag_{0},port_status_{0};
  std::deque<Transfer> pending_,completed_;
 };
