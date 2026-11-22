@@ -31,3 +31,8 @@ Reference: [WiiBrew Drive Interface register map](https://wiibrew.org/wiki/Hardw
 
 ## DI DMA alignment and direction checks
 The supported read-DMA command now rejects a non-read transfer direction, source offsets, RAM destinations, or lengths that violate the 32-byte DMA alignment requirement. Regression tests cover misaligned length, misaligned destination, and unsupported write direction.
+
+## Broadway DSP mailbox readback
+The documented inbound DSP mailbox halfwords at offsets 0x00 and 0x02 now support 16-bit CPU readback as well as writes. The pending/set bit in the high halfword remains visible until the DSP-side consumer takes the message; consuming the message clears that bit. Regression coverage checks both halfwords before consumption and verifies the assembled 32-bit message afterward.
+
+Reference: [WiiBrew Hardware/DSP — DSP Interface](https://wiibrew.org/wiki/Hardware/DSP).
