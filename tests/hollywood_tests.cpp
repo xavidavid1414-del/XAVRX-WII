@@ -40,6 +40,11 @@ int main(){
  check(hw.system_control().fx_enabled()&&hw.hollywood_clock_hz()==162000000ULL,"clock control exposes documented mode");
  check(!hw.write_as(HollywoodCpu::Broadway,HollywoodSystemControl::clocks_register,4,0U),"Broadway cannot access Starlet clock control");
  check(!hw.read_as(HollywoodCpu::Broadway,HollywoodSystemControl::resets_register,4,value),"Broadway cannot access Starlet reset control");
+ check(hw.write_as(HollywoodCpu::Starlet,0x40,4,1U<<7U),"Starlet writes FIQ mask");
+ hw.interrupts().raise(7,IrqRoute::Starlet);
+ check(hw.interrupts().fiq_asserted(),"Starlet FIQ asserted by masked source");
+ check(hw.read_as(HollywoodCpu::Starlet,0x40,4,value)&&value==(1U<<7U),"Starlet FIQ mask readback");
+ check(!hw.read_as(HollywoodCpu::Broadway,0x40,4,value),"Broadway cannot access Starlet FIQ mask");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,0xffffffffU),"Starlet writes reset control register");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,value)&&value==HollywoodSystemControl::resets_writable_mask,"reserved reset bit is masked");
  check(hw.system_control().reset_released(1U),"reset line state can be inspected");
