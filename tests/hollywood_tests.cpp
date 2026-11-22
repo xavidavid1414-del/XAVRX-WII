@@ -103,10 +103,18 @@ int main(){
  check(ppc_bus.read32(HollywoodHardware::base+12U,word)==xavrx::memory::AccessResult::DeviceError,"Broadway MMIO cannot access ARMCTRL");
  check(ppc_bus.read32(HollywoodHardware::mirror,word)==xavrx::memory::AccessResult::Unmapped,"Broadway bus has no Starlet private mirror");
 
+ check(hw.read_as(HollywoodCpu::Broadway,HollywoodSystemControl::ahb_prot_register,4,value)&&value==0U,"Broadway can inspect AHB protection state");
+ check(!hw.write_as(HollywoodCpu::Broadway,HollywoodSystemControl::ahb_prot_register,4,1U<<31U),"Broadway cannot grant itself privileged access");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::ahb_prot_register,4,1U<<31U),"Starlet grants PPCKERN access");
+ check(hw.read_as(HollywoodCpu::Broadway,12,4,value),"PPCKERN grants Broadway ARMCTRL visibility");
+ check(hw.read_as(HollywoodCpu::Broadway,0x38,4,value),"PPCKERN grants Broadway Starlet IRQ register visibility");
+ check(hw.write_as(HollywoodCpu::Broadway,0x40,4,1U<<6U),"PPCKERN grants Broadway FIQ mask access");
+ check(hw.write_as(HollywoodCpu::Broadway,0xe0,4,2U),"PPCKERN grants Broadway full GPIO bank access");
+ check(hw.read_as(HollywoodCpu::Broadway,0xe0,4,value)&&(value&2U)!=0U,"privileged GPIO write is shared");
  hw.reset();
  check(hw.interrupts().flags(HollywoodCpu::Broadway)==0U&&hw.interrupts().flags(HollywoodCpu::Starlet)==0U,"Hollywood reset clears IRQ state");
  check(hw.timer().counter()==0U&&!hw.timer().armed(),"Hollywood reset clears timer");
- check(hw.system_control().hollywood_clock_hz()==243000000ULL&&!hw.system_control().fx_enabled()&&hw.system_control().reset_register()==0U,"Hollywood reset clears clock/reset control state");
+ check(hw.system_control().hollywood_clock_hz()==243000000ULL&&!hw.system_control().fx_enabled()&&hw.system_control().reset_register()==0U&&hw.system_control().ahb_protection()==0U,"Hollywood reset clears clock/reset/AHB control state");
  check(hw.gpio().read(HollywoodCpu::Starlet,0xf0,word)&&word==0U,"Hollywood reset leaves GPIO flags clear");
  hw.advance_timer(0xfffffffeULL);
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodTimer::alarm_register,4,1U),"Program alarm across timer wraparound");
