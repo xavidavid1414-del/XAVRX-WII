@@ -19,6 +19,7 @@ public:
  [[nodiscard]] memory::AccessResult write(std::uint32_t address,std::uint8_t width,std::uint64_t value) noexcept;
  [[nodiscard]] memory::AccessResult read_as(WiiMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t& value) noexcept;
  [[nodiscard]] memory::AccessResult write_as(WiiMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t value) noexcept;
+ [[nodiscard]] memory::AccessResult write_bytes_as(WiiMemoryCpu cpu,std::uint32_t address,std::span<const std::uint8_t> bytes) noexcept;
  [[nodiscard]] memory::AccessResult read8(std::uint32_t address,std::uint8_t& value) noexcept;
  [[nodiscard]] memory::AccessResult read16(std::uint32_t address,std::uint16_t& value) noexcept;
  [[nodiscard]] memory::AccessResult read32(std::uint32_t address,std::uint32_t& value) noexcept;
