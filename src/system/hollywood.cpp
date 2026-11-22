@@ -190,13 +190,12 @@ bool HollywoodHardware::map_into(memory::Memory& broadway_bus,memory::Memory& st
  return starlet_bus.map_device(mirror,window_size,starlet_view_);
 }
 bool HollywoodHardware::map_into(WiiMemory& shared_bus)noexcept{
- const std::array<DualDeviceMapping,4> mappings{{
+ const std::array<DualDeviceMapping,2> mappings{{
   {base,window_size,&broadway_view_,&starlet_view_},
-  {mirror,window_size,&broadway_view_,&starlet_view_},
-  {StarletMemory::sram_base,0x20000U,&starlet_memory_,&starlet_memory_},
-  {StarletMemory::mirror_base,StarletMemory::mirror_size,&starlet_memory_,&starlet_memory_}
+  {mirror,window_size,&broadway_view_,&starlet_view_}
  }};
- return shared_bus.map_devices_dual(mappings.data(),mappings.size());
+ if(!shared_bus.map_devices_dual(mappings.data(),mappings.size()))return false;
+ return starlet_memory_.map_into(shared_bus);
 }
 void HollywoodHardware::reset()noexcept{interrupts_=HollywoodInterrupts{};ipc_.reset();gpio_.reset();timer_.reset();system_control_.reset();starlet_memory_.reset();}
 }
