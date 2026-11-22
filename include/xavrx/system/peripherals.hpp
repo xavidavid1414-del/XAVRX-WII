@@ -78,13 +78,21 @@ private:
 class DriveInterface final : public RegisterWindow {
 public:
  DriveInterface() noexcept;
+ [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
+ [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
  [[nodiscard]] bool mount_disc_image(std::vector<std::uint8_t> image);
  void eject_disc() noexcept;
  [[nodiscard]] bool disc_present() const noexcept{return !disc_image_.empty();}
  [[nodiscard]] std::size_t disc_size() const noexcept{return disc_image_.size();}
  [[nodiscard]] bool read_disc_bytes(std::uint64_t offset,std::span<std::uint8_t> output) const noexcept;
+ void signal_transfer_complete() noexcept{disr_|=1U<<4U;}
+ void signal_device_error() noexcept{disr_|=1U<<2U;}
+ void signal_break_interrupt() noexcept{disr_|=1U<<6U;}
+ [[nodiscard]] bool interrupt_pending() const noexcept;
+ void reset() noexcept;
 private:
  std::vector<std::uint8_t> disc_image_;
+ std::uint32_t disr_{0},dicvr_{0},dicr_{0};
 };
 class WirelessLanController final : public RegisterWindow {
 public:
