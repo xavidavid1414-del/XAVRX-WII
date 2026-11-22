@@ -57,6 +57,7 @@ private:
  void refresh_interrupts() noexcept;
  HollywoodInterrupts& irq_;
  std::uint32_t input_{0},straps_{0},owner_{0},enable_{0x00ffffffU};
+ bool inputs_initialized_{false};
  std::uint32_t output_{0},direction_{0},interrupt_level_{0},interrupt_flags_{0},interrupt_mask_{0};
 };
 class HollywoodHardware final : public memory::MemoryMappedDevice {
