@@ -37,6 +37,22 @@ WiiSystem::WiiSystem()
   wlan_broadway_(wlan_,hollywood_.system_control(),HollywoodCpu::Broadway,HollywoodEngine::Sd1),
   wlan_starlet_(wlan_,hollywood_.system_control(),HollywoodCpu::Starlet,HollywoodEngine::Sd1),
   drive_broadway_(drive_,hollywood_.system_control()),drive_starlet_(drive_,hollywood_.system_control()){}
+GameInputState WiiSystem::route_controller_inputs()const noexcept{
+ GameInputState combined{};
+ const auto merge=[this,&combined](const ControllerInputFrame& frame){
+  const auto routed=input_router_.route(frame);
+  for(std::size_t i=0;i<combined.buttons.size();++i){
+   combined.buttons[i]=combined.buttons[i]||routed.buttons[i];
+   if(routed.axes[i]>combined.axes[i]||routed.axes[i]<-combined.axes[i])combined.axes[i]=routed.axes[i];
+  }
+ };
+ merge(make_input_frame(wii_remote_.state()));
+ merge(make_input_frame(nunchuk_.state()));
+ merge(make_input_frame(classic_controller_.state()));
+ merge(make_input_frame(classic_controller_pro_.state()));
+ merge(make_input_frame(balance_board_.state()));
+ return combined;
+}
 void WiiSystem::advance_broadway_cycles(std::uint64_t cycles)noexcept{
  hardware_.advance(cycles);
  reset_controller_.set_register(hollywood_.system_control().reset_register());
