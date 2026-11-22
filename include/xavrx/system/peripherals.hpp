@@ -29,6 +29,7 @@ class NandInterface final : public RegisterWindow {
 public:
  static constexpr std::size_t page_size=2048,spare_size=64,pages_per_block=64,block_count=4096;
  NandInterface() noexcept;
+ [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
  [[nodiscard]] bool read_page(std::uint32_t page,std::span<std::uint8_t> data,std::span<std::uint8_t> spare) const noexcept;
  [[nodiscard]] bool program_page(std::uint32_t page,std::span<const std::uint8_t> data,std::span<const std::uint8_t> spare);
  [[nodiscard]] bool erase_block(std::uint32_t block) noexcept;
