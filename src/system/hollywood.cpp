@@ -61,7 +61,7 @@ bool HollywoodIpc::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value)
  switch(off){
  case ppc_msg:ppc_message_=value;return true;
  case arm_msg:arm_message_=value;return true;
- case ppc_ctrl:
+ case ppc_ctrl: {
   if(cpu!=HollywoodCpu::Broadway)return false;
   x1_=static_cast<std::uint8_t>(value&1U);x2_=static_cast<std::uint8_t>((value>>3U)&1U);
   iy1_=static_cast<std::uint8_t>((value>>4U)&1U);iy2_=static_cast<std::uint8_t>((value>>5U)&1U);
@@ -69,7 +69,8 @@ bool HollywoodIpc::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value)
   if(clear_y2)y2_=0;if(clear_y1)y1_=0;
   if((clear_y1&&iy1_)||(clear_y2&&iy2_))irq_.raise(30,IrqRoute::Broadway);
   update_interrupts();return true;
- case arm_ctrl:
+ }
+ case arm_ctrl: {
   if(cpu!=HollywoodCpu::Starlet)return false;
   y1_=static_cast<std::uint8_t>(value&1U);y2_=static_cast<std::uint8_t>((value>>3U)&1U);
   ix1_=static_cast<std::uint8_t>((value>>4U)&1U);ix2_=static_cast<std::uint8_t>((value>>5U)&1U);
@@ -77,6 +78,7 @@ bool HollywoodIpc::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value)
   if(clear_x2)x2_=0;if(clear_x1)x1_=0;
   if((clear_x1&&ix1_)||(clear_x2&&ix2_))irq_.raise(31,IrqRoute::Starlet);
   update_interrupts();return true;
+ }
  default:return false;
  }
 }
