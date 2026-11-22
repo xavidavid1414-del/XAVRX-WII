@@ -62,7 +62,7 @@ int main(){
  check(bt.process_host_command(reset_command,packet)&&packet.size()==7U&&packet[0]==0x04U&&packet[1]==0x0eU&&packet[6]==0U,"Bluetooth HCI Reset command complete event");
  check(bt.process_host_command(address_command,packet)&&packet.size()==13U&&packet[7]==0x02U,"Bluetooth HCI Read BD_ADDR response");
  check(bt.process_host_command(unknown_command,packet)&&packet.size()==7U&&packet[6]==1U,"Bluetooth HCI unknown command status");
- check(!bt.process_host_command(malformed,packet),"Bluetooth HCI command parser rejects malformed parameter length");
+ const std::uint8_t malformed_command[]={0x01U,0x03U,0x0cU,0x01U};check(!bt.process_host_command(malformed_command,packet),"Bluetooth HCI command parser rejects malformed parameter length");
 
  check(bt.submit_device_packet(event)&&bt.take_host_packet(packet)&&packet.size()==sizeof(event),"Bluetooth HCI event transport");
  check(bt.submit_host_packet(acl)&&bt.take_device_packet(packet)&&packet.size()==sizeof(acl),"Bluetooth ACL host-to-device transport");
