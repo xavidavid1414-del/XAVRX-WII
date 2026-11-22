@@ -1,6 +1,6 @@
 #include "xavrx/system/wii_memory.hpp"
 #include <array>
-#include <limits>
+#include <utility>
 namespace xavrx::system {
 namespace {
 constexpr std::uint64_t address_space_size=0x100000000ULL;
