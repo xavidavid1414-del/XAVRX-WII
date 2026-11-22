@@ -34,7 +34,7 @@ int main(){using namespace xavrx::system;
  wii.processor_interrupts().raise(6U);check(wii.processor_interrupts().active()==(1U<<6U),"PI interrupt source is masked and observable");
  check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c003000U,4,1U<<6U)==xavrx::memory::AccessResult::Success&&wii.processor_interrupts().cause()==0U,"PI interrupt cause is W1C through MMIO");
  check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c008000U,4,0xabcdef01U)==xavrx::memory::AccessResult::Success,"Broadway GX write-gather port accepts FIFO word");
- std::uint32_t gx_word=0;check(wii.gpu().take(gx_word)&&gx_word==0xabcdef01U,"GX FIFO receives MMIO write-gather word");
+ std::uint32_t gx_mmio_word=0;check(wii.gpu().take(gx_mmio_word)&&gx_mmio_word==0xabcdef01U,"GX FIFO receives MMIO write-gather word");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0c008000U,4,0U)==xavrx::memory::AccessResult::DeviceError,"Starlet cannot access Broadway-only GX FIFO");
  check(wii.memory().write32(0x80000000U,0x13579bdfU)==xavrx::memory::AccessResult::Success,"WiiSystem exposes MEM1");
  wii.advance_broadway_cycles(9U);
