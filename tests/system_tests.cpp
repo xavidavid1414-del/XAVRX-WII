@@ -46,6 +46,7 @@ int main(){using namespace xavrx::system;
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x80002000U,4U,di_byte)==xavrx::memory::AccessResult::Success&&di_byte==0x98badcfeU,"Starlet observes DI DMA data in shared MEM1");
  check(!wii.read_disc_to_memory(WiiMemoryCpu::Broadway,7U,0x80003000U,2U),"DI DMA rejects reads past image end");
  check(!wii.read_disc_to_memory(static_cast<WiiMemoryCpu>(0xffU),0U,0x80003000U,1U),"DI DMA rejects invalid CPU identity");
+ check(!wii.read_disc_to_memory(WiiMemoryCpu::Broadway,0U,0xffffffffU,2U),"DI DMA rejects destination address overflow before writing");
  check(wii.memory().read_as(WiiMemoryCpu::Broadway,0x80003000U,1U,di_byte)==xavrx::memory::AccessResult::Success&&di_byte==0U,"rejected DI DMA does not alter destination");
 
  // The composed system routes live states from every controller profile to game actions.
