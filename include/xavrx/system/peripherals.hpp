@@ -62,7 +62,7 @@ public:
  void connect_device(bool connected) noexcept;
  [[nodiscard]] bool complete_port_reset(bool high_speed_device) noexcept;
  [[nodiscard]] bool enqueue_transfer(std::uint32_t token,std::span<const std::uint8_t> payload);
- void advance_microframes(std::uint32_t count) noexcept;
+ void advance_microframes(std::uint64_t count) noexcept;
  [[nodiscard]] bool take_completed_transfer(Transfer& transfer);
  [[nodiscard]] std::size_t pending_transfers() const noexcept{return pending_.size();}
  [[nodiscard]] std::size_t completed_transfers() const noexcept{return completed_.size();}
