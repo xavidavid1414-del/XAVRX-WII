@@ -11,11 +11,11 @@ public:
  [[nodiscard]] bool initialized() const noexcept;
  [[nodiscard]] system::WiiSystem* system() noexcept{return system_.get();}
  [[nodiscard]] const system::WiiSystem* system() const noexcept{return system_.get();}
- [[nodiscard]] BroadwayCpu& broadway_cpu() noexcept{return broadway_cpu_;}
- [[nodiscard]] CpuStepResult step_broadway() noexcept;
+ [[nodiscard]] core::BroadwayCpu& broadway_cpu() noexcept{return broadway_cpu_;}
+ [[nodiscard]] core::CpuStepResult step_broadway() noexcept;
  void reset() noexcept;
 private:
  std::unique_ptr<system::WiiSystem> system_{};
- BroadwayCpu broadway_cpu_{};
+ core::BroadwayCpu broadway_cpu_{};
 };
 }
