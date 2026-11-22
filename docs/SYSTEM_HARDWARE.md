@@ -40,6 +40,13 @@ WiiSystem composes WiiMemory, generic system hardware, and HollywoodHardware. Em
 ## Initial NAND, SD and USB register windows
 The first peripheral group adds isolated register-window scaffolding for the Wii NAND interface (0x0D010000, 0x1C bytes), SD host controller (0x0D070000, 0x200 bytes), and EHCI USB controller (0x0D040000, 0x100 bytes). NAND accesses are big-endian; the documented SDHC and EHCI windows use reversed little-endian register words. The initial model accepts aligned 32-bit accesses only and rejects offsets not listed in its implemented register subset. This is deliberately not a claim of working NAND commands, SD card transfers, USB enumeration, DMA, interrupts, W1C behavior, or device reset sequencing. The windows are currently isolated components and are not yet connected to WiiSystem's MMIO map or AHB/SRNPROT enforcement. Their register semantics and integration remain future work.
 
+## Drive Interface, wireless SDIO and Bluetooth HCI scaffolding
+The Wii Drive Interface is modeled as an isolated 0x40-byte, 32-bit big-endian register window at 0x0D806000. The documented register subset includes DISR, DICVR, DICMDBUF0-2, DIMAR, DILENGTH, DICR, DIIMMBUF, and DICFG. This stage stores register words only; command execution, disc image reads, DMA, cover events, IRQ signaling, and reset side effects are not implemented.
+
+The internal Wi-Fi module is reached through the Starlet SDIO host at 0x0D080000. Its 0x200-byte window uses the same standard SDHC register layout and reversed little-endian access convention as the removable SD host at 0x0D070000. The modeled present-state register can be accessed, but card discovery, SDIO commands, BCM4318 firmware, wireless frames, IRQ 8, and AHB/MMIO integration are not implemented. Hardware documentation notes that information about this interface is limited.
+
+The Wii Bluetooth daughtercard is a USB device using Bluetooth HCI over USB, not a separate Hollywood MMIO block. The isolated BluetoothHciTransport validates and queues HCI command/event/ACL packet framing in both directions with bounded queues. It does not enumerate on the USB host, implement the BCM2045 controller, pair devices, run L2CAP, or connect Wii Remotes. All three components remain scaffolding rather than operational peripherals.
+
 ## References
 - [WiiBrew: Hollywood registers](https://wiibrew.org/wiki/Hollywood/Registers)
 - [WiiBrew: Hollywood IRQs](https://wiibrew.org/wiki/Hollywood/IRQs)
@@ -48,6 +55,10 @@ The first peripheral group adds isolated register-window scaffolding for the Wii
 - [WiiBrew: Main memory](https://wiibrew.org/wiki/Hardware/Main_Memory)
 - [EmuDocs: Starlet timer and alarm](https://emudocs.layle.dev/GameCube%20%26%20Wii/Starlet/)
 - [EmuDocs: Starlet SRAM and BOOT0 mapping](https://emudocs.layle.dev/GameCube%20%26%20Wii/Starlet/)
+- [WiiBrew: Drive Interface](https://wiibrew.org/wiki/Hardware/Drive_Interface)
+- [WiiBrew: 802.11 Wireless](https://wiibrew.org/wiki/Hardware/802.11_Wireless)
+- [WiiBrew: Bluetooth Card](https://wiibrew.org/wiki/Hardware/Bluetooth_Card)
+- [EmuDocs: Wii WL SDIO initialization](https://emudocs.layle.dev/GameCube%20%26%20Wii/Starlet/ios/wl/)
 
 ## Remaining Phase 6 work
-Phase 6 remains open. Still missing NAND/SD/USB/Wi-Fi/Bluetooth/disc controllers, DSP/GPU devices, full PLL programming and clock-domain reconfiguration, complete reset side effects on each peripheral, device timing, and integration with running Broadway and Starlet execution environments. No watchdog register has been established in the documented Hollywood register set used here; no speculative watchdog MMIO is fabricated. Register semantics and permissions must continue to be checked against hardware documentation and regression tests. Phase 7 remains blocked.
+Phase 6 remains open. Still missing operational NAND/SD/USB/Wi-Fi/Bluetooth/disc controllers (only isolated register/HCI scaffolding exists), DSP/GPU devices, full PLL programming and clock-domain reconfiguration, complete reset side effects on each peripheral, device timing, and integration with running Broadway and Starlet execution environments. No watchdog register has been established in the documented Hollywood register set used here; no speculative watchdog MMIO is fabricated. Register semantics and permissions must continue to be checked against hardware documentation and regression tests. Phase 7 remains blocked.
