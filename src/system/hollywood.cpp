@@ -86,7 +86,7 @@ void HollywoodIpc::update_interrupts()noexcept{
  if((y1_&&iy1_)||(y2_&&iy2_))irq_.raise(30,IrqRoute::Broadway);
  if((x1_&&ix1_)||(x2_&&ix2_))irq_.raise(31,IrqRoute::Starlet);
 }
-void HollywoodIpc::reset()noexcept{ppc_message_=arm_message_=0;x1_=x2_=y1_=y2_=iy1_=iy2_=ix1_=ix2_=0;}
+void HollywoodIpc::reset()noexcept{ppc_message_=arm_message_=0;x1_=x2_=y1_=y2_=iy1_=iy2_=ix1_=ix2_=0;irq_.clear(HollywoodCpu::Broadway,bit(30));irq_.clear(HollywoodCpu::Starlet,bit(31));}
 
 bool HollywoodGpio::read(HollywoodCpu cpu,std::uint32_t off,std::uint32_t& value)const noexcept{
  if(off==0xdcU){if(cpu!=HollywoodCpu::Starlet)return false;value=enable_;return true;}

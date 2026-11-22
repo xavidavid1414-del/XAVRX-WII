@@ -41,6 +41,11 @@ int main(){
  check(hw.write_as(HollywoodCpu::Broadway,4,4,(1U<<4U)|(1U<<2U)),"Broadway clear pulse with IY1 enabled");
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<30U))!=0U,"IPC clear write itself latches IRQ even if Y1 is already clear");
  check(hw.write_as(HollywoodCpu::Broadway,0x30U,4,1U<<30U),"Broadway clears IPC clear-write pulse");
+ HollywoodInterrupts standalone_ipc_irqs;HollywoodIpc standalone_ipc(standalone_ipc_irqs);
+ check(standalone_ipc.write(HollywoodCpu::Broadway,4U,1U)&&standalone_ipc.write(HollywoodCpu::Starlet,12U,1U<<4U),"Standalone IPC reset test raises Starlet interrupt");
+ check((standalone_ipc_irqs.flags(HollywoodCpu::Starlet)&(1U<<31U))!=0U,"Standalone IPC reset test has pending IRQ");
+ standalone_ipc.reset();
+ check(standalone_ipc_irqs.flags(HollywoodCpu::Broadway)==0U&&standalone_ipc_irqs.flags(HollywoodCpu::Starlet)==0U,"IPC reset clears only its owned latched interrupt sources");
 
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::clocks_register,4,value)&&value==0U,"Starlet reads Hollywood clock control");
  check(hw.system_control().hollywood_clock_hz()==243000000ULL,"Hollywood starts in Wii clock mode");
