@@ -2,7 +2,7 @@
 Nintendo Wii emulator project built from scratch in C++20 with CMake.
 
 ## Status
-**Current phase: 6 / 20 — Wii hardware foundation integrated; phase remains in progress.** The initialized system composes 24 MiB MEM1, 64 MiB MEM2, shared CPU-aware memory/MMIO dispatch, Hollywood dual-CPU IRQs and Starlet FIQ mask, IPC handshakes, shared GPIO state, Starlet timer/alarm, AHBPROT PPCKERN gating, and initial clock/reset register models. The current app can initialize and reset this hardware foundation. This is not yet a playable emulator: ARM Starlet execution, complete Gekko execution, MMU/cache behavior, firmware boot, watchdog/reset/PLL sequencing, per-engine AHB enforcement, peripherals, graphics, and audio remain incomplete.
+**Current phase: 6 / 20 — Wii hardware foundation integrated; phase remains in progress.** The initialized system composes 24 MiB MEM1, 64 MiB MEM2, shared CPU-aware memory/MMIO dispatch, Hollywood dual-CPU IRQs and Starlet FIQ mask, IPC handshakes, shared GPIO state, Starlet timer/alarm, AHBPROT PPCKERN gating, initial clock/reset register models, and a Starlet SRAM/BOOT0 address-mapping model. BOOT0 contents are not bundled; a verified ROM image must be supplied before ROM reads can succeed. This is not yet a playable emulator: ARM Starlet execution, complete Gekko execution, MMU/cache behavior, firmware boot, watchdog/reset/PLL sequencing, per-engine AHB enforcement, peripherals, graphics, and audio remain incomplete.
 
 ## Build
 ```sh
