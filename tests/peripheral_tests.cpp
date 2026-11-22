@@ -54,6 +54,10 @@ int main(){
  std::array<std::uint8_t,4> sdio_data{{1U,2U,3U,4U}},sdio_out{};
  check(wlan.write_sdio_data(1U,0x100U,sdio_data)&&wlan.read_sdio_data(1U,0x100U,sdio_out)&&sdio_out==sdio_data,"WLAN SDIO function one bulk transfer");
  check(!wlan.read_sdio_byte(2U,0U,block[0])&&!wlan.write_sdio_data(1U,0x1ffffU,sdio_data),"WLAN SDIO rejects invalid function and address range");
+ std::array<std::uint8_t,1> last_byte{{0x5aU}},last_out{};
+ check(wlan.write_sdio_byte(1U,WirelessLanController::function_address_space-1U,last_byte[0])&&wlan.read_sdio_byte(1U,WirelessLanController::function_address_space-1U,last_out[0])&&last_out[0]==0x5aU,"WLAN SDIO permits access to final valid byte");
+ check(wlan.read_sdio_data(1U,WirelessLanController::function_address_space,std::span<std::uint8_t>{})&&wlan.write_sdio_data(1U,WirelessLanController::function_address_space,std::span<const std::uint8_t>{}),"WLAN SDIO accepts empty transfers at one-past-end address");
+ check(!wlan.read_sdio_data(1U,WirelessLanController::function_address_space,last_out)&&!wlan.write_sdio_data(1U,WirelessLanController::function_address_space,last_byte),"WLAN SDIO rejects non-empty transfers at one-past-end address");
  wlan.reset();check(wlan.read_sdio_data(1U,0x100U,sdio_out)&&sdio_out[0]==0U,"WLAN reset clears SDIO function memory");
 
  BluetoothHciTransport bt;std::vector<std::uint8_t> packet;
