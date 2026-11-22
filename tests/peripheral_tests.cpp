@@ -9,7 +9,8 @@ int main(){
  using namespace xavrx::system;NandInterface nand;SdHostController sd;UsbHostController usb;DriveInterface di;WirelessLanController wlan;std::uint64_t value=0;
  check(nand.aperture_size()==0x1cU&&!nand.little_endian(),"NAND aperture and big-endian bus");
  check(nand.write(0x00U,4,0x12345678U)&&nand.read(0x00U,4,value)&&value==0x12345678U,"NAND register readback");
- check(!nand.read(0x18U,4,value)&&!nand.write(0x04U,2,0x1234U),"NAND rejects unknown and non-word accesses");
+ check(nand.write(0x18U,4,0x12345678U)&&nand.read(0x18U,4,value)&&value==0x12345678U,"NAND exposes documented opaque NAND_UNK register without assigning semantics");
+ check(!nand.read(0x1cU,4,value)&&!nand.write(0x04U,2,0x1234U),"NAND rejects out-of-aperture and non-word accesses");
  std::array<std::uint8_t,NandInterface::page_size> page{},readback{};std::array<std::uint8_t,NandInterface::spare_size> spare{},spare_out{};
  page.fill(0xf0U);spare.fill(0xfeU);
  check(nand.read_page(7U,readback,spare_out)&&readback[0]==0xffU&&spare_out[0]==0xffU,"erased NAND page reads as 0xff");
