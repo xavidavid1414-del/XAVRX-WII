@@ -3,6 +3,7 @@
 #include "xavrx/system/reset_controller.hpp"
 #include "xavrx/system/dsp_gpu.hpp"
 #include "xavrx/system/broadway_devices.hpp"
+#include "xavrx/system/controllers.hpp"
 #include "xavrx/system/hollywood.hpp"
 #include "xavrx/system/peripherals.hpp"
 #include "xavrx/system/wii_memory.hpp"
@@ -49,6 +50,9 @@ public:
  [[nodiscard]] UsbHostController& usb_host() noexcept{return usb_host_;}
  [[nodiscard]] DriveInterface& drive_interface() noexcept{return drive_;}
  [[nodiscard]] WirelessLanController& wlan() noexcept{return wlan_;}
+ [[nodiscard]] WiiRemoteController& wii_remote() noexcept{return wii_remote_;}
+ [[nodiscard]] NunchukController& nunchuk() noexcept{return nunchuk_;}
+ [[nodiscard]] ClassicController& classic_controller() noexcept{return classic_controller_;}
  [[nodiscard]] HardwareResetController& reset_controller() noexcept{return reset_controller_;}
  [[nodiscard]] DspDevice& dsp() noexcept{return dsp_;}
  [[nodiscard]] GpuCommandProcessor& gpu() noexcept{return gpu_;}
@@ -72,6 +76,9 @@ private:
  DriveInterface drive_;
  WirelessLanController wlan_;
  BluetoothHciTransport bluetooth_hci_;
+ WiiRemoteController wii_remote_{};
+ NunchukController nunchuk_{};
+ ClassicController classic_controller_{};
  ClockDomainScheduler clock_scheduler_;
  HardwareResetController reset_controller_{};
  DspDevice dsp_{};

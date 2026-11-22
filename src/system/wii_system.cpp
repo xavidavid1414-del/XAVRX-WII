@@ -81,6 +81,7 @@ bool WiiSystem::take_bluetooth_host_packet(HollywoodCpu cpu,std::vector<std::uin
 void WiiSystem::reset()noexcept{
  memory_.reset();hardware_.reset();hollywood_.reset();
  nand_.reset();sd_host_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();clock_scheduler_.reset();
+ wii_remote_.reset();nunchuk_.reset();classic_controller_.reset();
  reset_controller_.reset();dsp_.reset();gpu_.reset();dsp_mailbox_.reset();processor_interrupts_.reset();
 }
 }
