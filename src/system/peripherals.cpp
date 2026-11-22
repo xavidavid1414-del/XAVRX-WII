@@ -110,8 +110,8 @@ void UsbHostController::advance_microframes(std::uint64_t count)noexcept{
 bool UsbHostController::take_completed_transfer(Transfer& transfer){if(completed_.empty())return false;transfer=std::move(completed_.front());completed_.pop_front();return true;}
 void UsbHostController::reset()noexcept{RegisterWindow::reset();command_=0;status_=sts_halted;interrupt_enable_=0;frame_index_=0;periodic_base_=0;async_list_=0;config_flag_=0;port_status_=0;pending_.clear();completed_.clear();}
 DriveInterface::DriveInterface()noexcept:RegisterWindow(0x40U,di_offsets,std::size(di_offsets),false){}
-bool DriveInterface::mount_disc_image(std::vector<std::uint8_t> image){if(image.empty())return false;disc_image_=std::move(image);return true;}
-void DriveInterface::eject_disc()noexcept{disc_image_.clear();}
+bool DriveInterface::mount_disc_image(std::vector<std::uint8_t> image){if(image.empty())return false;const bool was_open=disc_image_.empty();disc_image_=std::move(image);if(was_open)signal_cover_interrupt();return true;}
+void DriveInterface::eject_disc()noexcept{if(!disc_image_.empty()){disc_image_.clear();signal_cover_interrupt();}}
 bool DriveInterface::read_disc_bytes(std::uint64_t offset,std::span<std::uint8_t> output)const noexcept{
  if(disc_image_.empty()||offset>disc_image_.size()||output.size()>disc_image_.size()-static_cast<std::size_t>(offset))return false;
  std::copy_n(disc_image_.begin()+static_cast<std::ptrdiff_t>(offset),output.size(),output.begin());return true;
