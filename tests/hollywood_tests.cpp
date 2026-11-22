@@ -134,6 +134,18 @@ int main(){
  check(!hw.write_as(HollywoodCpu::Broadway,HollywoodSystemControl::ahb_prot_register,4,1U<<31U),"Broadway cannot grant itself privileged access");
  check(!hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Sd0),"Broadway SD0 denied before AHB permission");
  check(!hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Sd0),"Starlet SD0 denied before AHB permission");
+ const auto invalid_cpu=static_cast<HollywoodCpu>(0xffU);
+ check(!hw.read_as(invalid_cpu,0U,4U,value)&&!hw.write_as(invalid_cpu,0U,4U,1U),"invalid Hollywood CPU identity is rejected by MMIO access");
+ check(!hw.system_control().engine_access_allowed(invalid_cpu,HollywoodEngine::Sd0),"invalid Hollywood CPU cannot inherit Starlet AHB permissions");
+ check(hw.interrupts().flags(invalid_cpu)==0U&&hw.interrupts().mask(invalid_cpu)==0U,"invalid Hollywood CPU has no interrupt view");
+ hw.interrupts().raise(5U,IrqRoute::Both);
+ const auto ppc_before_invalid_ack=hw.interrupts().flags(HollywoodCpu::Broadway);
+ const auto starlet_before_invalid_ack=hw.interrupts().flags(HollywoodCpu::Starlet);
+ hw.interrupts().clear(invalid_cpu,0xffffffffU);
+ hw.interrupts().set_mask(invalid_cpu,0xffffffffU);
+ check(hw.interrupts().flags(HollywoodCpu::Broadway)==ppc_before_invalid_ack&&hw.interrupts().flags(HollywoodCpu::Starlet)==starlet_before_invalid_ack,"invalid Hollywood CPU cannot clear or mask IRQ state");
+ hw.interrupts().clear(HollywoodCpu::Broadway,1U<<5U);
+ hw.interrupts().clear(HollywoodCpu::Starlet,1U<<5U);
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::ahb_prot_register,4,(1U<<31U)|(1U<<10U)|(1U<<28U)|(1U<<8U)|(1U<<26U)|(1U<<6U)|(1U<<24U)|(1U<<5U)|(1U<<23U)|(1U<<4U)|(1U<<22U)),"Starlet enables documented AHB engine permissions");
  check(hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Sd0),"PPCSD0EN grants Broadway SD0");
  check(hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Sd0),"IOPSD0EN grants Starlet SD0");

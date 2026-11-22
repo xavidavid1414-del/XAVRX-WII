@@ -1,17 +1,17 @@
 #include "xavrx/system/hollywood.hpp"
 #include <array>
 namespace xavrx::system {
-namespace { constexpr std::uint32_t pins=0x00ffffffU; constexpr std::uint32_t bit(std::uint8_t n) noexcept{return std::uint32_t{1}<<n;} }
+namespace { constexpr std::uint32_t pins=0x00ffffffU; constexpr std::uint32_t bit(std::uint8_t n) noexcept{return std::uint32_t{1}<<n;} constexpr bool valid_cpu(HollywoodCpu cpu) noexcept{return cpu==HollywoodCpu::Broadway||cpu==HollywoodCpu::Starlet;} }
 void HollywoodInterrupts::raise(std::uint8_t source,IrqRoute route) noexcept {
  if(source>=32U)return;
  const auto b=bit(source);const auto route_bits=static_cast<std::uint8_t>(route);
  if((route_bits&1U)!=0U)ppc_flags_|=b;
  if((route_bits&2U)!=0U)arm_flags_|=b;
 }
-void HollywoodInterrupts::clear(HollywoodCpu cpu,std::uint32_t bits) noexcept {if(cpu==HollywoodCpu::Broadway)ppc_flags_&=~bits;else arm_flags_&=~bits;}
-void HollywoodInterrupts::set_mask(HollywoodCpu cpu,std::uint32_t bits) noexcept {if(cpu==HollywoodCpu::Broadway)ppc_mask_=bits;else arm_mask_=bits;}
-std::uint32_t HollywoodInterrupts::flags(HollywoodCpu cpu)const noexcept{return cpu==HollywoodCpu::Broadway?ppc_flags_:arm_flags_;}
-std::uint32_t HollywoodInterrupts::mask(HollywoodCpu cpu)const noexcept{return cpu==HollywoodCpu::Broadway?ppc_mask_:arm_mask_;}
+void HollywoodInterrupts::clear(HollywoodCpu cpu,std::uint32_t bits) noexcept {if(cpu==HollywoodCpu::Broadway)ppc_flags_&=~bits;else if(cpu==HollywoodCpu::Starlet)arm_flags_&=~bits;}
+void HollywoodInterrupts::set_mask(HollywoodCpu cpu,std::uint32_t bits) noexcept {if(cpu==HollywoodCpu::Broadway)ppc_mask_=bits;else if(cpu==HollywoodCpu::Starlet)arm_mask_=bits;}
+std::uint32_t HollywoodInterrupts::flags(HollywoodCpu cpu)const noexcept{return cpu==HollywoodCpu::Broadway?ppc_flags_:(cpu==HollywoodCpu::Starlet?arm_flags_:0U);}
+std::uint32_t HollywoodInterrupts::mask(HollywoodCpu cpu)const noexcept{return cpu==HollywoodCpu::Broadway?ppc_mask_:(cpu==HollywoodCpu::Starlet?arm_mask_:0U);}
 bool HollywoodInterrupts::asserted(HollywoodCpu cpu)const noexcept{return (flags(cpu)&mask(cpu))!=0U;}
 
 bool HollywoodTimer::write_alarm(std::uint32_t deadline)noexcept{alarm_=deadline;armed_=true;return true;}
@@ -26,6 +26,7 @@ void HollywoodTimer::advance(std::uint64_t ticks)noexcept{
 }
 
 bool HollywoodSystemControl::read(HollywoodCpu cpu,std::uint32_t off,std::uint32_t& value)const noexcept{
+ if(!valid_cpu(cpu))return false;
  if(off==ahb_prot_register){value=ahb_prot_;return true;}
  if(cpu!=HollywoodCpu::Starlet)return false;
  if(off==clocks_register){value=clocks_;return true;}
@@ -35,12 +36,14 @@ bool HollywoodSystemControl::read(HollywoodCpu cpu,std::uint32_t off,std::uint32
 bool HollywoodSystemControl::engine_access_allowed(HollywoodCpu initiator,HollywoodEngine engine)const noexcept{
  static constexpr std::uint32_t ppc_bits[]={1U<<10U,1U<<11U,1U<<8U,1U<<9U,1U<<7U,1U<<6U,1U<<5U,1U<<4U};
  static constexpr std::uint32_t iop_bits[]={1U<<28U,1U<<29U,1U<<26U,1U<<27U,1U<<25U,1U<<24U,1U<<23U,1U<<22U};
+ if(!valid_cpu(initiator))return false;
  const auto index=static_cast<std::size_t>(engine);
  if(index>=8U)return false;
  const auto bitmask=initiator==HollywoodCpu::Broadway?ppc_bits[index]:iop_bits[index];
  return (ahb_prot_&bitmask)!=0U;
 }
 bool HollywoodSystemControl::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value)noexcept{
+ if(!valid_cpu(cpu))return false;
  if(off==ahb_prot_register){if(cpu!=HollywoodCpu::Starlet)return false;ahb_prot_=value;return true;}
  if(cpu!=HollywoodCpu::Starlet)return false;
  if(off==clocks_register){clocks_=value&0x3U;return true;}
@@ -153,7 +156,7 @@ bool HollywoodHardware::CpuBusView::write(std::uint32_t off,std::uint8_t width,s
 bool HollywoodHardware::read(std::uint32_t off,std::uint8_t width,std::uint64_t& value)noexcept{return read_as(HollywoodCpu::Broadway,off,width,value);}
 bool HollywoodHardware::write(std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{return write_as(HollywoodCpu::Broadway,off,width,value);}
 bool HollywoodHardware::read_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t width,std::uint64_t& value)noexcept{
- if(width!=4U||(off&3U)!=0U||off>=window_size)return false;
+ if(!valid_cpu(cpu)||width!=4U||(off&3U)!=0U||off>=window_size)return false;
  const auto access_cpu=(cpu==HollywoodCpu::Broadway&&system_control_.ppc_full_access())?HollywoodCpu::Starlet:cpu;
  std::uint32_t v=0;
  if(off<0x10U){const auto ipc_cpu=off==HollywoodIpc::arm_ctrl?access_cpu:cpu;if(!ipc_.read(ipc_cpu,off,v))return false;}
@@ -172,7 +175,7 @@ bool HollywoodHardware::read_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t 
  value=v;return true;
 }
 bool HollywoodHardware::write_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{
- if(width!=4U||(off&3U)!=0U||off>=window_size||value>0xffffffffULL)return false;
+ if(!valid_cpu(cpu)||width!=4U||(off&3U)!=0U||off>=window_size||value>0xffffffffULL)return false;
  const auto v=static_cast<std::uint32_t>(value);
  const auto access_cpu=(cpu==HollywoodCpu::Broadway&&system_control_.ppc_full_access())?HollywoodCpu::Starlet:cpu;
  if(off<0x10U){const auto ipc_cpu=off==HollywoodIpc::arm_ctrl?access_cpu:cpu;return ipc_.write(ipc_cpu,off,v);}
