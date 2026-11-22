@@ -1,5 +1,6 @@
 #include "xavrx/system/wii_system.hpp"
 #include <array>
+#include <cmath>
 namespace xavrx::system {
 namespace {
 constexpr std::uint32_t nand_base=0x0d010000U;
@@ -43,7 +44,7 @@ GameInputState WiiSystem::route_controller_inputs()const noexcept{
   const auto routed=input_router_.route(frame);
   for(std::size_t i=0;i<combined.buttons.size();++i){
    combined.buttons[i]=combined.buttons[i]||routed.buttons[i];
-   if(routed.axes[i]>combined.axes[i]||routed.axes[i]<-combined.axes[i])combined.axes[i]=routed.axes[i];
+   if(std::abs(routed.axes[i])>std::abs(combined.axes[i]))combined.axes[i]=routed.axes[i];
   }
  };
  merge(make_input_frame(wii_remote_.state()));
