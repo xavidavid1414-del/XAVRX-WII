@@ -50,11 +50,15 @@ int main(){
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,0xffffffffU),"Starlet writes reset control register");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,value)&&value==HollywoodSystemControl::resets_writable_mask,"reserved reset bit is masked");
  check(hw.system_control().reset_released(1U),"reset line state can be inspected");
- check(!hw.system_control().di_reset_asserted(),"DI reset is released when HW_RESETS bit 10 is set");
- check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask&~HollywoodSystemControl::di_reset_bit),"Starlet asserts documented DI reset");
- check(hw.system_control().di_reset_asserted(),"DI reset is asserted when HW_RESETS bit 10 is clear");
- check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask),"Starlet releases documented DI reset");
- check(!hw.system_control().di_reset_asserted(),"DI reset release is reflected immediately");
+ check(!hw.system_control().di_io_reset_asserted(),"DI I/O reset is released when HW_RESETS bit 10 is set");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask&~HollywoodSystemControl::di_io_reset_bit),"Starlet asserts DI I/O reset bit 10");
+ check(hw.system_control().di_io_reset_asserted(),"DI I/O reset is asserted when bit 10 is clear");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask),"Starlet releases DI I/O reset bit 10");
+ check(!hw.system_control().di_io_reset_asserted(),"DI I/O reset release is reflected immediately");
+ check(!hw.system_control().di_reset_b_asserted(),"DI reset-B line is released when bit 3 is set");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask&~HollywoodSystemControl::di_reset_b_bit),"Starlet asserts DI reset-B bit 3");
+ check(hw.system_control().di_reset_b_asserted(),"DI reset-B line is asserted when bit 3 is clear");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask),"Starlet releases DI reset-B bit 3");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodTimer::alarm_register,4,3U),"Starlet programs timer alarm");
  check(!hw.write_as(HollywoodCpu::Broadway,HollywoodTimer::alarm_register,4,9U),"Broadway cannot program Starlet alarm");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodTimer::timer_register,4,value)&&value==0U,"Starlet reads timer counter");
@@ -124,6 +128,17 @@ int main(){
  check(hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Aes),"PPCAESEN grants Broadway AES");
  check(hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,HollywoodEngine::Aes),"IOPAESEN grants Starlet AES");
  check(!hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,HollywoodEngine::Sd1),"unselected SD1 remains denied");
+ constexpr std::uint32_t ppc_engine_bits[]={1U<<10U,1U<<11U,1U<<8U,1U<<9U,1U<<7U,1U<<6U,1U<<5U,1U<<4U};
+ constexpr std::uint32_t iop_engine_bits[]={1U<<28U,1U<<29U,1U<<26U,1U<<27U,1U<<25U,1U<<24U,1U<<23U,1U<<22U};
+ for(std::size_t i=0;i<8U;++i){
+  const auto engine=static_cast<HollywoodEngine>(i);
+  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::ahb_prot_register,4,(1U<<31U)|ppc_engine_bits[i]),"configure one PPC AHB engine permission");
+  check(hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,engine),"PPC AHB engine bit grants its matching engine");
+  check(!hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,engine),"PPC AHB engine bit does not grant IOP access");
+  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::ahb_prot_register,4,(1U<<31U)|iop_engine_bits[i]),"configure one IOP AHB engine permission");
+  check(hw.system_control().engine_access_allowed(HollywoodCpu::Starlet,engine),"IOP AHB engine bit grants its matching engine");
+  check(!hw.system_control().engine_access_allowed(HollywoodCpu::Broadway,engine),"IOP AHB engine bit does not grant PPC access");
+ }
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::ahb_prot_register,4,1U<<31U),"Starlet grants PPCKERN access");
  check(hw.read_as(HollywoodCpu::Broadway,12,4,value),"PPCKERN grants Broadway ARMCTRL visibility");
  check(hw.read_as(HollywoodCpu::Broadway,0x38,4,value),"PPCKERN grants Broadway Starlet IRQ register visibility");
