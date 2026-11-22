@@ -98,6 +98,7 @@ private:
  WiiBalanceBoard balance_board_{};
  ControllerInputRouter input_router_{};
  ClockDomainScheduler clock_scheduler_;
+ std::uint64_t usb_microframe_phase_{0U};
  HardwareResetController reset_controller_{};
  DspDevice dsp_{};
  GpuCommandProcessor gpu_{};
