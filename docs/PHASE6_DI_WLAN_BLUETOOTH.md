@@ -1,7 +1,7 @@
 # Phase 6 peripheral batch: DI, WLAN SDIO and Bluetooth HCI
 
 ## Drive Interface (DI)
-The DI component can mount/eject a caller-supplied byte image and perform bounded read-only byte-range access. It does not yet decode the DI command-buffer protocol, perform DMA into emulated RAM, parse Wii optical-disc filesystem structures, or model drive interrupts and timing. The hardware register window remains separate from this image backend.
+The DI component can mount/eject a caller-supplied byte image and perform bounded read-only byte-range access. Its Broadway/Starlet MMIO views implement a narrow synchronous 0xA8 read-DMA path into shared emulated RAM with alignment, direction, length and destination validation. The full DI command-buffer protocol, DISR/DICVR status and interrupt behavior, asynchronous timing, other opcodes, and optical-disc filesystem parsing remain unimplemented.
 
 ## WLAN SDIO
 The WLAN model exposes two bounded SDIO function address spaces with byte and bulk read/write operations. It provides deterministic function-memory backing for future SDIO command and BCM4318 integration. It does not implement the SDHCI command/response engine, WLAN firmware, 802.11 MAC/PHY, radio behavior, or networking.
