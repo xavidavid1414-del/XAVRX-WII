@@ -81,11 +81,13 @@ bool StarletMemory::write_region(Translation m,std::uint8_t width,std::uint64_t 
  for(std::uint8_t i=0;i<width;++i){const auto shift=static_cast<unsigned>((width-1U-i)*8U);bytes[m.offset+i]=static_cast<std::uint8_t>(value>>shift);}return true;
 }
 bool StarletMemory::read_as(StarletMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t& value) noexcept {
+ if(cpu!=StarletMemoryCpu::Broadway&&cpu!=StarletMemoryCpu::Starlet)return false;
  if((width!=1U&&width!=2U&&width!=4U&&width!=8U)||(address&(width-1U))!=0U)return false;
  if(cpu==StarletMemoryCpu::Broadway&&(srnprot_&broadway_sram_bit)==0U)return false;
  return read_region(translate(address),width,value);
 }
 bool StarletMemory::write_as(StarletMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t value) noexcept {
+ if(cpu!=StarletMemoryCpu::Broadway&&cpu!=StarletMemoryCpu::Starlet)return false;
  if((width!=1U&&width!=2U&&width!=4U&&width!=8U)||(address&(width-1U))!=0U)return false;
  if(cpu==StarletMemoryCpu::Broadway&&(srnprot_&broadway_sram_bit)==0U)return false;
  return write_region(translate(address),width,value);

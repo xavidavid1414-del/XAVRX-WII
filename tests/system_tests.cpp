@@ -27,6 +27,13 @@ int main(){using namespace xavrx::system;
  TimerBank huge;InterruptController huge_irq;check(huge.configure(0,1,true,true),"high frequency timer config");huge.advance(std::numeric_limits<std::uint64_t>::max(),huge_irq);check(huge.expirations(0)==std::numeric_limits<std::uint64_t>::max()&&huge.remaining(0)==1U,"expiration counter saturates");huge.advance(std::numeric_limits<std::uint64_t>::max(),huge_irq);check(huge.expirations(0)==std::numeric_limits<std::uint64_t>::max(),"expiration counter remains saturated");
  BootController boot;check(boot.state()==BootState::Off,"initial boot state");check(!boot.transition(BootState::Running),"invalid direct boot transition rejected");check(boot.transition(BootState::BootRom),"off to boot ROM");check(boot.transition(BootState::Firmware),"boot ROM to firmware");check(boot.transition(BootState::Running),"firmware to running");check(boot.transition(BootState::Halted),"running to halted");check(boot.transition(BootState::Running),"resume from halted");check(boot.transition(BootState::Faulted),"running to faulted");check(!boot.transition(BootState::Running),"faulted cannot resume directly");check(boot.transition(BootState::Off),"faulted to off reset");
  SystemHardware hardware;check(hardware.timers().configure(2,4,false,true),"system hardware timer setup");hardware.advance(4);check(hardware.interrupts().pending(10),"system hardware advances timers into interrupt controller");check(hardware.boot().transition(BootState::BootRom),"system boot controller");hardware.reset();check(hardware.boot().state()==BootState::Off&&!hardware.interrupts().pending(10)&&!hardware.timers().is_enabled(2),"system hardware reset clears state");
+ // Starlet SRAM access rejects unknown CPU identities instead of treating them as Starlet.
+ StarletMemory starlet_memory;
+ const auto invalid_starlet_cpu=static_cast<StarletMemoryCpu>(0xffU);
+ std::uint64_t starlet_probe=0xfeedfaceU;
+ check(!starlet_memory.read_as(invalid_starlet_cpu,StarletMemory::sram_base,4U,starlet_probe)&&starlet_probe==0xfeedfaceU,"Starlet SRAM read rejects invalid CPU identity without changing output");
+ check(!starlet_memory.write_as(invalid_starlet_cpu,StarletMemory::sram_base,4U,0x12345678U),"Starlet SRAM write rejects invalid CPU identity");
+ check(!starlet_memory.master_access_allowed(static_cast<StarletSramMaster>(0xffU)),"Starlet SRAM master permission rejects invalid master identity");
  // WiiSystem composition, peripheral MMIO routing and independent AHB gates.
  WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes shared bus and peripherals");
  // The composed system routes live states from every controller profile to game actions.
