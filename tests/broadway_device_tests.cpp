@@ -9,7 +9,7 @@ int main(){
  check(dsp.take_mail_to_dsp(mail)&&mail==0x12345678U,"DSP consumes one complete inbound mailbox message");
  check(!dsp.take_mail_to_dsp(mail),"DSP inbound mailbox clears pending after consumption");
  check(dsp.post_mail_from_dsp(0x89abcdefU),"DSP posts outbound mailbox message");
- check(dsp.read(0x04U,2,value)&&value==0x89abU+0x8000U,"DSP outbound high halfword marks message valid");
+ check(dsp.read(0x04U,2,value)&&value==0x89abU,"DSP outbound high halfword marks message valid");
  check(dsp.read(0x06U,2,value)&&value==0xcdefU,"DSP outbound low halfword returns payload");
  check(!dsp.read(0x00U,2,value)&&!dsp.write(0x04U,2,0U),"DSP mailbox rejects unsupported access direction");
  dsp.reset();check(!dsp.read(0x04U,2,value)||value==0U,"DSP mailbox reset clears output state");
