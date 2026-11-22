@@ -110,6 +110,8 @@ int main(){
  hw.gpio().set_inputs(2U);
  check((hw.interrupts().flags(HollywoodCpu::Starlet)&(1U<<11U))!=0U,"Starlet-owned GPIO pin raises IRQ 11");
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<11U))==0U,"GPIO IRQ 11 is Starlet-only");
+ check(hw.write_as(HollywoodCpu::Starlet,0x38U,4,1U<<11U),"Starlet acknowledges active GPIO IRQ");
+ check((hw.interrupts().flags(HollywoodCpu::Starlet)&(1U<<11U))!=0U,"active Starlet GPIO level immediately reasserts IRQ after acknowledgement");
  check(hw.write_as(HollywoodCpu::Starlet,0xf0,4,2U),"Starlet clears idle GPIO flag after input returns");
  hw.gpio().set_inputs(0U);
  check(hw.write_as(HollywoodCpu::Starlet,0xf0,4,2U),"Starlet W1C clears GPIO flag");
