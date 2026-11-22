@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 namespace xavrx::system {
-class RegisterWindow final : public memory::MemoryMappedDevice {
+class RegisterWindow : public memory::MemoryMappedDevice {
 public:
  static constexpr std::size_t word_count=64;
  RegisterWindow(std::uint32_t aperture_size,const std::uint32_t* offsets,std::size_t count,bool little_endian) noexcept;
