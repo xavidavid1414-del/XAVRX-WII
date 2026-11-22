@@ -26,6 +26,16 @@ int main(){using namespace xavrx::system;
  SystemHardware hardware;check(hardware.timers().configure(2,4,false,true),"system hardware timer setup");hardware.advance(4);check(hardware.interrupts().pending(10),"system hardware advances timers into interrupt controller");check(hardware.boot().transition(BootState::BootRom),"system boot controller");hardware.reset();check(hardware.boot().state()==BootState::Off&&!hardware.interrupts().pending(10)&&!hardware.timers().is_enabled(2),"system hardware reset clears state");
  // WiiSystem composition, peripheral MMIO routing and independent AHB gates.
  WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes shared bus and peripherals");
+ // Broadway-only DSP mailbox, PI interrupt and GX write-gather mappings.
+ check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c005000U,2,0x9234U)==xavrx::memory::AccessResult::Success,"Broadway writes DSP mailbox high halfword");
+ check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c005002U,2,0x5678U)==xavrx::memory::AccessResult::Success,"Broadway writes DSP mailbox low halfword");
+ std::uint32_t dsp_mail=0;check(wii.dsp_mailbox().take_mail_to_dsp(dsp_mail)&&dsp_mail==0x12345678U,"WiiSystem exposes DSP mailbox payload");
+ check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c003004U,4,1U<<6U)==xavrx::memory::AccessResult::Success,"Broadway configures PI interrupt mask");
+ wii.processor_interrupts().raise(6U);check(wii.processor_interrupts().active()==(1U<<6U),"PI interrupt source is masked and observable");
+ check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c003000U,4,1U<<6U)==xavrx::memory::AccessResult::Success&&wii.processor_interrupts().cause()==0U,"PI interrupt cause is W1C through MMIO");
+ check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c008000U,4,0xabcdef01U)==xavrx::memory::AccessResult::Success,"Broadway GX write-gather port accepts FIFO word");
+ std::uint32_t gx_word=0;check(wii.gpu().take(gx_word)&&gx_word==0xabcdef01U,"GX FIFO receives MMIO write-gather word");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0c008000U,4,0U)==xavrx::memory::AccessResult::DeviceError,"Starlet cannot access Broadway-only GX FIFO");
  check(wii.memory().write32(0x80000000U,0x13579bdfU)==xavrx::memory::AccessResult::Success,"WiiSystem exposes MEM1");
  wii.advance_broadway_cycles(9U);
  check(wii.scheduled_cycles(ClockDomain::Starlet)==3U&&wii.hollywood().timer().counter()==3U,"WiiSystem derives Starlet ticks from Broadway cycles at 243 MHz");
