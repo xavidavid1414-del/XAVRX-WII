@@ -145,7 +145,7 @@ bool HollywoodHardware::read_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t 
  else if(off==HollywoodTimer::timer_register){if(access_cpu!=HollywoodCpu::Starlet)return false;v=timer_.counter();}
  else if(off==HollywoodTimer::alarm_register){return false;}
  else if(off==HollywoodSystemControl::ahb_prot_register||off==HollywoodSystemControl::clocks_register||off==HollywoodSystemControl::resets_register){if(!system_control_.read(cpu==HollywoodCpu::Broadway&&off!=HollywoodSystemControl::ahb_prot_register?access_cpu:cpu,off,v))return false;}
- else if(off==0x40U){if(access_cpu!=HollywoodCpu::Starlet)return false;v=interrupts_.fiq_mask();}
+ else if(off==0x40U){if(access_cpu!=HollywoodCpu::Starlet)return false;v=interrupts_.fiq_mask();}\n else if(off==StarletMemory::sram_protection_register){if(access_cpu!=HollywoodCpu::Starlet)return false;v=starlet_memory_.srnprot();}\n else if(off==StarletMemory::boot0_register){if(access_cpu!=HollywoodCpu::Starlet)return false;v=starlet_memory_.boot0();}
  else if(off>=0x30U&&off<=0x3cU){
   if((off>=0x38U)&&access_cpu!=HollywoodCpu::Starlet)return false;
   switch(off){case 0x30:v=interrupts_.flags(HollywoodCpu::Broadway);break;case 0x34:v=interrupts_.mask(HollywoodCpu::Broadway);break;case 0x38:v=interrupts_.flags(HollywoodCpu::Starlet);break;case 0x3c:v=interrupts_.mask(HollywoodCpu::Starlet);break;default:return false;}
@@ -163,7 +163,7 @@ bool HollywoodHardware::write_as(HollywoodCpu cpu,std::uint32_t off,std::uint8_t
  if(off==HollywoodTimer::alarm_register){if(access_cpu!=HollywoodCpu::Starlet)return false;return timer_.write_alarm(v);}
  if(off==HollywoodSystemControl::ahb_prot_register)return system_control_.write(cpu,off,v);
  if(off==HollywoodSystemControl::clocks_register||off==HollywoodSystemControl::resets_register)return system_control_.write(access_cpu,off,v);
- if(off==0x40U){if(access_cpu!=HollywoodCpu::Starlet)return false;interrupts_.set_fiq_mask(v);return true;}
+ if(off==0x40U){if(access_cpu!=HollywoodCpu::Starlet)return false;interrupts_.set_fiq_mask(v);return true;}\n if(off==StarletMemory::sram_protection_register){if(access_cpu!=HollywoodCpu::Starlet)return false;starlet_memory_.set_srnprot(v);return true;}\n if(off==StarletMemory::boot0_register){if(access_cpu!=HollywoodCpu::Starlet)return false;starlet_memory_.set_boot0(v);return true;}
  if(off>=0x30U&&off<=0x3cU){
   if((off>=0x38U)&&access_cpu!=HollywoodCpu::Starlet)return false;
   switch(off){case 0x30:interrupts_.clear(HollywoodCpu::Broadway,v);break;case 0x34:interrupts_.set_mask(HollywoodCpu::Broadway,v);break;case 0x38:interrupts_.clear(HollywoodCpu::Starlet,v);break;case 0x3c:interrupts_.set_mask(HollywoodCpu::Starlet,v);break;default:return false;}
@@ -180,5 +180,5 @@ bool HollywoodHardware::map_into(WiiMemory& shared_bus)noexcept{
  if(!shared_bus.map_device_dual(base,window_size,broadway_view_,starlet_view_))return false;
  return shared_bus.map_device_dual(mirror,window_size,broadway_view_,starlet_view_);
 }
-void HollywoodHardware::reset()noexcept{interrupts_=HollywoodInterrupts{};ipc_.reset();gpio_.reset();timer_.reset();system_control_.reset();}
+void HollywoodHardware::reset()noexcept{interrupts_=HollywoodInterrupts{};ipc_.reset();gpio_.reset();timer_.reset();system_control_.reset();starlet_memory_.reset();}
 }
