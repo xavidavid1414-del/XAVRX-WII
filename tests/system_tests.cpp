@@ -35,6 +35,29 @@ int main(){using namespace xavrx::system;
  check(wii.memory().write_as(WiiMemoryCpu::Broadway,nand_addr,4,0x12345678U)==xavrx::memory::AccessResult::Success,"Broadway NAND access follows FlashNand PPC gate");
  check(wii.memory().write_as(WiiMemoryCpu::Broadway,sd_addr,4,0x23456789U)==xavrx::memory::AccessResult::Success,"Broadway SD access follows SD0 PPC gate");
  check(wii.memory().write_as(WiiMemoryCpu::Broadway,usb_addr,4,0x3456789aU)==xavrx::memory::AccessResult::Success,"Broadway EHCI access follows EHCI PPC gate");
+ // DI reset lines gate the Drive Interface; both must be released.
+ const std::uint32_t di_addr=0x0d806008U;
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,di_addr,4,0x01020304U)==xavrx::memory::AccessResult::DeviceError,"DI access denied while reset lines are asserted");
+ const std::uint32_t di_release=(1U<<10U)|(1U<<3U);
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000194U,4,di_release)==xavrx::memory::AccessResult::Success,"Starlet releases both DI reset lines");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,di_addr,4,0x01020304U)==xavrx::memory::AccessResult::Success,"DI MMIO write after reset release");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,di_addr,4,value)==xavrx::memory::AccessResult::Success&&value==0x01020304U,"DI MMIO readback through Wii bus");
+ // Internal WLAN uses SD1 AHB permissions, independently of the removable SD0 host.
+ const std::uint32_t wlan_addr=0x0d080024U;
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,wlan_addr,4,0x00010000U)==xavrx::memory::AccessResult::DeviceError,"WLAN SDIO denied without SD1 permission");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000064U,4,iop_grants|(1U<<29U))==xavrx::memory::AccessResult::Success,"Starlet grants SD1 permission");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,wlan_addr,4,0x00010000U)==xavrx::memory::AccessResult::Success,"WLAN SDIO access after SD1 grant");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,wlan_addr,4,value)==xavrx::memory::AccessResult::Success&&value==0x00010000U,"WLAN SDIO register readback");
+ // Bluetooth HCI packets travel over the USB1 path and obey its independent AHB gate.
+ const std::array<std::uint8_t,4> hci_command{{0x01U,0x03U,0x0cU,0x00U}};
+ const std::array<std::uint8_t,4> hci_event{{0x04U,0x0eU,0x01U,0x00U}};
+ std::vector<std::uint8_t> hci_packet;
+ check(!wii.submit_bluetooth_host_packet(HollywoodCpu::Starlet,hci_command),"Bluetooth host transport denied without USB1 permission");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000064U,4,iop_grants|(1U<<27U))==xavrx::memory::AccessResult::Success,"Starlet grants USB1 permission for Bluetooth HCI");
+ check(wii.submit_bluetooth_host_packet(HollywoodCpu::Starlet,hci_command),"Bluetooth HCI command accepted through USB1");
+ check(wii.take_bluetooth_device_packet(HollywoodCpu::Starlet,hci_packet)&&hci_packet.size()==hci_command.size()&&hci_packet[0]==0x01U,"Bluetooth HCI host packet delivered to device side");
+ check(wii.submit_bluetooth_device_packet(hci_event),"Bluetooth device event enters host queue");
+ check(wii.take_bluetooth_host_packet(HollywoodCpu::Starlet,hci_packet)&&hci_packet.size()==hci_event.size()&&hci_packet[0]==0x04U,"Bluetooth HCI event delivered to host side");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000064U,4,1U<<31U)==xavrx::memory::AccessResult::Success,"WiiSystem exposes PPCKERN control");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000190U,4,3U)==xavrx::memory::AccessResult::Success,"WiiSystem exposes Hollywood clock controls");
  wii.reset();std::uint32_t reset_word=0;std::uint64_t reset_value=0;
@@ -42,5 +65,8 @@ int main(){using namespace xavrx::system;
  check(wii.memory().read32(0x80000000U,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears MEM1 contents");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000064U,4,reset_value)==xavrx::memory::AccessResult::Success&&reset_value==0U,"WiiSystem reset clears AHB protection");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000190U,4,reset_value)==xavrx::memory::AccessResult::Success&&reset_value==0U,"WiiSystem reset clears Hollywood clocks");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,di_addr,4,1U)==xavrx::memory::AccessResult::DeviceError,"WiiSystem reset reasserts DI reset gates");
+ check(!wii.submit_bluetooth_host_packet(HollywoodCpu::Starlet,hci_command),"WiiSystem reset clears USB1 permission");
+ check(!wii.take_bluetooth_host_packet(HollywoodCpu::Starlet,hci_packet),"WiiSystem reset clears Bluetooth HCI queues");
  check(wii.memory().write32(0x80000000U,0x2468ace0U)==xavrx::memory::AccessResult::Success,"WiiSystem remains operational after reset");
  if(failures){std::cerr<<failures<<" system hardware test(s) failed\n";return 1;}std::cout<<"All XAVRX-WII system hardware tests passed\n";return 0;}
