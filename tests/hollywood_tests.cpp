@@ -135,7 +135,7 @@ int main(){
  check(smem.read_as(StarletMemoryCpu::Starlet,0x0d400000U,4,value)&&value==0x0badc0deU,"SRAM B arrangement readback");
  check(hw.write_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,(1U<<5U)|(1U<<3U)),"Starlet enables Broadway SRAM access without changing SM");
  check(smem.read_as(StarletMemoryCpu::Broadway,0x0d400000U,4,value)&&value==0x0badc0deU,"AHPEN grants Broadway SRAM access");
- check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,value)&&value==(1U<<3U),"SRNPROT register readback");
+ check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,value)&&value==((1U<<5U)|(1U<<3U)),"SRNPROT register readback");
  check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::boot0_register,4,value)&&value==(1U<<12U),"BOOT0 register readback");
 
  hw.reset();
