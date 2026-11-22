@@ -98,7 +98,7 @@ private:
 class BluetoothHciTransport final {
 public:
  static constexpr std::size_t queue_capacity=64;
- [[nodiscard]] bool process_host_command(std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event) noexcept;
+ [[nodiscard]] bool process_host_command(std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event);
  [[nodiscard]] bool submit_host_packet(std::span<const std::uint8_t> packet);
  [[nodiscard]] bool take_device_packet(std::vector<std::uint8_t>& packet);
  [[nodiscard]] bool submit_device_packet(std::span<const std::uint8_t> packet);

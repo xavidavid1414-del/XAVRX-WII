@@ -45,7 +45,7 @@ int main(){
  check(di.mount_disc_image(std::move(disc))&&di.disc_present()&&di.disc_size()==4096U,"DI mounts read-only disc image");
  std::array<std::uint8_t,2> disc_data{};check(di.read_disc_bytes(0U,disc_data)&&disc_data[0]==0x5aU,"DI reads image bytes");
  check(di.read_disc_bytes(4094U,disc_data)&&disc_data[1]==0xa5U,"DI reads final image bytes");
- check(!di.read_disc_bytes(4095U,disc_data)&&!di.read_disc_bytes(0U,std::span<std::uint8_t>{}),"DI rejects out-of-range read and handles empty read span safely");
+ check(!di.read_disc_bytes(4095U,disc_data)&&di.read_disc_bytes(0U,std::span<std::uint8_t>{}),"DI rejects out-of-range read and handles empty read span safely");
  di.eject_disc();check(!di.disc_present()&&!di.read_disc_bytes(0U,disc_data),"DI eject removes image");
 
  check(wlan.aperture_size()==0x200U&&wlan.little_endian(),"WLAN SDIO aperture");

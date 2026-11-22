@@ -104,7 +104,7 @@ bool WirelessLanController::write_sdio_data(std::uint8_t function,std::uint32_t 
  std::copy(input.begin(),input.end(),functions_[function].begin()+static_cast<std::ptrdiff_t>(address));return true;
 }
 void WirelessLanController::reset()noexcept{RegisterWindow::reset();for(auto& function:functions_)function.fill(0U);}
-bool BluetoothHciTransport::process_host_command(std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event)noexcept{
+bool BluetoothHciTransport::process_host_command(std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event){
  if(command.size()<4U||command[0]!=hci_command||static_cast<std::size_t>(command[3])!=command.size()-4U)return false;
  const std::uint16_t opcode=static_cast<std::uint16_t>(command[1])|static_cast<std::uint16_t>(static_cast<std::uint16_t>(command[2])<<8U);
  std::uint8_t status=0U;std::vector<std::uint8_t> parameters;
