@@ -4,6 +4,7 @@
 #include "xavrx/system/dsp_gpu.hpp"
 #include "xavrx/system/broadway_devices.hpp"
 #include "xavrx/system/controllers.hpp"
+#include "xavrx/system/input_mapping.hpp"
 #include "xavrx/system/hollywood.hpp"
 #include "xavrx/system/peripherals.hpp"
 #include "xavrx/system/wii_memory.hpp"
@@ -55,6 +56,9 @@ public:
  [[nodiscard]] ClassicController& classic_controller() noexcept{return classic_controller_;}
  [[nodiscard]] ClassicControllerPro& classic_controller_pro() noexcept{return classic_controller_pro_;}
  [[nodiscard]] WiiBalanceBoard& balance_board() noexcept{return balance_board_;}
+ [[nodiscard]] ControllerInputRouter& input_router() noexcept{return input_router_;}
+ [[nodiscard]] const ControllerInputRouter& input_router() const noexcept{return input_router_;}
+ [[nodiscard]] GameInputState route_controller_inputs() const noexcept;
  [[nodiscard]] HardwareResetController& reset_controller() noexcept{return reset_controller_;}
  [[nodiscard]] DspDevice& dsp() noexcept{return dsp_;}
  [[nodiscard]] GpuCommandProcessor& gpu() noexcept{return gpu_;}
@@ -83,6 +87,7 @@ private:
  ClassicController classic_controller_{};
  ClassicControllerPro classic_controller_pro_{};
  WiiBalanceBoard balance_board_{};
+ ControllerInputRouter input_router_{};
  ClockDomainScheduler clock_scheduler_;
  HardwareResetController reset_controller_{};
  DspDevice dsp_{};
