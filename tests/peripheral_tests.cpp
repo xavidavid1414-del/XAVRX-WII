@@ -41,10 +41,29 @@ int main(){
  check(di.aperture_size()==0x40U&&!di.little_endian(),"DI aperture and big-endian registers");
  check(di.write(0x08U,4,0x11223344U)&&di.read(0x08U,4,value)&&value==0x11223344U,"DI register access");
  check(!di.read(0x28U,4,value),"DI rejects offsets outside documented aperture");
+ std::vector<std::uint8_t> disc(4096U,0U);disc[0]=0x5aU;disc[4095]=0xa5U;
+ check(di.mount_disc_image(std::move(disc))&&di.disc_present()&&di.disc_size()==4096U,"DI mounts read-only disc image");
+ std::array<std::uint8_t,2> disc_data{};check(di.read_disc_bytes(0U,disc_data)&&disc_data[0]==0x5aU,"DI reads image bytes");
+ check(di.read_disc_bytes(4094U,disc_data)&&disc_data[1]==0xa5U,"DI reads final image bytes");
+ check(!di.read_disc_bytes(4095U,disc_data)&&!di.read_disc_bytes(0U,std::span<std::uint8_t>{}),"DI rejects out-of-range read and handles empty read span safely");
+ di.eject_disc();check(!di.disc_present()&&!di.read_disc_bytes(0U,disc_data),"DI eject removes image");
+
  check(wlan.aperture_size()==0x200U&&wlan.little_endian(),"WLAN SDIO aperture");
+ check(wlan.write_sdio_byte(0U,0x20U,0x91U)&&wlan.read_sdio_byte(0U,0x20U,block[0])&&block[0]==0x91U,"WLAN SDIO function zero byte access");
+ std::array<std::uint8_t,4> sdio_data{{1U,2U,3U,4U}},sdio_out{};
+ check(wlan.write_sdio_data(1U,0x100U,sdio_data)&&wlan.read_sdio_data(1U,0x100U,sdio_out)&&sdio_out==sdio_data,"WLAN SDIO function one bulk transfer");
+ check(!wlan.read_sdio_byte(2U,0U,block[0])&&!wlan.write_sdio_data(1U,0x1ffffU,sdio_data),"WLAN SDIO rejects invalid function and address range");
+ wlan.reset();check(wlan.read_sdio_data(1U,0x100U,sdio_out)&&sdio_out[0]==0U,"WLAN reset clears SDIO function memory");
+
  BluetoothHciTransport bt;std::vector<std::uint8_t> packet;
  const std::uint8_t command[]={0x01U,0x03U,0x0cU,0x00U},event[]={0x04U,0x0eU,0x01U,0x00U},acl[]={0x02U,0x01U,0x00U,0x02U,0x00U,0xaaU,0xbbU};
  check(bt.submit_host_packet(command)&&bt.take_device_packet(packet)&&packet.size()==sizeof(command),"Bluetooth HCI command transport");
+ const std::uint8_t reset_command[]={0x01U,0x03U,0x0cU,0x00U},address_command[]={0x01U,0x09U,0x10U,0x00U},unknown_command[]={0x01U,0xffU,0xffU,0x00U};
+ check(bt.process_host_command(reset_command,packet)&&packet.size()==7U&&packet[0]==0x04U&&packet[1]==0x0eU&&packet[6]==0U,"Bluetooth HCI Reset command complete event");
+ check(bt.process_host_command(address_command,packet)&&packet.size()==13U&&packet[7]==0x02U,"Bluetooth HCI Read BD_ADDR response");
+ check(bt.process_host_command(unknown_command,packet)&&packet.size()==7U&&packet[6]==1U,"Bluetooth HCI unknown command status");
+ check(!bt.process_host_command(malformed,packet),"Bluetooth HCI command parser rejects malformed parameter length");
+
  check(bt.submit_device_packet(event)&&bt.take_host_packet(packet)&&packet.size()==sizeof(event),"Bluetooth HCI event transport");
  check(bt.submit_host_packet(acl)&&bt.take_device_packet(packet)&&packet.size()==sizeof(acl),"Bluetooth ACL host-to-device transport");
  check(bt.submit_device_packet(acl)&&bt.take_host_packet(packet)&&packet.size()==sizeof(acl),"Bluetooth ACL device-to-host transport");

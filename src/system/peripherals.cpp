@@ -82,7 +82,40 @@ void UsbHostController::advance_microframes(std::uint32_t count)noexcept{
 bool UsbHostController::take_completed_transfer(Transfer& transfer){if(completed_.empty())return false;transfer=std::move(completed_.front());completed_.pop_front();return true;}
 void UsbHostController::reset()noexcept{RegisterWindow::reset();command_=0;status_=sts_halted;interrupt_enable_=0;frame_index_=0;periodic_base_=0;async_list_=0;config_flag_=0;port_status_=0;pending_.clear();completed_.clear();}
 DriveInterface::DriveInterface()noexcept:RegisterWindow(0x40U,di_offsets,std::size(di_offsets),false){}
+bool DriveInterface::mount_disc_image(std::vector<std::uint8_t> image){if(image.empty())return false;disc_image_=std::move(image);return true;}
+void DriveInterface::eject_disc()noexcept{disc_image_.clear();}
+bool DriveInterface::read_disc_bytes(std::uint64_t offset,std::span<std::uint8_t> output)const noexcept{
+ if(disc_image_.empty()||offset>disc_image_.size()||output.size()>disc_image_.size()-static_cast<std::size_t>(offset))return false;
+ std::copy_n(disc_image_.begin()+static_cast<std::ptrdiff_t>(offset),output.size(),output.begin());return true;
+}
 WirelessLanController::WirelessLanController()noexcept:RegisterWindow(0x200U,sd_offsets,std::size(sd_offsets),true){}
+bool WirelessLanController::read_sdio_byte(std::uint8_t function,std::uint32_t address,std::uint8_t& value)const noexcept{
+ if(function>=function_count||address>=function_address_space)return false;value=functions_[function][address];return true;
+}
+bool WirelessLanController::write_sdio_byte(std::uint8_t function,std::uint32_t address,std::uint8_t value)noexcept{
+ if(function>=function_count||address>=function_address_space)return false;functions_[function][address]=value;return true;
+}
+bool WirelessLanController::read_sdio_data(std::uint8_t function,std::uint32_t address,std::span<std::uint8_t> output)const noexcept{
+ if(function>=function_count||address>function_address_space||output.size()>function_address_space-address)return false;
+ std::copy_n(functions_[function].begin()+static_cast<std::ptrdiff_t>(address),output.size(),output.begin());return true;
+}
+bool WirelessLanController::write_sdio_data(std::uint8_t function,std::uint32_t address,std::span<const std::uint8_t> input)noexcept{
+ if(function>=function_count||address>function_address_space||input.size()>function_address_space-address)return false;
+ std::copy(input.begin(),input.end(),functions_[function].begin()+static_cast<std::ptrdiff_t>(address));return true;
+}
+void WirelessLanController::reset()noexcept{RegisterWindow::reset();for(auto& function:functions_)function.fill(0U);}
+bool BluetoothHciTransport::process_host_command(std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event)noexcept{
+ if(command.size()<4U||command[0]!=hci_command||static_cast<std::size_t>(command[3])!=command.size()-4U)return false;
+ const std::uint16_t opcode=static_cast<std::uint16_t>(command[1])|static_cast<std::uint16_t>(static_cast<std::uint16_t>(command[2])<<8U);
+ std::uint8_t status=0U;std::vector<std::uint8_t> parameters;
+ if(opcode==0x0c03U){if(command.size()!=4U)return false;}
+ else if(opcode==0x1009U){if(command.size()!=4U)return false;parameters={0x02U,0x00U,0x00U,0x00U,0x00U,0x01U};}
+ else status=0x01U;
+ event.clear();event.reserve(7U+parameters.size());event.push_back(hci_event);event.push_back(0x0eU);
+ event.push_back(static_cast<std::uint8_t>(4U+parameters.size()));event.push_back(0x01U);
+ event.push_back(command[1]);event.push_back(command[2]);event.push_back(status);
+ event.insert(event.end(),parameters.begin(),parameters.end());return true;
+}
 bool BluetoothHciTransport::valid_host_packet(std::span<const std::uint8_t> p)noexcept{if(p.empty())return false;if(p[0]==hci_command)return p.size()>=4U&&static_cast<std::size_t>(p[3])==p.size()-4U;return valid_acl(p);}
 bool BluetoothHciTransport::valid_device_packet(std::span<const std::uint8_t> p)noexcept{if(p.empty())return false;if(p[0]==hci_event)return p.size()>=3U&&static_cast<std::size_t>(p[2])==p.size()-3U;return valid_acl(p);}
 bool BluetoothHciTransport::submit_host_packet(std::span<const std::uint8_t> p){if(!valid_host_packet(p)||host_to_device_.size()>=queue_capacity)return false;host_to_device_.emplace_back(p.begin(),p.end());return true;}

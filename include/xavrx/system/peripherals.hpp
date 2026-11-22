@@ -72,11 +72,33 @@ private:
  std::uint32_t command_{0},status_{sts_halted},interrupt_enable_{0},frame_index_{0},periodic_base_{0},async_list_{0},config_flag_{0},port_status_{0};
  std::deque<Transfer> pending_,completed_;
 };
-class DriveInterface final : public RegisterWindow { public: DriveInterface() noexcept; };
-class WirelessLanController final : public RegisterWindow { public: WirelessLanController() noexcept; };
+class DriveInterface final : public RegisterWindow {
+public:
+ DriveInterface() noexcept;
+ [[nodiscard]] bool mount_disc_image(std::vector<std::uint8_t> image);
+ void eject_disc() noexcept;
+ [[nodiscard]] bool disc_present() const noexcept{return !disc_image_.empty();}
+ [[nodiscard]] std::size_t disc_size() const noexcept{return disc_image_.size();}
+ [[nodiscard]] bool read_disc_bytes(std::uint64_t offset,std::span<std::uint8_t> output) const noexcept;
+private:
+ std::vector<std::uint8_t> disc_image_;
+};
+class WirelessLanController final : public RegisterWindow {
+public:
+ static constexpr std::size_t function_count=2U,function_address_space=0x20000U;
+ WirelessLanController() noexcept;
+ [[nodiscard]] bool read_sdio_byte(std::uint8_t function,std::uint32_t address,std::uint8_t& value) const noexcept;
+ [[nodiscard]] bool write_sdio_byte(std::uint8_t function,std::uint32_t address,std::uint8_t value) noexcept;
+ [[nodiscard]] bool read_sdio_data(std::uint8_t function,std::uint32_t address,std::span<std::uint8_t> output) const noexcept;
+ [[nodiscard]] bool write_sdio_data(std::uint8_t function,std::uint32_t address,std::span<const std::uint8_t> input) noexcept;
+ void reset() noexcept;
+private:
+ std::array<std::array<std::uint8_t,function_address_space>,function_count> functions_{};
+};
 class BluetoothHciTransport final {
 public:
  static constexpr std::size_t queue_capacity=64;
+ [[nodiscard]] bool process_host_command(std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event) noexcept;
  [[nodiscard]] bool submit_host_packet(std::span<const std::uint8_t> packet);
  [[nodiscard]] bool take_device_packet(std::vector<std::uint8_t>& packet);
  [[nodiscard]] bool submit_device_packet(std::span<const std::uint8_t> packet);
