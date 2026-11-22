@@ -27,6 +27,14 @@ int main() {
     check(r.accepted && r.value == 0x1abU, "CMD8 echoes a non-default check pattern");
     r = card.command(55U, 0U);
     check(r.accepted && r.r1 == 1U, "CMD55 arms application command");
+    r = card.command(41U, 0x40000000U);
+    check(!r.accepted && card.state() == SdCardProtocol::State::idle, "ACMD41 rejects an empty voltage window");
+    r = card.command(55U, 0U);
+    check(r.accepted, "CMD55 rearms after rejected ACMD41");
+    r = card.command(41U, 0x00ff8000U);
+    check(!r.accepted && card.state() == SdCardProtocol::State::idle, "SDHC ACMD41 requires host high-capacity support");
+    r = card.command(55U, 0U);
+    check(r.accepted, "CMD55 rearms for valid SDHC initialization");
     r = card.command(41U, 0x40ff8000U);
     check(r.accepted && r.r1 == 0U && card.state() == SdCardProtocol::State::ready, "ACMD41 enters ready state");
     r = card.command(2U, 0U);
