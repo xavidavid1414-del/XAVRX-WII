@@ -15,6 +15,17 @@ private:
  std::array<std::uint64_t,static_cast<std::size_t>(ClockDomain::Count)> hz_{};
  bool valid_{false};
 };
+class ClockDomainScheduler final {
+public:
+ static constexpr std::size_t domain_count=static_cast<std::size_t>(ClockDomain::Count);
+ using Frequencies=std::array<std::uint64_t,domain_count>;
+ [[nodiscard]] Frequencies advance(std::uint64_t source_cycles,std::uint64_t source_hz,const Frequencies& target_hz) noexcept;
+ [[nodiscard]] std::uint64_t total_cycles(ClockDomain domain) const noexcept;
+ void reset() noexcept{remainders_.fill(0U);totals_.fill(0U);}
+private:
+ std::array<std::uint64_t,domain_count> remainders_{};
+ std::array<std::uint64_t,domain_count> totals_{};
+};
 class InterruptController final {
 public:
  static constexpr std::size_t line_count=32;
