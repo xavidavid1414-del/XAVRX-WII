@@ -10,5 +10,6 @@ bool Emulator::initialize()noexcept{
  }catch(...){return false;}
 }
 bool Emulator::initialized()const noexcept{return system_&&system_->initialized();}
-void Emulator::reset()noexcept{if(system_)system_->reset();}
+CpuStepResult Emulator::step_broadway()noexcept{if(!system_)return CpuStepResult::NotInitialized;return broadway_cpu_.step(*system_);}
+void Emulator::reset()noexcept{if(system_)system_->reset();broadway_cpu_.reset();}
 }
