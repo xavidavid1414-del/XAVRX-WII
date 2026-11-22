@@ -12,7 +12,8 @@ constexpr std::uint8_t hci_command=0x01U,hci_acl=0x02U,hci_event=0x04U;
 bool valid_acl(std::span<const std::uint8_t> p) noexcept{return p.size()>=5U&&p[0]==hci_acl&&(static_cast<std::size_t>(p[3])|(static_cast<std::size_t>(p[4])<<8U))==p.size()-5U;}
 }
 RegisterWindow::RegisterWindow(std::uint32_t aperture,const std::uint32_t* offsets,std::size_t count,bool little) noexcept:aperture_size_(aperture),little_endian_(little){
- if(!offsets)return;for(std::size_t i=0;i<count;++i){const auto off=offsets[i];if((off&3U)==0U&&off<aperture_size_&&off/4U<word_count)implemented_[off/4U]=true;}
+ if (!offsets) return;
+ for (std::size_t i=0; i<count; ++i) {const auto off=offsets[i];if((off&3U)==0U&&off<aperture_size_&&off/4U<word_count)implemented_[off/4U]=true;}
 }
 std::uint32_t RegisterWindow::byte_swap(std::uint32_t v) noexcept{return ((v&0xffU)<<24U)|((v&0xff00U)<<8U)|((v&0xff0000U)>>8U)|((v&0xff000000U)>>24U);}
 bool RegisterWindow::supports(std::uint32_t off)const noexcept{return (off&3U)==0U&&off<aperture_size_&&off/4U<word_count&&implemented_[off/4U];}
@@ -34,12 +35,15 @@ bool NandInterface::program_page(std::uint32_t page,std::span<const std::uint8_t
  auto it=pages_.find(page);Page next;if(it==pages_.end())next.fill(0xffU);else next=it->second;
  for(std::size_t i=0;i<page_size;++i)if((next[i]&data[i])!=data[i])return false;
  for(std::size_t i=0;i<spare_size;++i)if((next[page_size+i]&spare[i])!=spare[i])return false;
- for(std::size_t i=0;i<page_size;++i)next[i]&=data[i];for(std::size_t i=0;i<spare_size;++i)next[page_size+i]&=spare[i];
+ for (std::size_t i=0; i<page_size; ++i) next[i] &= data[i];
+ for (std::size_t i=0; i<spare_size; ++i) next[page_size+i] &= spare[i];
  pages_[page]=next;return true;
 }
 bool NandInterface::erase_block(std::uint32_t block)noexcept{
- if(block>=block_count)return false;const auto first=block*pages_per_block;
- for(std::uint32_t i=0;i<pages_per_block;++i)pages_.erase(first+i);return true;
+ if (block >= block_count) return false;
+ const auto first = block * pages_per_block;
+ for (std::uint32_t i=0; i<pages_per_block; ++i) pages_.erase(first+i);
+ return true;
 }
 SdHostController::SdHostController()noexcept:RegisterWindow(0x200U,sd_offsets,std::size(sd_offsets),true){}
 bool SdHostController::attach_card(std::vector<std::uint8_t> image){if(image.empty()||image.size()%block_size!=0U||image.size()/block_size>std::numeric_limits<std::uint32_t>::max())return false;card_=std::move(image);return true;}
@@ -60,7 +64,8 @@ bool UsbHostController::read(std::uint32_t off,std::uint8_t width,std::uint64_t&
  switch(off){case 0x00U:value=0x01000020U;return true;case 0x04U:value=0x00000101U;return true;case 0x08U:value=0x00000006U;return true;case 0x0cU:value=0U;return true;case 0x10U:value=command_;return true;case 0x14U:value=status_;return true;case 0x18U:value=interrupt_enable_;return true;case 0x1cU:value=frame_index_;return true;case 0x24U:value=periodic_base_;return true;case 0x28U:value=async_list_;return true;case 0x50U:value=config_flag_;return true;case 0x54U:value=port_status_;return true;default:return RegisterWindow::read(off,width,value);}
 }
 bool UsbHostController::write(std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{
- if(width!=4U||value>0xffffffffULL)return false;const auto v=static_cast<std::uint32_t>(value);
+ if (width != 4U || value > 0xffffffffULL) return false;
+ const auto v = static_cast<std::uint32_t>(value);
  switch(off){
  case 0x00U:case 0x04U:case 0x08U:case 0x0cU:return false;
  case 0x10U:command_=v;if((v&cmd_reset)!=0U){reset();return true;}if((v&cmd_run)!=0U)status_&=~sts_halted;else status_|=sts_halted;return true;
@@ -113,10 +118,14 @@ bool DriveInterface::read_disc_bytes(std::uint64_t offset,std::span<std::uint8_t
 }
 WirelessLanController::WirelessLanController()noexcept:RegisterWindow(0x200U,sd_offsets,std::size(sd_offsets),true){}
 bool WirelessLanController::read_sdio_byte(std::uint8_t function,std::uint32_t address,std::uint8_t& value)const noexcept{
- if(function>=function_count||address>=function_address_space)return false;value=functions_[function][address];return true;
+ if (function >= function_count || address >= function_address_space) return false;
+ value = functions_[function][address];
+ return true;
 }
 bool WirelessLanController::write_sdio_byte(std::uint8_t function,std::uint32_t address,std::uint8_t value)noexcept{
- if(function>=function_count||address>=function_address_space)return false;functions_[function][address]=value;return true;
+ if (function >= function_count || address >= function_address_space) return false;
+ functions_[function][address] = value;
+ return true;
 }
 bool WirelessLanController::read_sdio_data(std::uint8_t function,std::uint32_t address,std::span<std::uint8_t> output)const noexcept{
  if(function>=function_count||address>function_address_space||output.size()>function_address_space-address)return false;
