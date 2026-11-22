@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <vector>
 namespace {int failures=0;void check(bool ok,const char* m){if(!ok){std::cerr<<"FAIL: "<<m<<'\n';++failures;}}}
 int main(){
@@ -17,6 +18,14 @@ int main(){
  page[0]=0xffU;check(!nand.program_page(7U,page,spare),"NAND programming cannot change zero bits back to one");
  check(nand.erase_block(0U)&&nand.read_page(7U,readback,spare_out)&&readback[0]==0xffU,"NAND block erase restores erased state");
  check(!nand.erase_block(NandInterface::block_count),"NAND rejects out-of-range block");
+ std::array<std::uint8_t,NandInterface::page_size> second_page{},second_read{};
+ std::array<std::uint8_t,NandInterface::spare_size> second_spare{},second_spare_read{};
+ second_page.fill(0x7fU);second_spare.fill(0x3fU);
+ const auto last_page=static_cast<std::uint32_t>(NandInterface::block_count*NandInterface::pages_per_block-1U);
+ check(nand.program_page(last_page,second_page,second_spare)&&nand.read_page(last_page,second_read,second_spare_read)&&second_read==second_page,"NAND accesses final valid page");
+ check(!nand.read_page(static_cast<std::uint32_t>(NandInterface::block_count*NandInterface::pages_per_block),second_read,second_spare_read),"NAND rejects page immediately beyond capacity");
+ check(nand.program_page(NandInterface::pages_per_block,second_page,second_spare)&&nand.erase_block(0U)&&nand.read_page(NandInterface::pages_per_block,second_read,second_spare_read)&&second_read==second_page,"NAND block erase preserves adjacent block contents");
+ check(nand.erase_block(NandInterface::block_count-1U)&&nand.read_page(last_page,second_read,second_spare_read)&&second_read[0]==0xffU,"NAND erases final block boundary");
  check(sd.aperture_size()==0x200U&&sd.little_endian(),"SD host aperture and little-endian register view");
  check(sd.write(0x08U,4,0x12345678U)&&sd.read(0x08U,4,value)&&value==0x12345678U,"SD host register endian round trip");
  check(!sd.read(0x64U,4,value),"unlisted SD host offset rejected");
@@ -25,6 +34,10 @@ int main(){
  check(sd.read_blocks(0U,1U,block)&&block[0]==0x42U,"SD block read");
  block[0]=0xa5U;check(sd.write_blocks(1U,1U,block)&&sd.read_blocks(1U,1U,block)&&block[0]==0xa5U,"SD block write/readback");
  check(!sd.read_blocks(4U,1U,block)&&!sd.write_blocks(0U,0U,block),"SD rejects invalid block ranges");
+ check(!sd.attach_card({})&&!sd.attach_card(std::vector<std::uint8_t>(block_size-1U)),"SD rejects empty and partial-block card images");
+ std::vector<std::uint8_t> final_block(SdHostController::block_size,0x6cU);
+ check(sd.write_blocks(3U,1U,final_block)&&sd.read_blocks(3U,1U,block)&&block==final_block,"SD accesses final valid block");
+ check(!sd.read_blocks(0U,1U,std::span<std::uint8_t>{})&&!sd.write_blocks(0U,1U,std::span<const std::uint8_t>{}),"SD rejects buffers whose size does not match block count");
  check(!sd.read_blocks(0U,0x00800000U,std::span<std::uint8_t>{})&&!sd.write_blocks(0U,0x00800000U,std::span<const std::uint8_t>{}),"SD rejects huge block counts without byte-size overflow");
  sd.detach_card();check(!sd.card_present()&&!sd.read_blocks(0U,1U,block),"SD detach removes card");
  check(usb.aperture_size()==0x100U&&usb.little_endian(),"USB EHCI aperture and little-endian register view");
@@ -62,6 +75,8 @@ int main(){
  std::array<std::uint8_t,2> disc_data{};check(di.read_disc_bytes(0U,disc_data)&&disc_data[0]==0x5aU,"DI reads image bytes");
  check(di.read_disc_bytes(4094U,disc_data)&&disc_data[1]==0xa5U,"DI reads final image bytes");
  check(!di.read_disc_bytes(4095U,disc_data)&&di.read_disc_bytes(0U,std::span<std::uint8_t>{}),"DI rejects out-of-range read and handles empty read span safely");
+ check(!di.read_disc_bytes(std::numeric_limits<std::uint64_t>::max(),disc_data),"DI rejects maximum 64-bit offset without overflow");
+ check(di.read_disc_bytes(4096U,std::span<std::uint8_t>{}),"DI accepts empty read exactly at image end");
  di.eject_disc();check(!di.disc_present()&&!di.read_disc_bytes(0U,disc_data),"DI eject removes image");
 
  check(wlan.aperture_size()==0x200U&&wlan.little_endian(),"WLAN SDIO aperture");
