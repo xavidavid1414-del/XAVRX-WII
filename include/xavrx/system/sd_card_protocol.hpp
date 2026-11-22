@@ -76,6 +76,7 @@ public:
             out.accepted = true; out.r1 = 0U; out.value = 0x12340000U; return out;
         case 7U:
             if ((argument >> 16U) == 0U) {
+                if (state_ != State::transfer && state_ != State::standby) return illegal(out);
                 selected_ = false; state_ = State::standby;
                 transfer_active_ = false; transfer_write_ = false; multi_block_ = false;
                 transfer_block_ = 0U;
