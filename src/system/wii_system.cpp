@@ -122,9 +122,17 @@ bool WiiSystem::submit_bluetooth_device_packet(std::span<const std::uint8_t> pac
 bool WiiSystem::take_bluetooth_host_packet(HollywoodCpu cpu,std::vector<std::uint8_t>& packet){
  return hollywood_.system_control().engine_access_allowed(cpu,HollywoodEngine::Usb1)&&bluetooth_hci_.take_host_packet(packet);
 }
+bool WiiSystem::attach_sd_card(std::vector<std::uint8_t> image){
+ if(image.empty()||image.size()%SdHostController::block_size!=0U)return false;
+ auto protocol_image=image;
+ if(!sd_card_protocol_.attach(std::move(protocol_image)))return false;
+ if(!sd_host_.attach_card(std::move(image))){sd_card_protocol_.detach();return false;}
+ return true;
+}
+void WiiSystem::detach_sd_card()noexcept{sd_host_.detach_card();sd_card_protocol_.detach();}
 void WiiSystem::reset()noexcept{
  memory_.reset();hardware_.reset();hollywood_.reset();
- nand_.reset();sd_host_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();clock_scheduler_.reset();
+ nand_.reset();sd_host_.reset();sd_card_protocol_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();clock_scheduler_.reset();
  wii_remote_.reset();nunchuk_.reset();classic_controller_.reset();classic_controller_pro_.reset();balance_board_.reset();
  reset_controller_.reset();dsp_.reset();gpu_.reset();dsp_mailbox_.reset();processor_interrupts_.reset();
 }

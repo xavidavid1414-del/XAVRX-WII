@@ -7,6 +7,7 @@
 #include "xavrx/system/input_mapping.hpp"
 #include "xavrx/system/hollywood.hpp"
 #include "xavrx/system/peripherals.hpp"
+#include "xavrx/system/sd_card_protocol.hpp"
 #include "xavrx/system/wii_memory.hpp"
 #include <cstdint>
 #include <span>
@@ -50,6 +51,9 @@ public:
  [[nodiscard]] HollywoodHardware& hollywood() noexcept{return hollywood_;}
  [[nodiscard]] NandInterface& nand() noexcept{return nand_;}
  [[nodiscard]] SdHostController& sd_host() noexcept{return sd_host_;}
+ [[nodiscard]] SdCardProtocol& sd_card_protocol() noexcept{return sd_card_protocol_;}
+ [[nodiscard]] bool attach_sd_card(std::vector<std::uint8_t> image);
+ void detach_sd_card() noexcept;
  [[nodiscard]] UsbHostController& usb_host() noexcept{return usb_host_;}
  [[nodiscard]] DriveInterface& drive_interface() noexcept{return drive_;}
  [[nodiscard]] WirelessLanController& wlan() noexcept{return wlan_;}
@@ -82,6 +86,7 @@ private:
  HollywoodHardware hollywood_;
  NandInterface nand_;
  SdHostController sd_host_;
+ SdCardProtocol sd_card_protocol_;
  UsbHostController usb_host_;
  DriveInterface drive_;
  WirelessLanController wlan_;
