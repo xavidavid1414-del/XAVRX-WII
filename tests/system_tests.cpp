@@ -1,4 +1,5 @@
 #include "xavrx/system/hardware.hpp"
+#include "xavrx/system/wii_system.hpp"
 #include <array>
 #include <cstdint>
 #include <iostream>
@@ -13,4 +14,15 @@ int main(){using namespace xavrx::system;
  TimerBank huge;InterruptController huge_irq;check(huge.configure(0,1,true,true),"high frequency timer config");huge.advance(std::numeric_limits<std::uint64_t>::max(),huge_irq);check(huge.expirations(0)==std::numeric_limits<std::uint64_t>::max()&&huge.remaining(0)==1U,"expiration counter saturates");huge.advance(std::numeric_limits<std::uint64_t>::max(),huge_irq);check(huge.expirations(0)==std::numeric_limits<std::uint64_t>::max(),"expiration counter remains saturated");
  BootController boot;check(boot.state()==BootState::Off,"initial boot state");check(!boot.transition(BootState::Running),"invalid direct boot transition rejected");check(boot.transition(BootState::BootRom),"off to boot ROM");check(boot.transition(BootState::Firmware),"boot ROM to firmware");check(boot.transition(BootState::Running),"firmware to running");check(boot.transition(BootState::Halted),"running to halted");check(boot.transition(BootState::Running),"resume from halted");check(boot.transition(BootState::Faulted),"running to faulted");check(!boot.transition(BootState::Running),"faulted cannot resume directly");check(boot.transition(BootState::Off),"faulted to off reset");
  SystemHardware hardware;check(hardware.timers().configure(2,4,false,true),"system hardware timer setup");hardware.advance(4);check(hardware.interrupts().pending(10),"system hardware advances timers into interrupt controller");check(hardware.boot().transition(BootState::BootRom),"system boot controller");hardware.reset();check(hardware.boot().state()==BootState::Off&&!hardware.interrupts().pending(10)&&!hardware.timers().is_enabled(2),"system hardware reset clears state");
+ // Verify the composed WiiSystem maps both memory and Hollywood devices and resets them coherently.
+ WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes its shared bus");
+ check(wii.memory().write32(0x80000000U,0x13579bdfU)==xavrx::memory::AccessResult::Success,"WiiSystem exposes MEM1");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000064U,4,(1U<<31U))==xavrx::memory::AccessResult::Success,"WiiSystem exposes Starlet AHB protection");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000190U,4,3U)==xavrx::memory::AccessResult::Success,"WiiSystem exposes Hollywood clock controls");
+ wii.reset();std::uint32_t reset_word=0;
+ check(wii.initialized(),"WiiSystem remains mapped after reset");
+ check(wii.memory().read32(0x80000000U,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears MEM1 contents");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000064U,4,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears AHB protection");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d000190U,4,reset_word)==xavrx::memory::AccessResult::Success&&reset_word==0U,"WiiSystem reset clears Hollywood clocks");
+ check(wii.memory().write32(0x80000000U,0x2468ace0U)==xavrx::memory::AccessResult::Success,"WiiSystem remains operational after reset");
  if(failures){std::cerr<<failures<<" system hardware test(s) failed\n";return 1;}std::cout<<"All XAVRX-WII system hardware tests passed\n";return 0;}
