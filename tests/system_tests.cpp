@@ -147,6 +147,12 @@ int main(){using namespace xavrx::system;
  dsp_device.advance(2U);check(dsp_device.active_cycles_remaining()==3U&&dsp_device.completed_tasks()==0U,"DSP task retains remaining cycles");
  dsp_device.advance(3U);check(!dsp_device.busy()&&dsp_device.completed_tasks()==1U&&dsp_device.last_completed_opcode()==0x1234U,"DSP task completes at exact cycle boundary");
  dsp_device.reset();check(!dsp_device.busy()&&dsp_device.completed_tasks()==0U,"DSP reset clears task and completion state");
+ check(dsp_device.submit({0x20U,2U})&&dsp_device.submit({0x21U,3U}),"DSP queues consecutive tasks");
+ dsp_device.advance(4U);check(dsp_device.completed_tasks()==1U&&dsp_device.last_completed_opcode()==0x20U&&dsp_device.active_cycles_remaining()==1U,"DSP advance crosses task boundary and preserves next task remainder");
+ dsp_device.advance(1U);check(dsp_device.completed_tasks()==2U&&dsp_device.last_completed_opcode()==0x21U&&!dsp_device.busy(),"DSP completes queued tasks in order");
+ for(std::size_t i=0;i<DspDevice::task_capacity;++i)check(dsp_device.submit({static_cast<std::uint32_t>(i),1U}),"DSP task queue accepts capacity");
+ check(!dsp_device.submit({0xffffffffU,1U})&&dsp_device.queued_tasks()==DspDevice::task_capacity,"DSP task queue rejects overflow without mutation");
+ dsp_device.reset();check(dsp_device.queued_tasks()==0U,"DSP reset clears a full task queue");
  // GPU command processor preserves FIFO order and rejects over-capacity batches atomically.
  GpuCommandProcessor gpu_device;const std::array<std::uint32_t,3> gx_words{{0x61000000U,0x00000001U,0x00000002U}};
  check(gpu_device.submit(gx_words)&&gpu_device.queued_words()==3U,"GPU accepts command words");
@@ -155,5 +161,10 @@ int main(){using namespace xavrx::system;
  check(!gpu_device.take(gx_word)&&gpu_device.empty(),"GPU empty FIFO rejects reads");
  const std::array<std::uint32_t,GpuCommandProcessor::fifo_capacity+1U> too_many{};
  check(!gpu_device.submit(too_many)&&gpu_device.empty(),"GPU rejects oversized command batch without partial enqueue");
+ std::array<std::uint32_t,GpuCommandProcessor::fifo_capacity> full_fifo{};
+ check(gpu_device.submit(full_fifo)&&gpu_device.full(),"GPU FIFO accepts exact capacity");
+ check(!gpu_device.submit(gx_words)&&gpu_device.queued_words()==GpuCommandProcessor::fifo_capacity,"GPU FIFO rejects overflow atomically");
+ check(gpu_device.take(gx_word)&&!gpu_device.full()&&gpu_device.queued_words()==GpuCommandProcessor::fifo_capacity-1U,"GPU FIFO frees capacity after consuming one word");
+ gpu_device.reset();check(gpu_device.empty(),"GPU reset clears full FIFO");
 
  if(failures){std::cerr<<failures<<" system hardware test(s) failed\n";return 1;}std::cout<<"All XAVRX-WII system hardware tests passed\n";return 0;}
