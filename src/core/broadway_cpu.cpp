@@ -12,7 +12,7 @@ CpuStepResult BroadwayCpu::step(system::WiiSystem& system) noexcept {
   if(irq==cpu::ControlFlowResult::Executed){system.advance_broadway_cycles(1U);return CpuStepResult::InterruptTaken;}
  }
  std::uint64_t fetched=0;
- if(system.memory().read_as(system::WiiMemoryCpu::Broadway,state_.pc(),4U,fetched)!=system::memory::AccessResult::Success)return CpuStepResult::BusFault;
+ if(system.memory().read_as(system::WiiMemoryCpu::Broadway,state_.pc(),4U,fetched)!=xavrx::memory::AccessResult::Success)return CpuStepResult::BusFault;
  const auto word=static_cast<std::uint32_t>(fetched);
  const auto decoded=cpu::InstructionDecoder::decode(word);
  if(!decoded.valid())return CpuStepResult::InvalidInstruction;
