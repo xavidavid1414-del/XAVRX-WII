@@ -20,6 +20,10 @@ bool RegisterWindow::read(std::uint32_t off,std::uint8_t width,std::uint64_t& va
 bool RegisterWindow::write(std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{if(width!=4U||value>0xffffffffULL||!supports(off))return false;const auto raw=static_cast<std::uint32_t>(value);registers_[off/4U]=little_endian_?byte_swap(raw):raw;return true;}
 void RegisterWindow::reset()noexcept{registers_.fill(0U);}
 NandInterface::NandInterface()noexcept:RegisterWindow(0x1cU,nand_offsets,std::size(nand_offsets),false){}
+bool NandInterface::write(std::uint32_t off,std::uint8_t width,std::uint64_t value)noexcept{
+ if((off==0x10U||off==0x14U)&&width==4U&&(value&0x0fU)!=0U)return false;
+ return RegisterWindow::write(off,width,value);
+}
 bool NandInterface::read_page(std::uint32_t page,std::span<std::uint8_t> data,std::span<std::uint8_t> spare)const noexcept{
  if(page>=block_count*pages_per_block||data.size()!=page_size||spare.size()!=spare_size)return false;
  const auto it=pages_.find(page);if(it==pages_.end()){std::fill(data.begin(),data.end(),0xffU);std::fill(spare.begin(),spare.end(),0xffU);return true;}
