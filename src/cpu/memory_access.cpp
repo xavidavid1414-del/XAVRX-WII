@@ -13,11 +13,11 @@ MemoryExecutionResult LoadStoreExecutor::execute(std::uint32_t word,CpuState& st
  const auto base=ra==0U?0U:state.gpr(ra);
  const auto address=base+static_cast<std::uint32_t>(displacement);
  if(decoded.id==InstructionId::LoadWord){
-  std::uint32_t value=0;
-  if(memory.read_as(system::WiiMemoryCpu::Broadway,address,4U,reinterpret_cast<std::uint64_t&>(value))!=system::memory::AccessResult::Success)return MemoryExecutionResult::BusFault;
-  state.set_gpr(reg,value);
+  std::uint64_t loaded=0;
+  if(memory.read_as(system::WiiMemoryCpu::Broadway,address,4U,loaded)!=xavrx::memory::AccessResult::Success)return MemoryExecutionResult::BusFault;
+  state.set_gpr(reg,static_cast<std::uint32_t>(loaded));
  }else{
-  if(memory.write_as(system::WiiMemoryCpu::Broadway,address,4U,state.gpr(reg))!=system::memory::AccessResult::Success)return MemoryExecutionResult::BusFault;
+  if(memory.write_as(system::WiiMemoryCpu::Broadway,address,4U,state.gpr(reg))!=xavrx::memory::AccessResult::Success)return MemoryExecutionResult::BusFault;
  }
  state.set_pc(state.pc()+4U);return MemoryExecutionResult::Executed;
 }
