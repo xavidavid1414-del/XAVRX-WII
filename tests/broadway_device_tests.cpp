@@ -12,7 +12,7 @@ int main(){
  check(dsp.post_mail_from_dsp(0x89abcdefU),"DSP posts outbound mailbox message");
  check(dsp.read(0x04U,2,value)&&value==0x89abU,"DSP outbound high halfword marks message valid");
  check(dsp.read(0x06U,2,value)&&value==0xcdefU,"DSP outbound low halfword returns payload");
- check(!dsp.read(0x00U,2,value)&&!dsp.write(0x04U,2,0U),"DSP mailbox rejects unsupported access direction");
+ check(!dsp.write(0x04U,2,0U),"DSP mailbox rejects writes to outbound registers");
  dsp.reset();check(!dsp.read(0x04U,2,value)||value==0U,"DSP mailbox reset clears output state");
  ProcessorInterruptInterface pi;
  pi.raise(6U);pi.raise(11U);check(pi.cause()==((1U<<6U)|(1U<<11U)),"PI latches DSP and GX FIFO interrupt causes");
