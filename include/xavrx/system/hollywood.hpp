@@ -33,6 +33,20 @@ private:
  std::uint32_t counter_{0},alarm_{0};
  bool armed_{false};
 };
+class HollywoodSystemControl final {
+public:
+ static constexpr std::uint32_t clocks_register=0x190,resets_register=0x194;
+ static constexpr std::uint32_t fx_bit=1U<<0U,speed_bit=1U<<1U,resets_writable_mask=0x7fffffffU;
+ [[nodiscard]] bool read(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t& value)const noexcept;
+ [[nodiscard]] bool write(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t value)noexcept;
+ [[nodiscard]] std::uint64_t hollywood_clock_hz()const noexcept{return (clocks_&speed_bit)!=0U?162000000ULL:243000000ULL;}
+ [[nodiscard]] bool fx_enabled()const noexcept{return (clocks_&fx_bit)!=0U;}
+ [[nodiscard]] std::uint32_t reset_register()const noexcept{return resets_;}
+ [[nodiscard]] bool reset_released(std::uint32_t mask)const noexcept{return (resets_&mask)==mask;}
+ void reset()noexcept{clocks_=0;resets_=0;}
+private:
+ std::uint32_t clocks_{0},resets_{0};
+};
 class HollywoodIpc final {
 public:
  static constexpr std::uint32_t ppc_msg=0,ppc_ctrl=4,arm_msg=8,arm_ctrl=12;
@@ -78,6 +92,7 @@ public:
  [[nodiscard]] HollywoodIpc& ipc() noexcept{return ipc_;}
  [[nodiscard]] HollywoodGpio& gpio() noexcept{return gpio_;}
  [[nodiscard]] HollywoodTimer& timer() noexcept{return timer_;}
+ [[nodiscard]] HollywoodSystemControl& system_control() noexcept{return system_control_;}
  void advance_timer(std::uint64_t ticks) noexcept{timer_.advance(ticks);}
  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
@@ -91,6 +106,7 @@ private:
  HollywoodIpc ipc_;
  HollywoodGpio gpio_;
  HollywoodTimer timer_;
+ HollywoodSystemControl system_control_{};
  CpuBusView broadway_view_;
  CpuBusView starlet_view_;
 };
