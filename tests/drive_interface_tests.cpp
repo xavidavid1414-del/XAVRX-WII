@@ -9,7 +9,7 @@ int main(){
  check(di.read(0x00U,4U,value)&&value==0U,"DI DISR resets clear");
  check(di.read(0x04U,4U,value)&&(value&1U)!=0U,"DI cover register reports open with no disc");
  check(di.write(0x04U,4U,0U)&&di.read(0x04U,4U,value)&&(value&1U)!=0U,"DI cover state is read-only");
- di.signal_cover_interrupt();check(di.read(0x04U,4U,value)&&(value&7U)==7U&&!di.interrupt_pending(),"DI cover interrupt latches while masked");
+ di.signal_cover_interrupt();check(di.read(0x04U,4U,value)&&(value&7U)==5U&&!di.interrupt_pending(),"DI cover interrupt latches while masked");
  check(di.write(0x04U,4U,2U)&&di.interrupt_pending(),"DI cover interrupt asserts when enabled");
  check(di.write(0x04U,4U,6U)&&di.read(0x04U,4U,value)&&(value&4U)==0U&&!di.interrupt_pending(),"DI cover interrupt clears write-one-to-clear");
  check(di.mount_disc_image(std::vector<std::uint8_t>(64U,0x5aU))&&di.read(0x04U,4U,value)&&(value&1U)==0U,"DI cover state reports closed with mounted disc");
