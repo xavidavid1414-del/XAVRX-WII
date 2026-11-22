@@ -47,6 +47,7 @@ int main(){
  check(hw.write_as(HollywoodCpu::Starlet,0x38,4,1U),"Starlet acknowledges timer IRQ");
  check((hw.interrupts().flags(HollywoodCpu::Starlet)&1U)==0U,"timer IRQ acknowledged");
 
+ check(hw.write_as(HollywoodCpu::Starlet,0xec,4,0x00ffffffU),"Initialize GPIO pins for active-high interrupts");
  check(hw.write_as(HollywoodCpu::Starlet,0xfc,4,1U),"Starlet assigns GPIO pin zero to Broadway");
  check(hw.write_as(HollywoodCpu::Starlet,0xe0,4,1U),"Starlet cannot overwrite Broadway-owned output");
  check(hw.write_as(HollywoodCpu::Broadway,0xc0,4,1U),"Broadway writes owned GPIO output");
