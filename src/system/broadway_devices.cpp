@@ -13,8 +13,12 @@ bool DspMailboxInterface::read(std::uint32_t off,std::uint8_t width,std::uint64_
 bool DspMailboxInterface::write(std::uint32_t off,std::uint8_t width,std::uint64_t value) noexcept {
  if(width!=2U||value>0xffffU)return false;
  switch(off){
- case 0x00U: in_high_=static_cast<std::uint16_t>(value);input_pending_=(in_high_&0x8000U)!=0U;return true;
- case 0x02U: in_low_=static_cast<std::uint16_t>(value);return true;
+ case 0x00U: in_high_=static_cast<std::uint16_t>(value);return true;
+ case 0x02U:
+  in_low_=static_cast<std::uint16_t>(value);
+  input_pending_=(in_high_&0x8000U)!=0U;
+  if(input_pending_)in_high_&=0x7fffU;
+  return true;
  default:return false;
  }
 }
