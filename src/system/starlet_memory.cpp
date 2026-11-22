@@ -1,4 +1,5 @@
 #include "xavrx/system/starlet_memory.hpp"
+#include <array>
 namespace xavrx::system {
 namespace { constexpr std::uint32_t sm_bit=1U<<5U, broadway_sram_bit=1U<<3U, boot0_disable_bit=1U<<12U; }
 StarletMemory::StarletMemory() noexcept = default;
@@ -9,8 +10,11 @@ bool StarletMemory::CpuView::write(std::uint32_t offset,std::uint8_t width,std::
  return owner_.write_as(cpu_,base_+offset,width,value);
 }
 bool StarletMemory::map_into(WiiMemory& bus) noexcept {
- if(!bus.map_device_dual(sram_base,0x20000U,broadway_sram_,starlet_sram_))return false;
- return bus.map_device_dual(mirror_base,mirror_size,broadway_mirror_,starlet_mirror_);
+ const std::array<DualDeviceMapping,2> mappings{{
+  {sram_base,0x20000U,&broadway_sram_,&starlet_sram_},
+  {mirror_base,mirror_size,&broadway_mirror_,&starlet_mirror_}
+ }};
+ return bus.map_devices_dual(mappings.data(),mappings.size());
 }
 bool StarletMemory::load_boot_rom(const std::array<std::uint8_t,boot_rom_size>& image) noexcept {
  boot_rom_=image;boot_rom_loaded_=true;return true;
