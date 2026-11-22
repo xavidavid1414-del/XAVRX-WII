@@ -60,6 +60,7 @@ public:
  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
  void connect_device(bool connected) noexcept;
+ [[nodiscard]] bool complete_port_reset(bool high_speed_device) noexcept;
  [[nodiscard]] bool enqueue_transfer(std::uint32_t token,std::span<const std::uint8_t> payload);
  void advance_microframes(std::uint32_t count) noexcept;
  [[nodiscard]] bool take_completed_transfer(Transfer& transfer);
