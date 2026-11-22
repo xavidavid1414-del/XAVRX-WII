@@ -67,7 +67,8 @@ std::uint64_t ClockDomainScheduler::total_cycles(ClockDomain domain)const noexce
 void InterruptController::raise(std::size_t line)noexcept{if(line<line_count)pending_|=static_cast<std::uint32_t>(bit(line));}
 void InterruptController::clear(std::size_t line)noexcept{if(line<line_count)pending_&=~static_cast<std::uint32_t>(bit(line));}
 void InterruptController::set_enabled(std::size_t line,bool value)noexcept{
- if(line>=line_count)return;const auto mask=static_cast<std::uint32_t>(bit(line));if(value)enabled_|=mask;else enabled_&=~mask;
+ if(line>=line_count)return;
+  const auto mask=static_cast<std::uint32_t>(bit(line));if(value)enabled_|=mask;else enabled_&=~mask;
 }
 bool InterruptController::pending(std::size_t line)const noexcept{return line<line_count&&(pending_&bit(line))!=0U;}
 bool InterruptController::enabled(std::size_t line)const noexcept{return line<line_count&&(enabled_&bit(line))!=0U;}
@@ -82,7 +83,8 @@ bool TimerBank::configure(std::size_t timer,std::uint64_t reload,bool periodic,b
  timers_[timer]={reload,reload,0U,periodic,enabled_value};return true;
 }
 void TimerBank::enable(std::size_t timer,bool value)noexcept{
- if(timer>=timer_count)return;auto& t=timers_[timer];if(value&&t.reload==0U)return;if(value&&!t.enabled&&t.remaining==0U)t.remaining=t.reload;t.enabled=value;
+ if(timer>=timer_count)return;
+  auto& t=timers_[timer];if(value&&t.reload==0U)return;if(value&&!t.enabled&&t.remaining==0U)t.remaining=t.reload;t.enabled=value;
 }
 void TimerBank::reset(std::size_t timer)noexcept{if(timer<timer_count)timers_[timer]=Timer{};}
 void TimerBank::advance(std::uint64_t cycles,InterruptController& interrupts)noexcept{
@@ -111,7 +113,8 @@ bool BootController::transition(BootState next)noexcept{
  case BootState::Halted:allowed=next==BootState::Running||next==BootState::Faulted;break;
  case BootState::Faulted:allowed=next==BootState::Off;break;
  }
- if(allowed)state_=next;return allowed;
+ if(allowed)state_=next;
+  return allowed;
 }
 void SystemHardware::advance(std::uint64_t cycles)noexcept{timers_.advance(cycles,interrupts_);}
 void SystemHardware::reset()noexcept{interrupts_.reset();timers_.reset_all();boot_.reset();}
