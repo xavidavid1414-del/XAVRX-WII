@@ -154,5 +154,9 @@ bool HollywoodHardware::map_into(memory::Memory& broadway_bus,memory::Memory& st
  if(!broadway_bus.map_device(base,window_size,broadway_view_))return false;
  return starlet_bus.map_device(mirror,window_size,starlet_view_);
 }
+bool HollywoodHardware::map_into(WiiMemory& shared_bus)noexcept{
+ if(!shared_bus.map_device_dual(base,window_size,broadway_view_,starlet_view_))return false;
+ return shared_bus.map_device_dual(mirror,window_size,broadway_view_,starlet_view_);
+}
 void HollywoodHardware::reset()noexcept{interrupts_=HollywoodInterrupts{};ipc_.reset();gpio_.reset();timer_.reset();}
 }
