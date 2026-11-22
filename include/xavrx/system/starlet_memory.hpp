@@ -4,7 +4,7 @@
 #include <array>
 #include <cstdint>
 namespace xavrx::system {
-enum class StarletMemoryCpu : std::uint8_t { Broadway, Starlet };
+enum class StarletMemoryCpu : std::uint8_t { Broadway, Starlet };\nenum class StarletSramMaster : std::uint8_t { Broadway, Usb1, FlashNand, Sha, Aes };
 class StarletMemory final : public memory::MemoryMappedDevice {
 public:
  static constexpr std::uint32_t sram_base=0x0d400000U;
@@ -34,7 +34,7 @@ public:
  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
  [[nodiscard]] bool read_as(StarletMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t& value) noexcept;
- [[nodiscard]] bool write_as(StarletMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t value) noexcept;
+ [[nodiscard]] bool write_as(StarletMemoryCpu cpu,std::uint32_t address,std::uint8_t width,std::uint64_t value) noexcept;\n [[nodiscard]] bool read_for_master(StarletSramMaster master,std::uint32_t address,std::uint8_t width,std::uint64_t& value) noexcept;\n [[nodiscard]] bool write_for_master(StarletSramMaster master,std::uint32_t address,std::uint8_t width,std::uint64_t value) noexcept;\n [[nodiscard]] bool master_access_allowed(StarletSramMaster master)const noexcept;
  void reset() noexcept;
 private:
  enum class Region : std::uint8_t { None, SramA, SramB, BootRom };
