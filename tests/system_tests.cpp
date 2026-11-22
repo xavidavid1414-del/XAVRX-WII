@@ -47,7 +47,10 @@ int main(){using namespace xavrx::system;
  check(!wii.read_disc_to_memory(WiiMemoryCpu::Broadway,7U,0x80003000U,2U),"DI DMA rejects reads past image end");
  check(!wii.read_disc_to_memory(static_cast<WiiMemoryCpu>(0xffU),0U,0x80003000U,1U),"DI DMA rejects invalid CPU identity");
  check(!wii.read_disc_to_memory(WiiMemoryCpu::Broadway,0U,0xffffffffU,2U),"DI DMA rejects destination address overflow before writing");
+ check(!wii.read_disc_to_memory(WiiMemoryCpu::Broadway,0U,0x817ffffcU,8U),"DI DMA rejects a transfer crossing the MEM1 boundary");
+ check(!wii.read_disc_to_memory(WiiMemoryCpu::Broadway,0U,0x0d010000U,4U),"DI DMA rejects MMIO destinations instead of partially writing registers");
  check(wii.memory().read_as(WiiMemoryCpu::Broadway,0x80003000U,1U,di_byte)==xavrx::memory::AccessResult::Success&&di_byte==0U,"rejected DI DMA does not alter destination");
+ check(wii.memory().read_as(WiiMemoryCpu::Broadway,0x817ffffcU,4U,di_byte)==xavrx::memory::AccessResult::Success&&di_byte==0U,"rejected cross-bank DI DMA leaves the final MEM1 bytes unchanged");
 
  // The composed system routes live states from every controller profile to game actions.
  check(wii.input_router().add_binding({ControllerType::WiiRemote,InputControl::RemoteA,GameAction::Confirm}),"WiiSystem registers Wii Remote binding");
