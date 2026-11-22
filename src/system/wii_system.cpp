@@ -34,6 +34,17 @@ WiiSystem::WiiSystem()
   wlan_broadway_(wlan_,hollywood_.system_control(),HollywoodCpu::Broadway,HollywoodEngine::Sd1),
   wlan_starlet_(wlan_,hollywood_.system_control(),HollywoodCpu::Starlet,HollywoodEngine::Sd1),
   drive_broadway_(drive_,hollywood_.system_control()),drive_starlet_(drive_,hollywood_.system_control()){}
+void WiiSystem::advance_broadway_cycles(std::uint64_t cycles)noexcept{
+ hardware_.advance(cycles);
+ ClockDomainScheduler::Frequencies targets{};
+ for(std::size_t i=0;i<ClockDomainScheduler::domain_count;++i){
+  const auto domain=static_cast<ClockDomain>(i);
+  targets[i]=hardware_.clock().frequency(domain);
+ }
+ targets[static_cast<std::size_t>(ClockDomain::Starlet)]=hollywood_.system_control().hollywood_clock_hz();
+ const auto produced=clock_scheduler_.advance(cycles,hardware_.clock().frequency(ClockDomain::Cpu),targets);
+ hollywood_.advance_timer(produced[static_cast<std::size_t>(ClockDomain::Starlet)]);
+}
 bool WiiSystem::initialize()noexcept{
  if(initialized_)return true;
  if(!hollywood_.map_into(memory_))return false;
@@ -59,6 +70,6 @@ bool WiiSystem::take_bluetooth_host_packet(HollywoodCpu cpu,std::vector<std::uin
 }
 void WiiSystem::reset()noexcept{
  memory_.reset();hardware_.reset();hollywood_.reset();
- nand_.reset();sd_host_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();
+ nand_.reset();sd_host_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();clock_scheduler_.reset();
 }
 }
