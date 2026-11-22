@@ -84,6 +84,16 @@ memory::AccessResult WiiMemory::write_as(WiiMemoryCpu cpu,std::uint32_t address,
  }
  return memory::AccessResult::Unmapped;
 }
+memory::AccessResult WiiMemory::write_bytes_as(WiiMemoryCpu cpu,std::uint32_t address,std::span<const std::uint8_t> bytes)noexcept{
+ if(cpu!=WiiMemoryCpu::Broadway&&cpu!=WiiMemoryCpu::Starlet)return memory::AccessResult::InvalidConfiguration;
+ if(bytes.empty())return memory::AccessResult::Success;
+ if(bytes.size()>0x100000000ULL-static_cast<std::uint64_t>(address))return memory::AccessResult::Unmapped;
+ std::vector<std::uint8_t>* bank=nullptr;std::size_t offset=0;
+ if(!translate(address,1U,bank,offset))return memory::AccessResult::Unmapped;
+ if(bytes.size()>bank->size()-offset)return memory::AccessResult::Unmapped;
+ std::copy(bytes.begin(),bytes.end(),bank->begin()+static_cast<std::ptrdiff_t>(offset));
+ return memory::AccessResult::Success;
+}
 memory::AccessResult WiiMemory::read8(std::uint32_t a,std::uint8_t& v)noexcept{std::uint64_t x=0;auto r=read(a,1,x);if(r==memory::AccessResult::Success)v=static_cast<std::uint8_t>(x);return r;}
 memory::AccessResult WiiMemory::read16(std::uint32_t a,std::uint16_t& v)noexcept{std::uint64_t x=0;auto r=read(a,2,x);if(r==memory::AccessResult::Success)v=static_cast<std::uint16_t>(x);return r;}
 memory::AccessResult WiiMemory::read32(std::uint32_t a,std::uint32_t& v)noexcept{std::uint64_t x=0;auto r=read(a,4,x);if(r==memory::AccessResult::Success)v=static_cast<std::uint32_t>(x);return r;}
