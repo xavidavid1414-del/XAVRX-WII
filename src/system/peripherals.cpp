@@ -74,8 +74,8 @@ void UsbHostController::connect_device(bool connected)noexcept{
  const bool was_connected=(port_status_&0x1U)!=0U;
  const bool was_enabled=(port_status_&0x4U)!=0U;
  if(connected==was_connected)return;
- if(connected){port_status_|=0x3U;return;}
- port_status_&=~0x5U;port_status_|=0x2U;
+ if(connected){port_status_|=0x3U;status_|=sts_port_change;return;}
+ port_status_&=~0x5U;port_status_|=0x2U;status_|=sts_port_change;
  if(was_enabled){port_status_&=~0x4U;port_status_|=0x8U;}
 }
 bool UsbHostController::complete_port_reset(bool high_speed_device)noexcept{
@@ -83,7 +83,7 @@ bool UsbHostController::complete_port_reset(bool high_speed_device)noexcept{
  port_status_&=~0x100U;
  const bool was_enabled=(port_status_&0x4U)!=0U;
  if(high_speed_device)port_status_|=0x4U;else port_status_&=~0x4U;
- if(was_enabled!=((port_status_&0x4U)!=0U))port_status_|=0x8U;
+ if(was_enabled!=((port_status_&0x4U)!=0U)){port_status_|=0x8U;status_|=sts_port_change;}
  return true;
 }
 bool UsbHostController::enqueue_transfer(std::uint32_t token,std::span<const std::uint8_t> payload){
