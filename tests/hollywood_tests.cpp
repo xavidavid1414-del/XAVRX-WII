@@ -1,4 +1,6 @@
 #include "xavrx/system/hollywood.hpp"
+#include "xavrx/system/starlet_memory.hpp"
+#include <array>
 #include "xavrx/memory/memory.hpp"
 #include <cstdint>
 #include <iostream>
@@ -111,6 +113,31 @@ int main(){
  check(hw.write_as(HollywoodCpu::Broadway,0x40,4,1U<<6U),"PPCKERN grants Broadway FIQ mask access");
  check(hw.write_as(HollywoodCpu::Broadway,0xe0,4,2U),"PPCKERN grants Broadway full GPIO bank access");
  check(hw.read_as(HollywoodCpu::Broadway,0xe0,4,value)&&(value&2U)!=0U,"privileged GPIO write is shared");
+ // Starlet SRAM/BOOT0 mapping and CPU permissions.
+ auto& smem=hw.starlet_memory();
+ check(!smem.write_as(StarletMemoryCpu::Broadway,0x0d400000U,4,0x11223344U),"Broadway SRAM access denied without AHPEN");
+ check(smem.write_as(StarletMemoryCpu::Starlet,0x0d400000U,4,0x11223344U),"Starlet writes SRAM A");
+ check(smem.write_as(StarletMemoryCpu::Starlet,0x0d410000U,4,0x55667788U),"Starlet writes SRAM B");
+ check(smem.read_as(StarletMemoryCpu::Starlet,0xfff00000U,4,value)&&value==0x11223344U,"SRAM A visible through FFF mirror");
+ check(smem.read_as(StarletMemoryCpu::Starlet,0xfffe0000U,4,value)&&value==0x11223344U,"SRAM A visible in FFFE window");
+ check(!smem.read_as(StarletMemoryCpu::Starlet,0xffff0000U,4,value),"unloaded BOOT0 image is not fabricated");
+ std::array<std::uint8_t,StarletMemory::boot_rom_size> boot_image{};
+ boot_image[0]=0x12U;boot_image[1]=0x34U;boot_image[2]=0x56U;boot_image[3]=0x78U;
+ check(smem.load_boot_rom(boot_image),"load externally supplied BOOT0 image");
+ check(smem.read_as(StarletMemoryCpu::Starlet,0xffff0000U,4,value)&&value==0x12345678U,"BOOT0 ROM is big-endian and readable");
+ check(smem.read_as(StarletMemoryCpu::Starlet,0xffff2000U,4,value)&&value==0x12345678U,"BOOT0 ROM repeats every 8 KiB");
+ check(hw.write_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,1U<<5U),"Starlet selects SRAM bank arrangement");
+ check(smem.read_as(StarletMemoryCpu::Starlet,0xd400000U,4,value)&&value==0x12345678U,"SM=1 maps BOOT0 into SRAM window");
+ check(smem.write_as(StarletMemoryCpu::Starlet,0xffff0000U,4,0xaabbccddU),"SM=1 maps SRAM A at FFFF");
+ check(smem.read_as(StarletMemoryCpu::Starlet,0x0d400000U,4,value)&&value==0x12345678U,"changing mapping preserves SRAM contents");
+ check(hw.write_as(HollywoodCpu::Starlet,StarletMemory::boot0_register,4,1U<<12U),"Starlet disables BOOT0 mapping");
+ check(smem.write_as(StarletMemoryCpu::Starlet,0x0d400000U,4,0x0badc0deU),"SM=1 exposes SRAM B after BOOT0 disable");
+ check(smem.read_as(StarletMemoryCpu::Starlet,0x0d400000U,4,value)&&value==0x0badc0deU,"SRAM B arrangement readback");
+ check(hw.write_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,1U<<3U),"Starlet enables Broadway SRAM access");
+ check(smem.read_as(StarletMemoryCpu::Broadway,0x0d400000U,4,value)&&value==0x0badc0deU,"AHPEN grants Broadway SRAM access");
+ check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,value)&&value==(1U<<3U),"SRNPROT register readback");
+ check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::boot0_register,4,value)&&value==(1U<<12U),"BOOT0 register readback");
+
  hw.reset();
  check(hw.interrupts().flags(HollywoodCpu::Broadway)==0U&&hw.interrupts().flags(HollywoodCpu::Starlet)==0U,"Hollywood reset clears IRQ state");
  check(hw.timer().counter()==0U&&!hw.timer().armed(),"Hollywood reset clears timer");
