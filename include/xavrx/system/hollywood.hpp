@@ -2,6 +2,7 @@
 #include "xavrx/memory/memory.hpp"
 #include "xavrx/system/hardware.hpp"
 #include "xavrx/system/wii_memory.hpp"
+#include "xavrx/system/starlet_memory.hpp"
 #include <cstddef>
 #include <cstdint>
 namespace xavrx::system {
@@ -38,7 +39,7 @@ private:
 };
 class HollywoodSystemControl final {
 public:
- static constexpr std::uint32_t ahb_prot_register=0x64,clocks_register=0x190,resets_register=0x194;
+ static constexpr std::uint32_t srnprot_register=0x60,ahb_prot_register=0x64,boot0_register=0x18c,clocks_register=0x190,resets_register=0x194;
  static constexpr std::uint32_t fx_bit=1U<<0U,speed_bit=1U<<1U,resets_writable_mask=0x7fffffffU;
  [[nodiscard]] bool read(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t& value)const noexcept;
  [[nodiscard]] bool write(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t value)noexcept;
@@ -97,7 +98,7 @@ public:
  [[nodiscard]] HollywoodIpc& ipc() noexcept{return ipc_;}
  [[nodiscard]] HollywoodGpio& gpio() noexcept{return gpio_;}
  [[nodiscard]] HollywoodTimer& timer() noexcept{return timer_;}
- [[nodiscard]] HollywoodSystemControl& system_control() noexcept{return system_control_;}
+ [[nodiscard]] HollywoodSystemControl& system_control() noexcept{return system_control_;}\n [[nodiscard]] StarletMemory& starlet_memory() noexcept{return starlet_memory_;}
  void advance_timer(std::uint64_t ticks) noexcept{timer_.advance(ticks);}
  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
@@ -111,7 +112,7 @@ private:
  HollywoodIpc ipc_;
  HollywoodGpio gpio_;
  HollywoodTimer timer_;
- HollywoodSystemControl system_control_{};
+ HollywoodSystemControl system_control_{};\n StarletMemory starlet_memory_{};
  CpuBusView broadway_view_;
  CpuBusView starlet_view_;
 };
