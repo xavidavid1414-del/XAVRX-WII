@@ -30,6 +30,8 @@ public:
     void detach() noexcept { image_.clear(); reset(); }
     void reset() noexcept {
         state_ = State::idle; app_command_ = false; selected_ = false;
+        transfer_active_ = false; transfer_write_ = false; multi_block_ = false;
+        transfer_block_ = 0U;
         block_length_ = static_cast<std::uint32_t>(block_size);
         last_command_ = 0U;
     }
