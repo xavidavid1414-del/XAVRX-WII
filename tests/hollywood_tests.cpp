@@ -150,6 +150,15 @@ int main(){
  hw.advance_timer(1U);
  check(hw.timer().counter()==1U&&!hw.timer().armed(),"Alarm fires after wrapped deadline");
  check((hw.interrupts().flags(HollywoodCpu::Starlet)&1U)!=0U,"Wrapped alarm raises timer IRQ");
+ // Verify SRAM and Hollywood register views are connected through the shared Wii bus.
+ WiiMemory integrated_bus;HollywoodHardware integrated_hw;
+ check(integrated_hw.map_into(integrated_bus),"map Hollywood and Starlet memory into shared Wii bus");
+ check(integrated_bus.write_as(WiiMemoryCpu::Starlet,0x0d400000U,4,0xdecafbadU)==xavrx::memory::AccessResult::Success,"Starlet writes SRAM through Wii bus");
+ check(integrated_bus.read_as(WiiMemoryCpu::Starlet,0xfff00000U,4,value)==xavrx::memory::AccessResult::Success&&value==0xdecafbadU,"Wii bus routes high SRAM mirror");
+ check(integrated_bus.read_as(WiiMemoryCpu::Broadway,0x0d400000U,4,value)==xavrx::memory::AccessResult::DeviceError,"Wii bus enforces Broadway SRAM protection");
+ check(integrated_bus.write_as(WiiMemoryCpu::Starlet,0x0d000060U,4,1U<<3U)==xavrx::memory::AccessResult::Success,"Wii bus exposes SRNPROT MMIO");
+ check(integrated_bus.read_as(WiiMemoryCpu::Broadway,0x0d400000U,4,value)==xavrx::memory::AccessResult::Success&&value==0xdecafbadU,"SRNPROT AHPEN grants Broadway SRAM access");
+
  if(failures){std::cerr<<failures<<" Hollywood test(s) failed\n";return 1;}
  std::cout<<"All Hollywood hardware tests passed\n";return 0;
 }
