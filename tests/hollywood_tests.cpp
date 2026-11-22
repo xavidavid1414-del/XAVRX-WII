@@ -65,7 +65,7 @@ int main(){
  check(hw.gpio().read(HollywoodCpu::Broadway,0xd0,word)&&word==0U,"GPIO W1C clears idle flag");
  check((hw.interrupts().flags(HollywoodCpu::Broadway)&(1U<<10U))==0U,"cleared GPIO flag deasserts IRQ 10");
 
- check(hw.write_as(HollywoodCpu::Starlet,0xec,4,2U),"Starlet configures unowned GPIO interrupt level");
+ check(hw.write_as(HollywoodCpu::Starlet,0xec,4,0x00ffffffU),"Starlet preserves active-high levels across full GPIO bank");
  check(hw.write_as(HollywoodCpu::Starlet,0xf4,4,2U),"Starlet configures unowned GPIO interrupt mask");
  hw.gpio().set_inputs(2U);
  check((hw.interrupts().flags(HollywoodCpu::Starlet)&(1U<<11U))!=0U,"Starlet-owned GPIO pin raises IRQ 11");
