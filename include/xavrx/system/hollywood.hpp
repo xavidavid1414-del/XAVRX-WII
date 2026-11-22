@@ -44,7 +44,8 @@ public:
  static constexpr std::uint32_t fx_bit=1U<<0U,speed_bit=1U<<1U,resets_writable_mask=0x7fffffffU;
  [[nodiscard]] bool read(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t& value)const noexcept;
  [[nodiscard]] bool write(HollywoodCpu cpu,std::uint32_t offset,std::uint32_t value)noexcept;
- [[nodiscard]] bool ppc_full_access()const noexcept{return (ahb_prot_&(1U<<31U))!=0U;}\n [[nodiscard]] bool engine_access_allowed(HollywoodCpu initiator,HollywoodEngine engine)const noexcept;
+ [[nodiscard]] bool ppc_full_access()const noexcept{return (ahb_prot_&(1U<<31U))!=0U;}
+ [[nodiscard]] bool engine_access_allowed(HollywoodCpu initiator,HollywoodEngine engine)const noexcept;
  [[nodiscard]] std::uint32_t ahb_protection()const noexcept{return ahb_prot_;}
  [[nodiscard]] std::uint64_t hollywood_clock_hz()const noexcept{return (clocks_&speed_bit)!=0U?162000000ULL:243000000ULL;}
  [[nodiscard]] bool fx_enabled()const noexcept{return (clocks_&fx_bit)!=0U;}
