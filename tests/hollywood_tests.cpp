@@ -148,7 +148,20 @@ int main(){
  check(hw.write_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,(1U<<5U)|(1U<<3U)),"Starlet enables Broadway SRAM access without changing SM");
  check(smem.read_as(StarletMemoryCpu::Broadway,0x0d400000U,4,value)&&value==0x0badc0deU,"AHPEN grants Broadway SRAM access");
  check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::sram_protection_register,4,value)&&value==((1U<<5U)|(1U<<3U)),"SRNPROT register readback");
- check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::boot0_register,4,value)&&value==(1U<<12U),"BOOT0 register readback");
+ check(hw.read_as(HollywoodCpu::Starlet,StarletMemory::boot0_register,4,value)&&value==(1U<<12U),"BOOT0 register readback"); check(!smem.master_access_allowed(StarletSramMaster::Usb1),"USB SRAM access denied without U4");
+ check(!smem.read_for_master(StarletSramMaster::FlashNand,0x0d400000U,4,value),"NAND/flash SRAM read denied without C");
+ check(!smem.write_for_master(StarletSramMaster::Sha,0x0d400000U,4,0xabcdef01U),"SHA SRAM write denied without B");
+ check(!smem.read_for_master(StarletSramMaster::Aes,0x0d400000U,4,value),"AES SRAM read denied without A");
+ smem.set_srnprot((1U<<5U)|(1U<<3U)|(1U<<4U)|(1U<<2U)|(1U<<1U)|(1U<<0U));
+ check(smem.master_access_allowed(StarletSramMaster::Broadway),"AHPEN permits Broadway SRAM master");
+ check(smem.master_access_allowed(StarletSramMaster::Usb1),"U4 permits USB1 SRAM master");
+ check(smem.master_access_allowed(StarletSramMaster::FlashNand),"C permits flash/NAND SRAM master");
+ check(smem.master_access_allowed(StarletSramMaster::Sha),"B permits SHA SRAM master");
+ check(smem.master_access_allowed(StarletSramMaster::Aes),"A permits AES SRAM master");
+ check(smem.write_for_master(StarletSramMaster::Sha,0x0d400000U,4,0xabcdef01U),"SHA master writes SRAM after C/B/A gates enabled");
+ check(smem.read_for_master(StarletSramMaster::Aes,0x0d400000U,4,value)&&value==0xabcdef01U,"AES master reads shared SRAM after gate enabled");
+ check(!smem.read_for_master(StarletSramMaster::Aes,0x0d400001U,4,value),"engine SRAM access rejects misalignment");
+
 
  hw.reset();
  check(hw.interrupts().flags(HollywoodCpu::Broadway)==0U&&hw.interrupts().flags(HollywoodCpu::Starlet)==0U,"Hollywood reset clears IRQ state");
