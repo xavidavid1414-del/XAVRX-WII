@@ -1,5 +1,7 @@
 #pragma once
 #include "xavrx/system/hardware.hpp"
+#include "xavrx/system/reset_controller.hpp"
+#include "xavrx/system/dsp_gpu.hpp"
 #include "xavrx/system/hollywood.hpp"
 #include "xavrx/system/peripherals.hpp"
 #include "xavrx/system/wii_memory.hpp"
@@ -41,6 +43,9 @@ public:
  [[nodiscard]] UsbHostController& usb_host() noexcept{return usb_host_;}
  [[nodiscard]] DriveInterface& drive_interface() noexcept{return drive_;}
  [[nodiscard]] WirelessLanController& wlan() noexcept{return wlan_;}
+ [[nodiscard]] HardwareResetController& reset_controller() noexcept{return reset_controller_;}
+ [[nodiscard]] DspDevice& dsp() noexcept{return dsp_;}
+ [[nodiscard]] GpuCommandProcessor& gpu() noexcept{return gpu_;}
  [[nodiscard]] bool submit_bluetooth_host_packet(HollywoodCpu cpu,std::span<const std::uint8_t> packet);
  [[nodiscard]] bool take_bluetooth_device_packet(HollywoodCpu cpu,std::vector<std::uint8_t>& packet);
  [[nodiscard]] bool submit_bluetooth_device_packet(std::span<const std::uint8_t> packet);
@@ -60,6 +65,9 @@ private:
  WirelessLanController wlan_;
  BluetoothHciTransport bluetooth_hci_;
  ClockDomainScheduler clock_scheduler_;
+ HardwareResetController reset_controller_{};
+ DspDevice dsp_{};
+ GpuCommandProcessor gpu_{};
  ProtectedRegisterView nand_broadway_,nand_starlet_;
  ProtectedRegisterView sd_broadway_,sd_starlet_;
  ProtectedRegisterView usb_broadway_,usb_starlet_;
