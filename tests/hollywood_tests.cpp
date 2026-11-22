@@ -4,7 +4,8 @@
 #include "xavrx/memory/memory.hpp"
 #include <cstdint>
 #include <iostream>
-namespace {int failures=0;void check(bool ok,const char* m){if(!ok){std::cerr<<"FAIL: "<<m<<'\n';++failures;}}}
+namespace {int failures=0;void check(bool ok,const char* m){if(!ok){std::cerr<<"FAIL: "<<m<<'
+';++failures;}}}
 int main(){
  using namespace xavrx::system;
  HollywoodHardware hw;std::uint64_t value=0;std::uint32_t word=0;
@@ -49,7 +50,12 @@ int main(){
  check(!hw.read_as(HollywoodCpu::Broadway,0x40,4,value),"Broadway cannot access Starlet FIQ mask");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,0xffffffffU),"Starlet writes reset control register");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,value)&&value==HollywoodSystemControl::resets_writable_mask,"reserved reset bit is masked");
- check(hw.system_control().reset_released(1U),"reset line state can be inspected");\n check(!hw.system_control().di_reset_asserted(),"DI reset is released when HW_RESETS bit 10 is set");\n check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask&~HollywoodSystemControl::di_reset_bit),"Starlet asserts documented DI reset");\n check(hw.system_control().di_reset_asserted(),"DI reset is asserted when HW_RESETS bit 10 is clear");\n check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask),"Starlet releases documented DI reset");\n check(!hw.system_control().di_reset_asserted(),"DI reset release is reflected immediately");
+ check(hw.system_control().reset_released(1U),"reset line state can be inspected");
+ check(!hw.system_control().di_reset_asserted(),"DI reset is released when HW_RESETS bit 10 is set");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask&~HollywoodSystemControl::di_reset_bit),"Starlet asserts documented DI reset");
+ check(hw.system_control().di_reset_asserted(),"DI reset is asserted when HW_RESETS bit 10 is clear");
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask),"Starlet releases documented DI reset");
+ check(!hw.system_control().di_reset_asserted(),"DI reset release is reflected immediately");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodTimer::alarm_register,4,3U),"Starlet programs timer alarm");
  check(!hw.write_as(HollywoodCpu::Broadway,HollywoodTimer::alarm_register,4,9U),"Broadway cannot program Starlet alarm");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodTimer::timer_register,4,value)&&value==0U,"Starlet reads timer counter");
@@ -184,6 +190,8 @@ int main(){
  check(integrated_bus.write_as(WiiMemoryCpu::Starlet,0x0d000060U,4,1U<<3U)==xavrx::memory::AccessResult::Success,"Wii bus exposes SRNPROT MMIO");
  check(integrated_bus.read_as(WiiMemoryCpu::Broadway,0x0d400000U,4,value)==xavrx::memory::AccessResult::Success&&value==0xdecafbadU,"SRNPROT AHPEN grants Broadway SRAM access");
 
- if(failures){std::cerr<<failures<<" Hollywood test(s) failed\n";return 1;}
- std::cout<<"All Hollywood hardware tests passed\n";return 0;
+ if(failures){std::cerr<<failures<<" Hollywood test(s) failed
+";return 1;}
+ std::cout<<"All Hollywood hardware tests passed
+";return 0;
 }
