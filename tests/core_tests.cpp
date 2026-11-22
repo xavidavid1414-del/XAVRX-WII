@@ -19,7 +19,7 @@ int main(){
   check(system->memory().mem1_capacity()==xavrx::system::WiiMemory::mem1_size,"MEM1 is present");
   check(system->memory().mem2_capacity()==xavrx::system::WiiMemory::mem2_size,"MEM2 is present");
   check(system->memory().write32(xavrx::system::WiiMemory::mem1_cached,0x12345678U)==xavrx::memory::AccessResult::Success,"write through cached MEM1 alias");
-  std::uint32_t word=0;
+  std::uint32_t word=0;std::uint64_t value=0;
   check(system->memory().read32(xavrx::system::WiiMemory::mem1_physical,word)==xavrx::memory::AccessResult::Success&&word==0x12345678U,"MEM1 physical alias shares backing");
   check(system->memory().write_as(xavrx::system::WiiMemoryCpu::Broadway,xavrx::system::HollywoodHardware::base,4,0x87654321U)==xavrx::memory::AccessResult::Success,"Broadway reaches Hollywood MMIO through Wii bus");
   check(system->memory().read_as(xavrx::system::WiiMemoryCpu::Starlet,xavrx::system::HollywoodHardware::mirror,4,value)==xavrx::memory::AccessResult::Success&&value==0x87654321U,"Starlet sees shared Hollywood message register");
