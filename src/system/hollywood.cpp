@@ -1,4 +1,5 @@
 #include "xavrx/system/hollywood.hpp"
+#include <array>
 namespace xavrx::system {
 namespace { constexpr std::uint32_t pins=0x00ffffffU; constexpr std::uint32_t bit(std::uint8_t n) noexcept{return std::uint32_t{1}<<n;} }
 void HollywoodInterrupts::raise(std::uint8_t source,IrqRoute route) noexcept {
@@ -189,9 +190,13 @@ bool HollywoodHardware::map_into(memory::Memory& broadway_bus,memory::Memory& st
  return starlet_bus.map_device(mirror,window_size,starlet_view_);
 }
 bool HollywoodHardware::map_into(WiiMemory& shared_bus)noexcept{
- if(!shared_bus.map_device_dual(base,window_size,broadway_view_,starlet_view_))return false;
- if(!shared_bus.map_device_dual(mirror,window_size,broadway_view_,starlet_view_))return false;
- return starlet_memory_.map_into(shared_bus);
+ const std::array<DualDeviceMapping,4> mappings{{
+  {base,window_size,&broadway_view_,&starlet_view_},
+  {mirror,window_size,&broadway_view_,&starlet_view_},
+  {StarletMemory::sram_base,0x20000U,&starlet_memory_,&starlet_memory_},
+  {StarletMemory::mirror_base,StarletMemory::mirror_size,&starlet_memory_,&starlet_memory_}
+ }};
+ return shared_bus.map_devices_dual(mappings.data(),mappings.size());
 }
 void HollywoodHardware::reset()noexcept{interrupts_=HollywoodInterrupts{};ipc_.reset();gpio_.reset();timer_.reset();system_control_.reset();starlet_memory_.reset();}
 }
