@@ -27,7 +27,8 @@ AccessResult Memory::read(std::uint32_t a,std::uint8_t w,std::uint64_t& v)noexce
  return AccessResult::Unmapped;
 }
 AccessResult Memory::write(std::uint32_t a,std::uint8_t w,std::uint64_t v)noexcept{
- if(!valid_)return AccessResult::InvalidConfiguration;if(!supported_width(w))return AccessResult::InvalidWidth;
+ if(!valid_)return AccessResult::InvalidConfiguration;
+ if(!supported_width(w))return AccessResult::InvalidWidth;
  if((a&(static_cast<std::uint32_t>(w)-1U))!=0U)return AccessResult::Misaligned;
  const auto end=static_cast<std::uint64_t>(ram_base_)+ram_.size();
  if(a>=ram_base_&&static_cast<std::uint64_t>(a)+w<=end){const auto off=static_cast<std::size_t>(a-ram_base_);for(std::uint8_t i=0;i<w;++i){const auto shift=static_cast<unsigned>((w-1U-i)*8U);ram_[off+i]=static_cast<std::uint8_t>(v>>shift);}return AccessResult::Success;}
