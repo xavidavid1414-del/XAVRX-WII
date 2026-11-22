@@ -98,7 +98,8 @@ public:
  [[nodiscard]] HollywoodIpc& ipc() noexcept{return ipc_;}
  [[nodiscard]] HollywoodGpio& gpio() noexcept{return gpio_;}
  [[nodiscard]] HollywoodTimer& timer() noexcept{return timer_;}
- [[nodiscard]] HollywoodSystemControl& system_control() noexcept{return system_control_;}\n [[nodiscard]] StarletMemory& starlet_memory() noexcept{return starlet_memory_;}
+ [[nodiscard]] HollywoodSystemControl& system_control() noexcept{return system_control_;}
+ [[nodiscard]] StarletMemory& starlet_memory() noexcept{return starlet_memory_;}
  void advance_timer(std::uint64_t ticks) noexcept{timer_.advance(ticks);}
  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
@@ -112,7 +113,8 @@ private:
  HollywoodIpc ipc_;
  HollywoodGpio gpio_;
  HollywoodTimer timer_;
- HollywoodSystemControl system_control_{};\n StarletMemory starlet_memory_{};
+ HollywoodSystemControl system_control_{};
+ StarletMemory starlet_memory_{};
  CpuBusView broadway_view_;
  CpuBusView starlet_view_;
 };
