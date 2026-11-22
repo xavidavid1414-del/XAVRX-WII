@@ -31,6 +31,14 @@ bool HollywoodSystemControl::read(HollywoodCpu cpu,std::uint32_t off,std::uint32
  if(off==resets_register){value=resets_;return true;}
  return false;
 }
+bool HollywoodSystemControl::engine_access_allowed(HollywoodCpu initiator,HollywoodEngine engine)const noexcept{
+ static constexpr std::uint32_t ppc_bits[]={1U<<10U,1U<<11U,1U<<8U,1U<<9U,1U<<7U,1U<<6U,1U<<5U,1U<<4U};
+ static constexpr std::uint32_t iop_bits[]={1U<<28U,1U<<29U,1U<<26U,1U<<27U,1U<<25U,1U<<24U,1U<<23U,1U<<22U};
+ const auto index=static_cast<std::size_t>(engine);
+ if(index>=8U)return false;
+ const auto bitmask=initiator==HollywoodCpu::Broadway?ppc_bits[index]:iop_bits[index];
+ return (ahb_prot_&bitmask)!=0U;
+}
 bool HollywoodSystemControl::write(HollywoodCpu cpu,std::uint32_t off,std::uint32_t value)noexcept{
  if(off==ahb_prot_register){if(cpu!=HollywoodCpu::Starlet)return false;ahb_prot_=value;return true;}
  if(cpu!=HollywoodCpu::Starlet)return false;
