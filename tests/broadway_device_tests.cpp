@@ -6,6 +6,7 @@ int main(){
  using namespace xavrx::system;std::uint64_t value=0;std::uint32_t mail=0;
  DspMailboxInterface dsp;
  check(dsp.write(0x00U,2,0x9234U)&&dsp.write(0x02U,2,0x5678U),"DSP inbound mailbox accepts high and low halfwords");
+ check(dsp.read(0x00U,2,value)&&value==0x9234U&&dsp.read(0x02U,2,value)&&value==0x5678U,"DSP inbound mailbox registers support documented readback");
  check(dsp.take_mail_to_dsp(mail)&&mail==0x12345678U,"DSP consumes one complete inbound mailbox message");
  check(!dsp.take_mail_to_dsp(mail),"DSP inbound mailbox clears pending after consumption");
  check(dsp.post_mail_from_dsp(0x89abcdefU),"DSP posts outbound mailbox message");
