@@ -109,7 +109,7 @@ int main(){using namespace xavrx::system;
  const std::uint32_t released_lines=(1U<<26U)|(1U<<17U)|(1U<<16U)|(1U<<21U)|(1U<<14U);
  reset_controller.set_register(released_lines|0x80000000U);
  check(reset_controller.register_value()==released_lines&&reset_controller.released(HardwareResetLine::DSP)&&reset_controller.released(HardwareResetLine::GFX)&&reset_controller.released(HardwareResetLine::GFXTCPE),"reset controller releases selected lines and masks reserved bit");
- check(reset_controller.asserted(HardwareResetLine::IOP)&&reset_controller.released(HardwareResetLine::IODI)==false,"reset controller tracks independent active-low lines");
+ check(reset_controller.asserted(HardwareResetLine::IOP)&&reset_controller.released(HardwareResetLine::IODI),"reset controller tracks independent active-low lines");
  reset_controller.reset();check(reset_controller.register_value()==0U&&reset_controller.asserted(HardwareResetLine::DSP),"reset controller reset reasserts all modeled lines");
  // DSP task scheduler is deterministic scaffolding, not DSP instruction execution.
  DspDevice dsp_device;
