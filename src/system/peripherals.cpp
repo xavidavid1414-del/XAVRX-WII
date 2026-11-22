@@ -41,11 +41,13 @@ SdHostController::SdHostController()noexcept:RegisterWindow(0x200U,sd_offsets,st
 bool SdHostController::attach_card(std::vector<std::uint8_t> image){if(image.empty()||image.size()%block_size!=0U||image.size()/block_size>std::numeric_limits<std::uint32_t>::max())return false;card_=std::move(image);return true;}
 void SdHostController::detach_card()noexcept{card_.clear();}
 bool SdHostController::read_blocks(std::uint32_t first,std::uint32_t count,std::span<std::uint8_t> output)const noexcept{
- if(card_.empty()||count==0U||output.size()!=static_cast<std::size_t>(count)*block_size||first>block_count()||count>block_count()-first)return false;
+ const auto byte_count=static_cast<std::uint64_t>(count)*block_size;
+ if(card_.empty()||count==0U||byte_count!=output.size()||first>block_count()||count>block_count()-first)return false;
  const auto offset=static_cast<std::size_t>(first)*block_size;std::copy_n(card_.begin()+static_cast<std::ptrdiff_t>(offset),output.size(),output.begin());return true;
 }
 bool SdHostController::write_blocks(std::uint32_t first,std::uint32_t count,std::span<const std::uint8_t> input)noexcept{
- if(card_.empty()||count==0U||input.size()!=static_cast<std::size_t>(count)*block_size||first>block_count()||count>block_count()-first)return false;
+ const auto byte_count=static_cast<std::uint64_t>(count)*block_size;
+ if(card_.empty()||count==0U||byte_count!=input.size()||first>block_count()||count>block_count()-first)return false;
  const auto offset=static_cast<std::size_t>(first)*block_size;std::copy(input.begin(),input.end(),card_.begin()+static_cast<std::ptrdiff_t>(offset));return true;
 }
 UsbHostController::UsbHostController()noexcept:RegisterWindow(0x100U,usb_offsets,std::size(usb_offsets),true){}

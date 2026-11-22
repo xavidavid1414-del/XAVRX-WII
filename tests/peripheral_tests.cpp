@@ -25,6 +25,7 @@ int main(){
  check(sd.read_blocks(0U,1U,block)&&block[0]==0x42U,"SD block read");
  block[0]=0xa5U;check(sd.write_blocks(1U,1U,block)&&sd.read_blocks(1U,1U,block)&&block[0]==0xa5U,"SD block write/readback");
  check(!sd.read_blocks(4U,1U,block)&&!sd.write_blocks(0U,0U,block),"SD rejects invalid block ranges");
+ check(!sd.read_blocks(0U,0x00800000U,std::span<std::uint8_t>{})&&!sd.write_blocks(0U,0x00800000U,std::span<const std::uint8_t>{}),"SD rejects huge block counts without byte-size overflow");
  sd.detach_card();check(!sd.card_present()&&!sd.read_blocks(0U,1U,block),"SD detach removes card");
  check(usb.aperture_size()==0x100U&&usb.little_endian(),"USB EHCI aperture and little-endian register view");
  check(usb.read(0x00U,4,value)&&value==0x01000020U,"EHCI capability register is read-only hardware identity");
