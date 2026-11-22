@@ -92,6 +92,13 @@ int main(){
  check(hw.interrupts().flags(HollywoodCpu::Broadway)==0U&&hw.interrupts().flags(HollywoodCpu::Starlet)==0U,"Hollywood reset clears IRQ state");
  check(hw.timer().counter()==0U&&!hw.timer().armed(),"Hollywood reset clears timer");
  check(hw.gpio().read(HollywoodCpu::Starlet,0xf0,word)&&word==0U,"Hollywood reset leaves GPIO flags clear");
+ hw.advance_timer(0xfffffffeULL);
+ check(hw.write_as(HollywoodCpu::Starlet,HollywoodTimer::alarm_register,4,1U),"Program alarm across timer wraparound");
+ hw.advance_timer(2U);
+ check(hw.timer().counter()==0U&&hw.timer().armed(),"Timer wraps without early alarm");
+ hw.advance_timer(1U);
+ check(hw.timer().counter()==1U&&!hw.timer().armed(),"Alarm fires after wrapped deadline");
+ check((hw.interrupts().flags(HollywoodCpu::Starlet)&1U)!=0U,"Wrapped alarm raises timer IRQ");
  if(failures){std::cerr<<failures<<" Hollywood test(s) failed\n";return 1;}
  std::cout<<"All Hollywood hardware tests passed\n";return 0;
 }
