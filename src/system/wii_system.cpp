@@ -82,6 +82,16 @@ void WiiSystem::advance_broadway_cycles(std::uint64_t cycles)noexcept{
  const auto produced=clock_scheduler_.advance(cycles,hardware_.clock().frequency(ClockDomain::Cpu),targets);
  hollywood_.advance_timer(produced[static_cast<std::size_t>(ClockDomain::Starlet)]);
  if(reset_controller_.released(HardwareResetLine::DSP))dsp_.advance(produced[static_cast<std::size_t>(ClockDomain::Dsp)]);
+ const auto bus_hz=hardware_.clock().frequency(ClockDomain::Bus);
+ const auto bus_cycles_per_microframe=bus_hz/8000U;
+ if(bus_cycles_per_microframe!=0U){
+  const auto bus_cycles=produced[static_cast<std::size_t>(ClockDomain::Bus)];
+  auto microframes=bus_cycles/bus_cycles_per_microframe;
+  const auto remainder=bus_cycles%bus_cycles_per_microframe;
+  if(remainder>=bus_cycles_per_microframe-usb_microframe_phase_){++microframes;usb_microframe_phase_=remainder-(bus_cycles_per_microframe-usb_microframe_phase_);}
+  else usb_microframe_phase_+=remainder;
+  if(microframes!=0U)usb_host_.advance_microframes(microframes);
+ }
 }
 bool WiiSystem::initialize()noexcept{
  if(initialized_)return true;
@@ -132,7 +142,7 @@ bool WiiSystem::attach_sd_card(std::vector<std::uint8_t> image){
 void WiiSystem::detach_sd_card()noexcept{sd_host_.detach_card();sd_card_protocol_.detach();}
 void WiiSystem::reset()noexcept{
  memory_.reset();hardware_.reset();hollywood_.reset();
- nand_.reset();sd_host_.reset();sd_card_protocol_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();clock_scheduler_.reset();
+ nand_.reset();sd_host_.reset();sd_card_protocol_.reset();usb_host_.reset();drive_.reset();wlan_.reset();bluetooth_hci_.reset();clock_scheduler_.reset();usb_microframe_phase_=0U;
  wii_remote_.reset();nunchuk_.reset();classic_controller_.reset();classic_controller_pro_.reset();balance_board_.reset();
  reset_controller_.reset();dsp_.reset();gpu_.reset();dsp_mailbox_.reset();processor_interrupts_.reset();
 }
