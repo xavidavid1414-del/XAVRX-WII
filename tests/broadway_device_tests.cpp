@@ -5,10 +5,16 @@ namespace {int failures=0;void check(bool ok,const char* m){if(!ok){std::cerr<<"
 int main(){
  using namespace xavrx::system;std::uint64_t value=0;std::uint32_t mail=0;
  DspMailboxInterface dsp;
- check(dsp.write(0x00U,2,0x9234U)&&dsp.write(0x02U,2,0x5678U),"DSP inbound mailbox accepts high and low halfwords");
- check(dsp.read(0x00U,2,value)&&value==0x9234U&&dsp.read(0x02U,2,value)&&value==0x5678U,"DSP inbound mailbox registers support documented readback");
- check(dsp.take_mail_to_dsp(mail)&&mail==0x12345678U,"DSP consumes one complete inbound mailbox message");
+ check(dsp.write(0x00U,2,0x9234U),"DSP inbound mailbox accepts the high halfword");
+ check(dsp.read(0x00U,2,value)&&value==0x9234U,"DSP inbound high halfword supports documented readback");
+ check(!dsp.take_mail_to_dsp(mail),"DSP does not publish a message before the low halfword is written");
+ check(dsp.write(0x02U,2,0x5678U),"DSP inbound mailbox accepts the low halfword");
+ check(dsp.read(0x00U,2,value)&&value==0x1234U,"DSP clears the inbound Set bit after committing the message");
+ check(dsp.read(0x02U,2,value)&&value==0x5678U,"DSP inbound low halfword supports documented readback");
+ check(dsp.take_mail_to_dsp(mail)&&mail==0x12345678U,"DSP consumes the complete inbound message after the low-halfword write");
  check(!dsp.take_mail_to_dsp(mail),"DSP inbound mailbox clears pending after consumption");
+ check(dsp.write(0x00U,2,0x1234U)&&dsp.write(0x02U,2,0x5678U),"DSP accepts inbound data without the Set bit");
+ check(!dsp.take_mail_to_dsp(mail),"DSP ignores inbound data when the Set bit is clear");
  check(dsp.post_mail_from_dsp(0x89abcdefU),"DSP posts outbound mailbox message");
  check(dsp.read(0x04U,2,value)&&value==0x89abU,"DSP outbound high halfword marks message valid");
  check(dsp.read(0x06U,2,value)&&value==0xcdefU,"DSP outbound low halfword returns payload");
