@@ -50,7 +50,9 @@ int main() {
     r = card.command(13U, 0U);
     check(r.accepted && r.value == 0U, "CMD13 reports transfer status");
     r = card.command(18U, 1U);
-    check(r.accepted, "CMD18 starts transfer before reset regression");
+    check(r.accepted, "CMD18 starts transfer before deselect regression");
+    r = card.command(7U, 0U);
+    check(r.accepted && !card.read_data_block(data), "CMD7 deselect aborts active data transfer");
     r = card.command(0U, 0U);
     check(r.accepted && card.state() == SdCardProtocol::State::idle &&
           !card.read_data_block(data), "CMD0 aborts any active data transfer");
