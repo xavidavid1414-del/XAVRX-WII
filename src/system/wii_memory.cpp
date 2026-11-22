@@ -9,15 +9,34 @@ constexpr bool overlaps(std::uint64_t a0,std::uint64_t a1,std::uint64_t b0,std::
 }
 WiiMemory::WiiMemory():mem1_(mem1_size),mem2_(mem2_size){}
 bool WiiMemory::map_device_dual(std::uint32_t base,std::uint32_t size,memory::MemoryMappedDevice& broadway,memory::MemoryMappedDevice& starlet)noexcept{
- if(size==0U||static_cast<std::uint64_t>(base)+size>address_space_size)return false;
- const auto begin=static_cast<std::uint64_t>(base),end=begin+size;
+ const DualDeviceMapping mapping{base,size,&broadway,&starlet};
+ return map_devices_dual(&mapping,1U);
+}
+bool WiiMemory::map_devices_dual(const DualDeviceMapping* mappings,std::size_t count)noexcept{
+ if(mappings==nullptr||count==0U)return false;
  const std::array<std::pair<std::uint32_t,std::size_t>,6> banks{{
   {mem1_cached,mem1_size},{mem1_uncached,mem1_size},{mem1_physical,mem1_size},
   {mem2_cached,mem2_size},{mem2_uncached,mem2_size},{mem2_physical,mem2_size}
  }};
- for(const auto& bank:banks)if(overlaps(begin,end,bank.first,static_cast<std::uint64_t>(bank.first)+bank.second))return false;
- for(const auto& region:devices_)if(overlaps(begin,end,region.base,static_cast<std::uint64_t>(region.base)+region.size))return false;
- try{devices_.push_back({base,size,&broadway,&starlet});}catch(...){return false;}
+ for(std::size_t i=0;i<count;++i){
+  const auto& candidate=mappings[i];
+  if(candidate.size==0U||candidate.broadway==nullptr||candidate.starlet==nullptr)return false;
+  const auto begin=static_cast<std::uint64_t>(candidate.base);
+  const auto end=begin+candidate.size;
+  if(end>address_space_size)return false;
+  for(const auto& bank:banks)if(overlaps(begin,end,bank.first,static_cast<std::uint64_t>(bank.first)+bank.second))return false;
+  for(const auto& region:devices_)if(overlaps(begin,end,region.base,static_cast<std::uint64_t>(region.base)+region.size))return false;
+  for(std::size_t j=0;j<i;++j){
+   const auto other_begin=static_cast<std::uint64_t>(mappings[j].base);
+   const auto other_end=other_begin+mappings[j].size;
+   if(overlaps(begin,end,other_begin,other_end))return false;
+  }
+ }
+ const auto original_size=devices_.size();
+ try{
+  devices_.reserve(original_size+count);
+  for(std::size_t i=0;i<count;++i)devices_.push_back(mappings[i]);
+ }catch(...){devices_.resize(original_size);return false;}
  return true;
 }
 bool WiiMemory::translate(std::uint32_t address,std::uint8_t width,std::vector<std::uint8_t>*& bank,std::size_t& offset)noexcept{
