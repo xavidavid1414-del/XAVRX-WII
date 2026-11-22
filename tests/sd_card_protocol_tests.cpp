@@ -19,6 +19,12 @@ int main() {
     check(r.accepted && r.r1 == 1U && card.state() == SdCardProtocol::State::idle, "CMD0 resets to idle");
     r = card.command(8U, 0x1aaU);
     check(r.accepted && r.value == 0x1aaU, "CMD8 echoes voltage/check pattern");
+    r = card.command(8U, 0x2aaU);
+    check(!r.accepted && (r.r1 & 0x04U) != 0U && card.state() == SdCardProtocol::State::idle, "CMD8 rejects unsupported voltage without changing card state");
+    r = card.command(8U, 0x10001aaU);
+    check(!r.accepted && (r.r1 & 0x04U) != 0U, "CMD8 rejects nonzero reserved argument bits");
+    r = card.command(8U, 0x1abU);
+    check(r.accepted && r.value == 0x1abU, "CMD8 echoes a non-default check pattern");
     r = card.command(55U, 0U);
     check(r.accepted && r.r1 == 1U, "CMD55 arms application command");
     r = card.command(41U, 0x40ff8000U);
