@@ -71,7 +71,9 @@ bool UsbHostController::write(std::uint32_t off,std::uint8_t width,std::uint64_t
  }
 }
 void UsbHostController::connect_device(bool connected)noexcept{
+ const bool was_connected=(port_status_&0x1U)!=0U;
  const bool was_enabled=(port_status_&0x4U)!=0U;
+ if(connected==was_connected)return;
  if(connected){port_status_|=0x3U;return;}
  port_status_&=~0x5U;port_status_|=0x2U;
  if(was_enabled){port_status_&=~0x4U;port_status_|=0x8U;}
