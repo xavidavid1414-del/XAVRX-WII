@@ -92,6 +92,7 @@ void WiiSystem::advance_broadway_cycles(std::uint64_t cycles)noexcept{
   else usb_microframe_phase_+=remainder;
   if(microframes!=0U)usb_host_.advance_microframes(microframes);
  }
+ if(usb_host_.interrupt_pending())hollywood_.interrupts().raise(4U,IrqRoute::Both);
 }
 bool WiiSystem::initialize()noexcept{
  if(initialized_)return true;
