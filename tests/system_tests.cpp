@@ -138,6 +138,8 @@ int main(){using namespace xavrx::system;
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::Success,"DI DICR starts supported read DMA command");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x80004000U,4,value)==xavrx::memory::AccessResult::Success&&value==0x01020304U,"DI register command transfers image bytes into shared MEM1");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,value)==xavrx::memory::AccessResult::Success&&(value&1U)==0U,"DI command start bit self-clears after synchronous completion");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,0xfffffff8U)==xavrx::memory::AccessResult::Success,"DI control accepts writes with reserved bits set");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,value)==xavrx::memory::AccessResult::Success&&value==0U,"DI control register masks reserved bits on write");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4,8U)==xavrx::memory::AccessResult::Success,"DI non-aligned transfer length configured");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::DeviceError,"DI rejects non-32-byte DMA length");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4,32U)==xavrx::memory::AccessResult::Success,"DI restores aligned transfer length");
