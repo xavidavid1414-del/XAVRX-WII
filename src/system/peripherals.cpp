@@ -90,11 +90,13 @@ bool UsbHostController::enqueue_transfer(std::uint32_t token,std::span<const std
  if(pending_.size()>=transfer_capacity||completed_.size()>=transfer_capacity)return false;
  pending_.push_back({token,std::vector<std::uint8_t>(payload.begin(),payload.end())});return true;
 }
-void UsbHostController::advance_microframes(std::uint32_t count)noexcept{
- for(std::uint32_t i=0;i<count;++i){frame_index_=(frame_index_+1U)&0x3fffU;
-  if((command_&cmd_run)==0U||(status_&sts_halted)!=0U||(port_status_&0x4U)==0U||pending_.empty()||completed_.size()>=transfer_capacity)continue;
-  completed_.push_back(std::move(pending_.front()));pending_.pop_front();status_|=sts_usbint;
- }
+void UsbHostController::advance_microframes(std::uint64_t count)noexcept{
+ frame_index_=(frame_index_+static_cast<std::uint32_t>(count&0x3fffU))&0x3fffU;
+ if(count==0U||(command_&cmd_run)==0U||(status_&sts_halted)!=0U||(port_status_&0x4U)==0U)return;
+ const auto available=transfer_capacity-completed_.size();
+ const auto completions=std::min<std::uint64_t>(count,std::min<std::size_t>(pending_.size(),available));
+ for(std::uint64_t i=0;i<completions;++i){completed_.push_back(std::move(pending_.front()));pending_.pop_front();}
+ if(completions!=0U)status_|=sts_usbint;
 }
 bool UsbHostController::take_completed_transfer(Transfer& transfer){if(completed_.empty())return false;transfer=std::move(completed_.front());completed_.pop_front();return true;}
 void UsbHostController::reset()noexcept{RegisterWindow::reset();command_=0;status_=sts_halted;interrupt_enable_=0;frame_index_=0;periodic_base_=0;async_list_=0;config_flag_=0;port_status_=0;pending_.clear();completed_.clear();}
