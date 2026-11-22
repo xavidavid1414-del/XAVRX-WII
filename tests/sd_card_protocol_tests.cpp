@@ -49,6 +49,11 @@ int main() {
     check(r.accepted && card.write_data_block(data) && card.write_data_block(data), "CMD25 writes sequential blocks");
     r = card.command(13U, 0U);
     check(r.accepted && r.value == 0U, "CMD13 reports transfer status");
+    r = card.command(18U, 1U);
+    check(r.accepted, "CMD18 starts transfer before reset regression");
+    r = card.command(0U, 0U);
+    check(r.accepted && card.state() == SdCardProtocol::State::idle &&
+          !card.read_data_block(data), "CMD0 aborts any active data transfer");
     r = card.command(16U, 1024U);
     check(!r.accepted && (r.r1 & 0x04U) != 0U, "reject unsupported block length");
     card.reset();
