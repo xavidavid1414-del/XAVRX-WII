@@ -26,6 +26,17 @@ int main(){using namespace xavrx::system;
  SystemHardware hardware;check(hardware.timers().configure(2,4,false,true),"system hardware timer setup");hardware.advance(4);check(hardware.interrupts().pending(10),"system hardware advances timers into interrupt controller");check(hardware.boot().transition(BootState::BootRom),"system boot controller");hardware.reset();check(hardware.boot().state()==BootState::Off&&!hardware.interrupts().pending(10)&&!hardware.timers().is_enabled(2),"system hardware reset clears state");
  // WiiSystem composition, peripheral MMIO routing and independent AHB gates.
  WiiSystem wii;check(!wii.initialized(),"WiiSystem begins uninitialized");check(wii.initialize()&&wii.initialized(),"WiiSystem initializes shared bus and peripherals");
+ // The composed system routes live states from every controller profile to game actions.
+ check(wii.input_router().add_binding({ControllerType::WiiRemote,InputControl::RemoteA,GameAction::Confirm}),"WiiSystem registers Wii Remote binding");
+ check(wii.input_router().add_binding({ControllerType::Nunchuk,InputControl::NunchukStickX,GameAction::MoveX,1.0F,0.0F,false}),"WiiSystem registers Nunchuk axis binding");
+ check(wii.input_router().add_binding({ControllerType::BalanceBoard,InputControl::BalanceWeightKg,GameAction::WeightKg,1.0F,0.0F,false}),"WiiSystem registers Balance Board weight binding");
+ (void)wii.wii_remote().set_button(WiiRemoteButton::A,true);wii.nunchuk().set_stick(0.75F,0.0F);
+ for(unsigned i=0;i<4U;++i)(void)wii.balance_board().set_corner_calibration(static_cast<BalanceBoardCorner>(i),0.0F,0.01F);
+ wii.balance_board().set_sensor_readings(1000.0F,1000.0F,1000.0F,1000.0F);
+ const auto routed_inputs=wii.route_controller_inputs();
+ check(routed_inputs.pressed(GameAction::Confirm),"WiiSystem routes live Wii Remote buttons");
+ check(routed_inputs.value(GameAction::MoveX)>0.74F&&routed_inputs.value(GameAction::MoveX)<0.76F,"WiiSystem routes live Nunchuk axes");
+ check(routed_inputs.value(GameAction::WeightKg)>0.26F&&routed_inputs.value(GameAction::WeightKg)<0.27F,"WiiSystem routes calibrated Balance Board weight");
  // Broadway-only DSP mailbox, PI interrupt and GX write-gather mappings.
  check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c005000U,2,0x9234U)==xavrx::memory::AccessResult::Success,"Broadway writes DSP mailbox high halfword");
  check(wii.memory().write_as(WiiMemoryCpu::Broadway,0x0c005002U,2,0x5678U)==xavrx::memory::AccessResult::Success,"Broadway writes DSP mailbox low halfword");
