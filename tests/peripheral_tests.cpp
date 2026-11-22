@@ -34,7 +34,7 @@ int main(){
  check(sd.read_blocks(0U,1U,block)&&block[0]==0x42U,"SD block read");
  block[0]=0xa5U;check(sd.write_blocks(1U,1U,block)&&sd.read_blocks(1U,1U,block)&&block[0]==0xa5U,"SD block write/readback");
  check(!sd.read_blocks(4U,1U,block)&&!sd.write_blocks(0U,0U,block),"SD rejects invalid block ranges");
- check(!sd.attach_card({})&&!sd.attach_card(std::vector<std::uint8_t>(block_size-1U)),"SD rejects empty and partial-block card images");
+ check(!sd.attach_card({})&&!sd.attach_card(std::vector<std::uint8_t>(SdHostController::block_size-1U)),"SD rejects empty and partial-block card images");
  std::vector<std::uint8_t> final_block(SdHostController::block_size,0x6cU);
  check(sd.write_blocks(3U,1U,final_block)&&sd.read_blocks(3U,1U,block)&&block==final_block,"SD accesses final valid block");
  check(!sd.read_blocks(0U,1U,std::span<std::uint8_t>{})&&!sd.write_blocks(0U,1U,std::span<const std::uint8_t>{}),"SD rejects buffers whose size does not match block count");
