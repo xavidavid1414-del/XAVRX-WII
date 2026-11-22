@@ -110,6 +110,21 @@ int main(){using namespace xavrx::system;
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d000194U,4,di_release)==xavrx::memory::AccessResult::Success,"Starlet releases both DI reset lines");
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,di_addr,4,0x01020304U)==xavrx::memory::AccessResult::Success,"DI MMIO write after reset release");
  check(wii.memory().read_as(WiiMemoryCpu::Starlet,di_addr,4,value)==xavrx::memory::AccessResult::Success&&value==0x01020304U,"DI MMIO readback through Wii bus");
+ // A documented DI 0xA8 read command is dispatched by DICR and DMA-writes shared MEM1.
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806008U,4,0xa8000000U)==xavrx::memory::AccessResult::Success,"DI command buffer 0 accepts read command");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80600cU,4,0U)==xavrx::memory::AccessResult::Success,"DI command buffer 1 sets image byte offset");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806010U,4,8U)==xavrx::memory::AccessResult::Success,"DI command buffer 2 sets transfer size");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806014U,4,0x80004000U)==xavrx::memory::AccessResult::Success,"DI DMA destination configured");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806018U,4,8U)==xavrx::memory::AccessResult::Success,"DI DMA length configured");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::Success,"DI DICR starts supported read DMA command");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x80004000U,4,value)==xavrx::memory::AccessResult::Success&&value==0x10325476U,"DI register command transfers image bytes into shared MEM1");
+ check(wii.memory().read_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,value)==xavrx::memory::AccessResult::Success&&(value&1U)==0U,"DI command start bit self-clears after synchronous completion");
+ // Unsupported command and invalid destination are rejected without changing RAM.
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806008U,4,0x12000000U)==xavrx::memory::AccessResult::Success,"DI stores an unsupported command for rejection test");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::DeviceError,"DI rejects unsupported command opcode");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806008U,4,0xa8000000U)==xavrx::memory::AccessResult::Success,"DI restores supported read opcode");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d806014U,4,0x0d010000U)==xavrx::memory::AccessResult::Success,"DI invalid MMIO destination configured");
+ check(wii.memory().write_as(WiiMemoryCpu::Starlet,0x0d80601cU,4,3U)==xavrx::memory::AccessResult::DeviceError,"DI rejects MMIO DMA destination atomically");
  // Internal WLAN uses SD1 AHB permissions, independently of the removable SD0 host.
  const std::uint32_t wlan_addr=0x0d080024U;
  check(wii.memory().write_as(WiiMemoryCpu::Starlet,wlan_addr,4,0x00010000U)==xavrx::memory::AccessResult::DeviceError,"WLAN SDIO denied without SD1 permission");

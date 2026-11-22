@@ -26,7 +26,20 @@ bool DriveResetView::read(std::uint32_t offset,std::uint8_t width,std::uint64_t&
 }
 bool DriveResetView::write(std::uint32_t offset,std::uint8_t width,std::uint64_t value)noexcept{
  if(control_.di_io_reset_asserted()||control_.di_reset_b_asserted())return false;
- return device_.write(offset,width,value);
+ if(!device_.write(offset,width,value))return false;
+ if(offset!=0x1cU||width!=4U||(value&1U)==0U)return true;
+ bool completed=false;
+ if((value&2U)!=0U){
+  std::uint64_t command=0U,source=0U,length=0U,destination=0U,requested=0U;
+  if(device_.read(0x08U,4U,command)&&device_.read(0x0cU,4U,source)&&device_.read(0x10U,4U,length)&&device_.read(0x14U,4U,destination)&&device_.read(0x18U,4U,requested)&&
+     (static_cast<std::uint32_t>(command)>>24U)==0xa8U&&length==requested&&length>0U&&length<=0xffffffffULL){
+   std::vector<std::uint8_t> bytes;
+   try{bytes.resize(static_cast<std::size_t>(length));}catch(...){bytes.clear();}
+   if(bytes.size()==length&&device_.read_disc_bytes(source,bytes)&&memory_.write_bytes_as(cpu_,static_cast<std::uint32_t>(destination),bytes)==memory::AccessResult::Success)completed=true;
+  }
+ }
+ (void)device_.write(0x1cU,4U,static_cast<std::uint32_t>(value)&~1U);
+ return completed;
 }
 WiiSystem::WiiSystem()
  :nand_broadway_(nand_,hollywood_.system_control(),HollywoodCpu::Broadway,HollywoodEngine::FlashNand),
@@ -37,7 +50,8 @@ WiiSystem::WiiSystem()
   usb_starlet_(usb_host_,hollywood_.system_control(),HollywoodCpu::Starlet,HollywoodEngine::Ehci),
   wlan_broadway_(wlan_,hollywood_.system_control(),HollywoodCpu::Broadway,HollywoodEngine::Sd1),
   wlan_starlet_(wlan_,hollywood_.system_control(),HollywoodCpu::Starlet,HollywoodEngine::Sd1),
-  drive_broadway_(drive_,hollywood_.system_control()),drive_starlet_(drive_,hollywood_.system_control()){}
+  drive_broadway_(drive_,hollywood_.system_control(),memory_,WiiMemoryCpu::Broadway),
+  drive_starlet_(drive_,hollywood_.system_control(),memory_,WiiMemoryCpu::Starlet){}
 GameInputState WiiSystem::route_controller_inputs()const noexcept{
  GameInputState combined{};
  const auto merge=[this,&combined](const ControllerInputFrame& frame){

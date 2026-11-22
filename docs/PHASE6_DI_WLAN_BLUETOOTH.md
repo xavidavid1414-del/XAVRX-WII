@@ -21,3 +21,9 @@ Hollywood IPC control writes now latch IRQ 30/31 when an enabled Y/X flag is ack
 
 ## GPIO level-sensitive IRQ reassertion
 When Broadway or Starlet acknowledges its Hollywood IRQ flag register, the GPIO interrupt outputs are reevaluated immediately. A still-active, enabled and unmasked GPIO level therefore reasserts its routed IRQ without waiting for another input transition. Regression coverage acknowledges IRQ 10 while its source pin remains active.
+
+
+## DI command/DMA integration
+The Broadway and Starlet DI MMIO views now dispatch the documented 0xA8 read command when DICR is written with TSTART and DMA enabled. The command uses CMDBUF1 as the byte offset, CMDBUF2 and DILENGTH as the transfer size, and DIMAR as the destination. Transfers are synchronous, read-only, and atomically committed to the selected CPU's shared Wii RAM view. TSTART self-clears after dispatch. Unsupported opcodes, missing images, mismatched lengths, and invalid RAM destinations fail without a partial RAM write. This remains a narrow command subset: the full DISR interrupt/status behavior, cover state, asynchronous timing, and other DI opcodes are not implemented.
+
+Reference: [WiiBrew Drive Interface register map](https://wiibrew.org/wiki/Hardware/Drive_Interface) and [WiiBrew /dev/di command notes](https://wiibrew.org/wiki//dev/di).

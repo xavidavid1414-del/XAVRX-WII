@@ -26,12 +26,14 @@ private:
 };
 class DriveResetView final : public memory::MemoryMappedDevice {
 public:
- DriveResetView(DriveInterface& device,HollywoodSystemControl& control) noexcept:device_(device),control_(control){}
+ DriveResetView(DriveInterface& device,HollywoodSystemControl& control,WiiMemory& memory,WiiMemoryCpu cpu) noexcept:device_(device),control_(control),memory_(memory),cpu_(cpu){}
  [[nodiscard]] bool read(std::uint32_t offset,std::uint8_t width,std::uint64_t& value) noexcept override;
  [[nodiscard]] bool write(std::uint32_t offset,std::uint8_t width,std::uint64_t value) noexcept override;
 private:
  DriveInterface& device_;
  HollywoodSystemControl& control_;
+ WiiMemory& memory_;
+ WiiMemoryCpu cpu_;
 };
 class DeniedDeviceView final : public memory::MemoryMappedDevice {
 public:
