@@ -3,6 +3,8 @@ namespace xavrx::system {
 bool DspMailboxInterface::read(std::uint32_t off,std::uint8_t width,std::uint64_t& value) noexcept {
  if(width!=2U)return false;
  switch(off){
+ case 0x00U: value=in_high_;return true;
+ case 0x02U: value=in_low_;return true;
  case 0x04U: value=static_cast<std::uint16_t>((out_high_&0x7fffU)|(output_pending_?0x8000U:0U));return true;
  case 0x06U: value=out_low_;output_pending_=false;return true;
  default:return false;
