@@ -95,7 +95,8 @@ int main(){
  check(bt.submit_host_packet(command)&&bt.take_device_packet(packet)&&packet.size()==sizeof(command),"Bluetooth HCI command transport");
  const std::uint8_t reset_command[]={0x01U,0x03U,0x0cU,0x00U},address_command[]={0x01U,0x09U,0x10U,0x00U},unknown_command[]={0x01U,0xffU,0xffU,0x00U};
  check(bt.process_host_command(reset_command,packet)&&packet.size()==7U&&packet[0]==0x04U&&packet[1]==0x0eU&&packet[6]==0U,"Bluetooth HCI Reset command complete event");
- check(bt.process_host_command(address_command,packet)&&packet.size()==13U&&packet[7]==0x02U,"Bluetooth HCI Read BD_ADDR response");
+ check(bt.process_host_command(address_command,packet)&&packet.size()==13U&&packet[1]==0x0eU&&packet[2]==10U&&packet[3]==1U&&packet[4]==0x09U&&packet[5]==0x10U&&packet[6]==0U&&packet[7]==0x02U&&packet[12]==0x01U,"Bluetooth HCI Read BD_ADDR response fields and address");
+ 
  check(bt.process_host_command(unknown_command,packet)&&packet.size()==7U&&packet[6]==1U,"Bluetooth HCI unknown command status");
  const std::uint8_t malformed_command[]={0x01U,0x03U,0x0cU,0x01U};check(!bt.process_host_command(malformed_command,packet),"Bluetooth HCI command parser rejects malformed parameter length");
 
@@ -104,7 +105,9 @@ int main(){
  check(bt.submit_device_packet(acl)&&bt.take_host_packet(packet)&&packet.size()==sizeof(acl),"Bluetooth ACL device-to-host transport");
  const std::uint8_t malformed[]={0x01U,0x03U,0x0cU,0x01U};check(!bt.submit_host_packet(malformed)&&!bt.submit_device_packet(command),"Bluetooth rejects malformed packet directions");
  for(std::size_t i=0;i<BluetoothHciTransport::queue_capacity;++i)check(bt.submit_host_packet(command),"Bluetooth queue accepts bounded packets");
- check(!bt.submit_host_packet(command),"Bluetooth queue capacity enforced");bt.reset();check(bt.host_queue_size()==0U&&bt.device_queue_size()==0U,"Bluetooth reset clears queues");
+ check(!bt.submit_host_packet(command),"Bluetooth queue capacity enforced");for(std::size_t i=0;i<BluetoothHciTransport::queue_capacity;++i)check(bt.submit_device_packet(event),"Bluetooth device-to-host queue accepts capacity");
+ check(!bt.submit_device_packet(event),"Bluetooth device-to-host queue capacity enforced");
+ bt.reset();check(bt.host_queue_size()==0U&&bt.device_queue_size()==0U,"Bluetooth reset clears queues");
  nand.reset();check(nand.read(0x00U,4,value)&&value==0U,"NAND reset clears controller registers but retains flash contents");
  if(failures){std::cerr<<failures<<" peripheral test(s) failed\n";return 1;}std::cout<<"All peripheral controller tests passed\n";return 0;
 }
