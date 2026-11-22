@@ -11,7 +11,11 @@ The Wii memory object models 24 MiB of MEM1 and 64 MiB of MEM2 with shared backi
 | MEM1 | 0x80000000 | 0xC0000000 | 0x00000000 | 24 MiB |
 | MEM2 | 0x90000000 | 0xD0000000 | 0x10000000 | 64 MiB |
 
-Access widths, natural alignment, bank boundaries, and big-endian reads/writes are checked. MMU/BAT translation, cache behavior, SRAM, MEM2 reservation/protection, and the complete memory map are not yet implemented.
+Access widths, natural alignment, bank boundaries, and big-endian reads/writes are checked. MMU/BAT translation, cache behavior, MEM2 reservation/protection, and the complete memory map are not yet implemented.
+
+## Starlet internal SRAM and BOOT0 mapping
+The Starlet memory model provides independent 64 KiB SRAM bank A and 32 KiB SRAM bank B, the 128 KiB window at 0x0D400000, and the 1 MiB high-address mirror range beginning at 0xFFF00000. The seven 128 KiB windows below 0xFFFE0000 mirror the 0x0D400000 window. The 0xFFFE0000 and 0xFFFF0000 windows have their documented special SRAM/BOOT0 roles. HW_SRNPROT (0x60) bit 5 selects the bank arrangement; bit 3 gates Broadway access to SRAM. HW_BOOT0 (0x18C) bit 12 hides BOOT0 and exposes the selected SRAM arrangement. Switching these registers changes the mapping without moving SRAM contents.
+The 8 KiB BOOT0 image is not fabricated or embedded. A caller must supply the exact ROM image through the explicit load interface; until then, mapped BOOT0 reads fail instead of returning invented instructions. ROM is read-only. Tests use a synthetic fixture solely to verify mapping, mirroring, repetition, endianness, and access gating; it is not represented as Nintendo firmware.
 
 ## Hollywood interrupt controller
 The model implements independent 32-bit Broadway and Starlet IRQ flag/mask pairs at offsets 0x30, 0x34, 0x38, and 0x3C, plus the Starlet FIQ mask at 0x40. Sources can be routed to Broadway, Starlet, or both. Flags are write-one-to-clear; masks gate each processor's interrupt independently. The FIQ output is derived from Starlet pending flags AND the FIQ mask. Current event sources include Starlet timer (0), GPIOB (10), GPIO (11), IPC-to-Broadway (30), and IPC-to-Starlet (31). Other IRQ sources still need their corresponding devices and event sources.
@@ -40,6 +44,7 @@ WiiSystem composes WiiMemory, generic system hardware, and HollywoodHardware. Em
 - [WiiBrew: Hardware IPC](https://wiibrew.org/wiki/Hardware/IPC)
 - [WiiBrew: Main memory](https://wiibrew.org/wiki/Hardware/Main_Memory)
 - [EmuDocs: Starlet timer and alarm](https://emudocs.layle.dev/GameCube%20%26%20Wii/Starlet/)
+- [EmuDocs: Starlet SRAM and BOOT0 mapping](https://emudocs.layle.dev/GameCube%20%26%20Wii/Starlet/)
 
 ## Remaining Phase 6 work
 Phase 6 remains open. Still missing a functional watchdog, full reset/PLL sequencing and clock-domain reconfiguration, enforcement of individual AHB engine permissions, SRAM/boot ROM, NAND/SD/USB/Wi-Fi/Bluetooth/disc controllers, DSP/GPU devices, device timing, and integration with running Broadway and Starlet execution environments. Register semantics and permissions must continue to be checked against hardware documentation and regression tests. Phase 7 remains blocked.
