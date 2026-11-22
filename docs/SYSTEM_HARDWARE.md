@@ -37,6 +37,9 @@ The Starlet-only HW_CLOCKS register at offset 0x190 stores the documented FX and
 Hollywood registers are 32-bit, naturally aligned, big-endian. Broadway and Starlet access views are installed into the same WiiMemory object at 0x0D000000 and 0x0D800000. The bus selects the correct CPU-specific device view from the initiating CPU, while MEM1/MEM2 remain shared between both processors. Broadway access to Starlet-private registers is rejected unless PPCKERN is set; Starlet receives the full view. The generic MemoryMappedDevice bus is also retained for isolated component tests.
 WiiSystem composes WiiMemory, generic system hardware, and HollywoodHardware. Emulator::initialize() creates and maps this hardware composition; reset() resets the RAM and modeled hardware state. This is hardware-system initialization only, not a playable emulation loop or firmware boot.
 
+## Initial NAND, SD and USB register windows
+The first peripheral group adds isolated register-window scaffolding for the Wii NAND interface (0x0D010000, 0x1C bytes), SD host controller (0x0D070000, 0x200 bytes), and EHCI USB controller (0x0D040000, 0x100 bytes). NAND accesses are big-endian; the documented SDHC and EHCI windows use reversed little-endian register words. The initial model accepts aligned 32-bit accesses only and rejects offsets not listed in its implemented register subset. This is deliberately not a claim of working NAND commands, SD card transfers, USB enumeration, DMA, interrupts, W1C behavior, or device reset sequencing. The windows are currently isolated components and are not yet connected to WiiSystem's MMIO map or AHB/SRNPROT enforcement. Their register semantics and integration remain future work.
+
 ## References
 - [WiiBrew: Hollywood registers](https://wiibrew.org/wiki/Hollywood/Registers)
 - [WiiBrew: Hollywood IRQs](https://wiibrew.org/wiki/Hollywood/IRQs)
