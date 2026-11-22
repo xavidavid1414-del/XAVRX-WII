@@ -49,7 +49,7 @@ int main(){
  check(!hw.read_as(HollywoodCpu::Broadway,0x40,4,value),"Broadway cannot access Starlet FIQ mask");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,0xffffffffU),"Starlet writes reset control register");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,value)&&value==HollywoodSystemControl::resets_writable_mask,"reserved reset bit is masked");
- check(hw.system_control().reset_released(1U),"reset line state can be inspected");
+ check(hw.system_control().reset_released(1U),"reset line state can be inspected");\n check(!hw.system_control().di_reset_asserted(),"DI reset is released when HW_RESETS bit 10 is set");\n check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask&~HollywoodSystemControl::di_reset_bit),"Starlet asserts documented DI reset");\n check(hw.system_control().di_reset_asserted(),"DI reset is asserted when HW_RESETS bit 10 is clear");\n check(hw.write_as(HollywoodCpu::Starlet,HollywoodSystemControl::resets_register,4,HollywoodSystemControl::resets_writable_mask),"Starlet releases documented DI reset");\n check(!hw.system_control().di_reset_asserted(),"DI reset release is reflected immediately");
  check(hw.write_as(HollywoodCpu::Starlet,HollywoodTimer::alarm_register,4,3U),"Starlet programs timer alarm");
  check(!hw.write_as(HollywoodCpu::Broadway,HollywoodTimer::alarm_register,4,9U),"Broadway cannot program Starlet alarm");
  check(hw.read_as(HollywoodCpu::Starlet,HollywoodTimer::timer_register,4,value)&&value==0U,"Starlet reads timer counter");
