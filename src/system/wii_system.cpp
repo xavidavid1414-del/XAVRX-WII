@@ -93,12 +93,7 @@ bool WiiSystem::read_disc_to_memory(WiiMemoryCpu cpu,std::uint64_t disc_offset,s
  std::vector<std::uint8_t> transfer;
  try{transfer.resize(byte_count);}catch(...){return false;}
  if(!drive_.read_disc_bytes(disc_offset,transfer))return false;
- for(std::uint32_t i=0;i<byte_count;++i){
-  const auto address=static_cast<std::uint64_t>(destination)+i;
-  if(address>0xffffffffULL)return false;
-  if(memory_.write_as(cpu,static_cast<std::uint32_t>(address),1U,transfer[i])!=memory::AccessResult::Success)return false;
- }
- return true;
+ return memory_.write_bytes_as(cpu,destination,transfer)==memory::AccessResult::Success;
 }
 bool WiiSystem::process_bluetooth_host_command(HollywoodCpu cpu,std::span<const std::uint8_t> command,std::vector<std::uint8_t>& event){
  return hollywood_.system_control().engine_access_allowed(cpu,HollywoodEngine::Usb1)&&bluetooth_hci_.process_host_command(command,event);
