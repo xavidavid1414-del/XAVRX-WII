@@ -51,9 +51,9 @@ int main(){
  check(usb.enqueue_transfer(0x2222U,payload),"EHCI accepts transfer before disconnect test");
  usb.connect_device(false);usb.advance_microframes(2U);
  check(usb.pending_transfers()==1U&&usb.completed_transfers()==0U,"EHCI does not complete transfers while port is disconnected");
- usb.connect_device(true);usb.write(0x10U,4,0U);usb.advance_microframes(1U);
+ usb.connect_device(true);(void)usb.write(0x10U,4,0U);usb.advance_microframes(1U);
  check(usb.pending_transfers()==1U,"EHCI does not complete transfers while controller is halted");
- usb.write(0x10U,4,1U);usb.advance_microframes(1U);
+ (void)usb.write(0x10U,4,1U);usb.advance_microframes(1U);
  check(usb.take_completed_transfer(transfer)&&transfer.token==0x2222U,"EHCI resumes queued transfer after reconnect and run");
  for(std::size_t i=0;i<UsbHostController::transfer_capacity;++i)check(usb.enqueue_transfer(static_cast<std::uint32_t>(i),payload),"EHCI pending queue accepts capacity");
  check(!usb.enqueue_transfer(0xffffffffU,payload),"EHCI rejects transfer beyond pending queue capacity");
@@ -62,7 +62,7 @@ int main(){
  check(!usb.enqueue_transfer(0xffffffffU,payload),"EHCI backpressure applies while completion queue is full");
  for(std::size_t i=0;i<UsbHostController::transfer_capacity;++i)check(usb.take_completed_transfer(transfer),"EHCI completion queue drains in bounded order");
  check(usb.enqueue_transfer(0xabcdefU,payload),"EHCI accepts transfers after completion queue drains");
- usb.reset();
+
  check(usb.read(0x14U,4,value)&&(value&1U)!=0U,"EHCI raises USB interrupt status on completion");
  check(usb.write(0x14U,4,1U)&&usb.read(0x14U,4,value)&&(value&1U)==0U,"EHCI interrupt status is write-one-to-clear");
  check(usb.write(0x10U,4,2U)&&usb.read(0x14U,4,value)&&(value&(1U<<12U))!=0U,"EHCI controller reset halts controller");
