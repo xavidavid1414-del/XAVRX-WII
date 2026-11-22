@@ -249,6 +249,11 @@ int main() {
             drawMenu(topConsole, bottomConsole, selected, emulator);
             break;
 
+        case Screen::SystemStatus:
+            if ((down & KEY_B) != 0) screen = Screen::Menu;
+            if (screen == Screen::SystemStatus) drawSystemStatus(topConsole, bottomConsole, emulator);
+            break;
+
         case Screen::Games:
             if ((down & KEY_A) != 0) {
                 screen = Screen::BalanceDemo;
