@@ -19,8 +19,8 @@ int clampMap(int value) { return (value + 14) % 14; }
 
 void drawHome(PrintConsole& top, PrintConsole& bottom) {
  consoleSelect(&top); consoleClear();
- std::printf("XAVRX-WII                                      V1.0.0-alpha.5\n");
- std::printf("============================================================\n");
+ std::printf("XAVRX-WII | alpha.5\n");
+ std::printf("================================================\n");
  std::printf("                    WII EMULATOR\n\n");
  for(int i=0;i<5;i++) std::printf("%s  %s\n", i==selected?">":" ", menu[i]);
  std::printf("\n------------------------------------------------------------\n");
@@ -29,7 +29,7 @@ void drawHome(PrintConsole& top, PrintConsole& bottom) {
  std::printf("GAMES   Wii disc loading: not implemented\n");
  std::printf("\nD-PAD: navigate     A: select     START: exit\n");
  consoleSelect(&bottom); consoleClear();
- std::printf("                                           [ SETTINGS ]\n");
+ std::printf("                  [ SETTINGS ]\n");
  std::printf("                                      Touch the gear area\n\n\n");
  if(!settingsOpen) {
   std::printf("                 XAVRX CONTROL PANEL\n\n");
@@ -54,8 +54,8 @@ void drawMapRows(const char* const* names, const int* values, int count, int bas
 
 void drawControllers(PrintConsole& top, PrintConsole& bottom) {
  consoleSelect(&top); consoleClear();
- std::printf("XAVRX-WII                                      V1.0.0-alpha.5\n");
- std::printf("============================================================\n");
+ std::printf("XAVRX-WII | alpha.5\n");
+ std::printf("================================================\n");
  std::printf("             NINTENDO 2DS XL CONTROLLER MAP\n\n");
  for(int i=0;i<6;i++) std::printf("%s  %s\n",i==control?">":" ",controls[i]);
  std::printf("\nUP/DOWN: controller  L/R: mapping row\nB: back  A: change selected mapping  X: reset\n");
