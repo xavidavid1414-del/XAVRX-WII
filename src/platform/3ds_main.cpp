@@ -15,7 +15,7 @@ int selected=0, category=0, control=0;
 bool settingsOpen=false;
 void frame(PrintConsole& top, PrintConsole& bottom) {
  consoleSelect(&top); consoleClear();
- std::printf("XAVRX-WII                                      V1.0.0-alpha.2\n");
+ std::printf("XAVRX-WII                                      V1.0.0-alpha.3\n");
  std::printf("============================================================\n");
  std::printf("                    WII EMULATOR\n\n");
  for(int i=0;i<5;i++) std::printf("%s  %s\n", i==selected?">":" ", menu[i]);
@@ -70,23 +70,24 @@ int main() {
    if(down&KEY_A) {
     if(selected==0) panel=Panel::System;
     else if(selected==1) panel=Panel::LoadGame;
-    else if(selected==3) {settingsOpen=true;panel=Panel::Settings;}
+    else if(selected==2) panel=Panel::Controllers;
+    else if(selected==3) panel=Panel::Settings;
     else if(selected==4) panel=Panel::About;
    }
    touchPosition touch{};
-   if(down&KEY_TOUCH) { hidTouchRead(&touch); if(touch.px>=270 && touch.py<=42) {settingsOpen=true;panel=Panel::Settings;} }
+   if(down&KEY_TOUCH) { hidTouchRead(&touch); if(touch.px>=270 && touch.py<=42) panel=Panel::Settings; }
    frame(top,bottom);
   } else if(panel==Panel::Settings) {
    touchPosition touch{};
    if(down&KEY_TOUCH) {
     hidTouchRead(&touch);
-    if(touch.px>=270 && touch.py<=42) {settingsOpen=false;panel=Panel::Home;}
+    if(touch.px>=270 && touch.py<=42) panel=Panel::Home;
     else if(touch.py>=58 && touch.py<208) {
      int pick=(touch.py-58)/25; if(pick>=0&&pick<6) category=pick;
      else if(category==0) control=(touch.py-58)/25;
     }
    }
-   if(down&KEY_B) {settingsOpen=false;panel=Panel::Home;}
+   if(down&KEY_B) panel=Panel::Home;
    if(down&KEY_UP) category=(category+5)%6;
    if(down&KEY_DOWN) category=(category+1)%6;
    frame(top,bottom);
