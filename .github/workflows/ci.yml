@@ -89,7 +89,7 @@ jobs:
                   raise SystemExit(f"{name}: file is too small")
               if name.endswith(".3dsx") and data[:4] != magic:
                   raise SystemExit(f"{name}: invalid 3DSX magic")
-              if name.endswith(".cia") and b"NCCH" not in data[:0x2000]:
+              if name.endswith(".cia") and b"NCCH" not in data:
                   raise SystemExit(f"{name}: NCCH content header not found")
               print(f"Verified {name}: {len(data)} bytes")
           PY
