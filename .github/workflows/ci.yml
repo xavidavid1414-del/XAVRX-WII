@@ -1,5 +1,8 @@
 name: Build and Test
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
@@ -103,3 +106,32 @@ jobs:
             XAVRX-WII.cia
           if-no-files-found: error
           retention-days: 14
+
+  publish-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, build-3ds]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified 3DS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: XAVRX-WII-3DS-Builds
+          path: release-files
+
+      - name: Publish GitHub prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-alpha.1
+          target_commitish: ${{ github.sha }}
+          name: XAVRX-WII V1.0.0-alpha.1
+          prerelease: true
+          generate_release_notes: true
+          overwrite_files: true
+          files: |
+            release-files/XAVRX-WII.3dsx
+            release-files/XAVRX-WII.cia
+          body: |
+            XAVRX-WII V1 alpha.
+
+            Includes Nintendo 3DS homebrew packages (.3dsx and .cia).
+            This release verifies compilation and packaging only. Wii game execution is not yet implemented or verified.
