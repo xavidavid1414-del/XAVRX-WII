@@ -7,7 +7,7 @@
 namespace {int failures=0;void check(bool ok,const char* message){if(!ok){std::cerr<<"FAIL: "<<message<<'\n';++failures;}}}
 int main(){
  xavrx::Emulator emulator;
- check(xavrx::Emulator::version()==std::string_view{"1.0.0-alpha.1"},"version smoke test");
+ check(xavrx::Emulator::version()==std::string_view{"1.0.0-alpha.2"},"version smoke test");
  check(!emulator.initialized(),"fresh emulator is not initialized");
  check(emulator.initialize(),"initialize composed Wii hardware");
  check(emulator.initialized(),"emulator reports initialized after hardware setup");
