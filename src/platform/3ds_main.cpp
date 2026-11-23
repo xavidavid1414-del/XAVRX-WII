@@ -35,7 +35,7 @@ void drawHome(PrintConsole& top, PrintConsole& bottom) {
   std::printf("             Select the gear to open settings.\n");
   std::printf("             The lower screen is touch-enabled.\n");
  } else {
-  std::printf("                 SETTINGS\n-------------------------------\n");
+  std::printf("                 SETTINGS\n");
   for(int i=0;i<6;i++) std::printf("%s %s\n", i==category?">":" ", categories[i]);
   if(category==0) {
    std::printf("\nCONTROLS\n");
