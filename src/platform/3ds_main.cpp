@@ -51,23 +51,40 @@ void frame(PrintConsole& top, PrintConsole& bottom) {
 }
 void drawControllers(PrintConsole& top, PrintConsole& bottom) {
  consoleSelect(&top); consoleClear();
- std::printf("XAVRX-WII                                      V1.0.0-alpha.3\\n");
+ std::printf("XAVRX-WII                                      V1.0.0-alpha.4\\n");
  std::printf("============================================================\\n");
- std::printf("                    CONTROLLERS\\n\\n");
- for(int i=0;i<5;i++) std::printf("%s  %s\\n",i==control?">":" ",controls[i]);
- std::printf("\\nD-PAD: navigate   B: back\\n");
+ std::printf("             NINTENDO 2DS XL CONTROLLER MAP\\n\\n");
+ for(int i=0;i<3;i++) std::printf("%s  %s\\n",i==control?">":" ",controls[i]);
+ std::printf("\\nD-PAD: select controller   B: back\\n");
  consoleSelect(&bottom); consoleClear();
- std::printf("                 CONTROL DETAILS\\n");
- std::printf("-------------------------------\\n");
+ std::printf("       %s -> 2DS XL\\n", controls[control]);
+ std::printf("--------------------------------\\n");
  if(control==0) {
-  for(int i=0;i<5;i++) std::printf("%s\\n",remote[i]);
+  std::printf("Wii A       = 2DS A\\nWii B       = 2DS B\\n");
+  std::printf("Wii 1       = 2DS X\\nWii 2       = 2DS Y\\n");
+  std::printf("Wii +       = START\\nWii -       = SELECT\\n");
+  std::printf("Wii HOME    = HOME\\nWii D-Pad   = 2DS D-Pad\\n");
+  std::printf("Pointer     = C-Stick\\n");
  } else if(control==1) {
-  for(int i=0;i<3;i++) std::printf("%s\\n",nunchuk[i]);
+  std::printf("Nunchuk Stick = Circle Pad\\n");
+  std::printf("Nunchuk C     = 2DS L\\nNunchuk Z     = 2DS R\\n");
+  std::printf("Wii A         = 2DS A\\nWii B         = 2DS B\\n");
+  std::printf("Wii D-Pad     = 2DS D-Pad\\n");
  } else if(control==2) {
-  for(int i=0;i<4;i++) std::printf("%s\\n",classic[i]);
- } else if(control==3) std::printf("Controller profile storage is not implemented.\\n");
- else std::printf("Calibration is not implemented.\\n");
- std::printf("\\nWii Bluetooth pairing is not implemented.\\n");
+  std::printf("Classic A   = 2DS A\\nClassic B   = 2DS B\\n");
+  std::printf("Classic X   = 2DS X\\nClassic Y   = 2DS Y\\n");
+  std::printf("Classic L   = 2DS L\\nClassic R   = 2DS R\\n");
+  std::printf("Classic ZL  = 2DS ZL\\nClassic ZR  = 2DS ZR\\n");
+  std::printf("Left Stick  = Circle Pad\\nRight Stick = C-Stick\\n");
+  std::printf("+ / -       = START / SELECT\\n");
+  std::printf("D-Pad       = 2DS D-Pad\\n");
+ } else if(control==3) {
+  std::printf("Controller Profiles\\nProfile saving is not implemented.\\n");
+ } else {
+  std::printf("Calibrate Controls\\nCalibration is not implemented.\\n");
+ }
+ std::printf("\\nDEFAULT MAPPING PREVIEW\\n");
+ std::printf("Input backend connection: pending\\n");
 }
 void drawSimple(PrintConsole& top, PrintConsole& bottom, const char* heading, const char* a, const char* b) {
  consoleSelect(&top); consoleClear(); std::printf("%s\n================================\n%s\n%s\n",heading,a,b);
@@ -113,6 +130,7 @@ int main() {
    frame(top,bottom);
   } else {
    if(down&KEY_B) panel=Panel::Home;
+   if(panel==Panel::Controls) { if(down&KEY_UP) control=(control+4)%5; if(down&KEY_DOWN) control=(control+1)%5; drawControllers(top,bottom); }
    if(panel==Panel::System) drawSimple(top,bottom,"WII SYSTEM STATUS",emulator.initialized()?"Hardware initialization: OK":"Hardware initialization: FAILED","Broadway / Hollywood / Starlet remain partial.");
    if(panel==Panel::LoadGame) drawSimple(top,bottom,"LOAD WII GAME","No Wii ISO/WBFS loader is available yet.","Disc parsing and game execution are not implemented.");
    if(panel==Panel::About) drawSimple(top,bottom,"ABOUT XAVRX-WII","Experimental Wii emulator for Nintendo 3DS.","Build package does not imply Wii game compatibility.");
