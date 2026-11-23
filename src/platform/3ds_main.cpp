@@ -10,12 +10,12 @@ namespace {
 enum class Screen { Menu, SystemStatus, Games, Controllers, BalanceBoard, Settings, About, BalanceDemo };
 
 constexpr const char* menuItems[] = {
-    "Iniciar sistema Wii",
-    "Juegos / demos",
-    "Mandos y controles",
+    "Start Wii system",
+    "Games / demos",
+    "Controllers",
     "Wii Balance Board",
-    "Configuracion",
-    "Acerca de"
+    "Settings",
+    "About"
 };
 constexpr int menuCount = static_cast<int>(sizeof(menuItems) / sizeof(menuItems[0]));
 
@@ -27,11 +27,11 @@ constexpr const char* controllerNames[] = {
     "Wii MotionPlus (opcional)"
 };
 constexpr const char* controllerDetails[] = {
-    "Cruceta, A/B, +/-, HOME, 1/2, movimiento y puntero IR.",
-    "Stick analogico, C/Z y acelerometro.",
-    "Dos sticks, cruceta, A/B/X/Y, L/R/ZL/ZR, +/- y HOME.",
-    "Dos sticks, cruceta, A/B/X/Y, L/R/ZL/ZR, +/- y HOME.",
-    "Extension de movimiento para el Wii Remote."
+    "D-pad, A/B, +/-, HOME, 1/2, motion and IR pointer.",
+    "Analog stick, C/Z and accelerometer.",
+    "Dual sticks, D-pad, A/B/X/Y, L/R/ZL/ZR, +/- and HOME.",
+    "Dual sticks, D-pad, A/B/X/Y, L/R/ZL/ZR, +/- and HOME.",
+    "Motion extension for the Wii Remote."
 };
 
 void clearScreens(PrintConsole& top, PrintConsole& bottom) {
@@ -60,7 +60,7 @@ void drawMenu(PrintConsole& top, PrintConsole& bottom, int selected,
         std::printf("%s %s\n", i == selected ? ">" : " ", menuItems[i]);
     }
     std::printf("\nEstado del sistema: %s\n",
-                emulator.initialized() ? "inicializado" : "no inicializado");
+                emulator.initialized() ? "initialized" : "not initialized");
     std::printf("Build: homebrew experimental para 3DS\n");
 
     consoleSelect(&bottom);
@@ -68,14 +68,14 @@ void drawMenu(PrintConsole& top, PrintConsole& bottom, int selected,
     std::printf("Cruceta: mover   A: seleccionar\n");
     std::printf("B: volver        START: salir\n\n");
     std::printf("Aviso: aun no ejecuta juegos comerciales de Wii.\n");
-    std::printf("La demo incluida es un minijuego nativo de 3DS.");
+    std::printf("The included demo is a native 3DS minigame.");
 }
 
 void drawSystemStatus(PrintConsole& top, PrintConsole& bottom, const xavrx::Emulator& emulator) {
     clearScreens(top, bottom);
     std::printf("ESTADO DEL SISTEMA WII\\n");
     std::printf("==============================\\n");
-    std::printf("Inicializacion: %s\\n", emulator.initialized() ? "correcta" : "fallida");
+    std::printf("Inicializacion: %s\\n", emulator.initialized() ? "successful" : "failed");
     std::printf("Memoria y dispositivos: modelo experimental\\n");
     std::printf("CPU Broadway: nucleo en desarrollo\\n");
     std::printf("CPU Starlet: nucleo en desarrollo\\n");
@@ -98,7 +98,7 @@ void drawGames(PrintConsole& top, PrintConsole& bottom) {
     std::printf("IMPORTANTE\n");
     std::printf("Esta demo permite probar el menu, la entrada analogica\n");
     std::printf("y el medidor visual de cuatro sensores. No es Wii Fit\n");
-    std::printf("ni ejecuta un archivo de juego de Wii.");
+    std::printf("and cannot run Wii game files.");
 }
 
 void drawControllers(PrintConsole& top, PrintConsole& bottom, int selected) {
@@ -113,7 +113,7 @@ void drawControllers(PrintConsole& top, PrintConsole& bottom, int selected) {
     std::printf("Perfil seleccionado: %s\n", controllerNames[selected]);
     std::printf("A: cambiar perfil   B: volver\n");
     std::printf("\nLos perfiles describen el mapeo previsto; no\n");
-    std::printf("significan que haya mandos Wii conectados por Bluetooth.");
+    std::printf("mean Wii controllers are connected over Bluetooth.");
 }
 
 void drawBalanceBoard(PrintConsole& top, PrintConsole& bottom) {
@@ -201,7 +201,7 @@ void drawBalanceDemo(PrintConsole& top, PrintConsole& bottom,
     std::printf("Tiempo estable cerca del centro: %u cuadros\n", stableFrames);
     std::printf("\nB: terminar demo y volver");
     std::printf("\nLos cuatro valores son calculados por software;\n");
-    std::printf("no proceden de sensores fisicos.");
+    std::printf("they do not come from physical sensors.");
 }
 
 } // namespace
