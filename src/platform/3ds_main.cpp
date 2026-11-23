@@ -90,7 +90,7 @@ int main() {
    if(down&KEY_A) {
     if(selected==0) panel=Panel::System;
     else if(selected==1) panel=Panel::LoadGame;
-    else if(selected==2) panel=Panel::Controllers;
+    else if(selected==2) panel=Panel::Controls;
     else if(selected==3) panel=Panel::Settings;
     else if(selected==4) panel=Panel::About;
    }
