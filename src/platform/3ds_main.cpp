@@ -24,7 +24,7 @@ constexpr const char* controllerNames[] = {
     "Nunchuk",
     "Classic Controller",
     "Classic Controller Pro",
-    "Wii MotionPlus (opcional)"
+    "Wii MotionPlus (optional)"
 };
 constexpr const char* controllerDetails[] = {
     "D-pad, A/B, +/-, HOME, 1/2, motion and IR pointer.",
@@ -59,60 +59,60 @@ void drawMenu(PrintConsole& top, PrintConsole& bottom, int selected,
     for (int i = 0; i < menuCount; ++i) {
         std::printf("%s %s\n", i == selected ? ">" : " ", menuItems[i]);
     }
-    std::printf("\nEstado del sistema: %s\n",
+    std::printf("\nSystem status: %s\n",
                 emulator.initialized() ? "initialized" : "not initialized");
-    std::printf("Build: homebrew experimental para 3DS\n");
+    std::printf("Build: experimental 3DS homebrew\n");
 
     consoleSelect(&bottom);
-    std::printf("CONTROLES\n");
-    std::printf("Cruceta: mover   A: seleccionar\n");
-    std::printf("B: volver        START: salir\n\n");
-    std::printf("Aviso: aun no ejecuta juegos comerciales de Wii.\n");
+    std::printf("CONTROLS\n");
+    std::printf("D-pad: move   A: select\n");
+    std::printf("B: back        START: exit\n\n");
+    std::printf("Note: commercial Wii games do not run yet.\n");
     std::printf("The included demo is a native 3DS minigame.");
 }
 
 void drawSystemStatus(PrintConsole& top, PrintConsole& bottom, const xavrx::Emulator& emulator) {
     clearScreens(top, bottom);
-    std::printf("ESTADO DEL SISTEMA WII\\n");
-    std::printf("==============================\\n");
-    std::printf("Inicializacion: %s\\n", emulator.initialized() ? "successful" : "failed");
-    std::printf("Memoria y dispositivos: modelo experimental\\n");
-    std::printf("CPU Broadway: nucleo en desarrollo\\n");
-    std::printf("CPU Starlet: nucleo en desarrollo\\n");
-    std::printf("GPU GX / DSP: en desarrollo\\n");
+    std::printf("WII SYSTEM STATUS\n");
+    std::printf("==============================\n");
+    std::printf("Initialization: %s\n", emulator.initialized() ? "successful" : "failed");
+    std::printf("Memory and devices: experimental model\n");
+    std::printf("Broadway CPU: core in development\n");
+    std::printf("Starlet CPU: core in development\n");
+    std::printf("GX GPU / DSP: in development\n");
     consoleSelect(&bottom);
-    std::printf("El sistema base puede inicializarse, pero aun no\\n");
-    std::printf("arranca el menu original de Wii ni carga juegos.\\n\\n");
+    std::printf("The base system can initialize, but it does not\n");
+    std::printf("boot the original Wii Menu or load games yet.\n\n");
     std::printf("B: volver");
 }
 
 void drawGames(PrintConsole& top, PrintConsole& bottom) {
     clearScreens(top, bottom);
-    std::printf("JUEGOS Y DEMOS\n");
+    std::printf("GAMES AND DEMOS\n");
     std::printf("==============================\n");
     std::printf("> XAVRX Balance Demo\n");
-    std::printf("  Estado: disponible para jugar\n");
-    std::printf("  Tipo: minijuego nativo de 3DS\n");
-    std::printf("\nA: iniciar demo   B: volver\n");
+    std::printf("  Status: ready to play\n");
+    std::printf("  Type: native 3DS minigame\n");
+    std::printf("\nA: start demo   B: back\n");
     consoleSelect(&bottom);
-    std::printf("IMPORTANTE\n");
-    std::printf("Esta demo permite probar el menu, la entrada analogica\n");
-    std::printf("y el medidor visual de cuatro sensores. No es Wii Fit\n");
+    std::printf("IMPORTANT\n");
+    std::printf("This demo tests the menu and analog input\n");
+    std::printf("and a four-sensor visual meter. It is not Wii Fit\n");
     std::printf("and cannot run Wii game files.");
 }
 
 void drawControllers(PrintConsole& top, PrintConsole& bottom, int selected) {
     clearScreens(top, bottom);
-    std::printf("MANDOS Y PERIFERICOS\n");
+    std::printf("CONTROLLERS AND PERIPHERALS\n");
     std::printf("==============================\n");
     for (int i = 0; i < 5; ++i) {
         std::printf("%s %s\n", i == selected ? ">" : " ", controllerNames[i]);
     }
     consoleSelect(&bottom);
     std::printf("%s\n\n", controllerDetails[selected]);
-    std::printf("Perfil seleccionado: %s\n", controllerNames[selected]);
-    std::printf("A: cambiar perfil   B: volver\n");
-    std::printf("\nLos perfiles describen el mapeo previsto; no\n");
+    std::printf("Selected profile: %s\n", controllerNames[selected]);
+    std::printf("A: change profile   B: back\n");
+    std::printf("\nThese profiles describe planned mappings; they do not\n");
     std::printf("mean Wii controllers are connected over Bluetooth.");
 }
 
@@ -120,50 +120,50 @@ void drawBalanceBoard(PrintConsole& top, PrintConsole& bottom) {
     clearScreens(top, bottom);
     std::printf("WII BALANCE BOARD\n");
     std::printf("==============================\n");
-    std::printf("Sensores: 4 celdas de carga\n");
-    std::printf("  Delantero izquierdo  [ FL ]\n");
-    std::printf("  Delantero derecho    [ FR ]\n");
-    std::printf("  Trasero izquierdo    [ RL ]\n");
-    std::printf("  Trasero derecho      [ RR ]\n");
-    std::printf("\nMedidor: disponible en modo DEMO\n");
+    std::printf("Sensors: 4 load cells\n");
+    std::printf("  Front left  [ FL ]\n");
+    std::printf("  Front right    [ FR ]\n");
+    std::printf("  Rear left    [ RL ]\n");
+    std::printf("  Rear right      [ RR ]\n");
+    std::printf("\nMeter: available in DEMO mode\n");
     consoleSelect(&bottom);
-    std::printf("Conexion fisica: no disponible en esta version.\n");
-    std::printf("El 2DS XL no incorpora los sensores de peso ni\n");
-    std::printf("un receptor compatible para la Balance Board.\n\n");
-    std::printf("A: abrir demo interactiva\n");
+    std::printf("Physical connection: unavailable in this version.\n");
+    std::printf("The 2DS XL has no weight sensors or\n");
+    std::printf("a compatible Balance Board receiver.\n\n");
+    std::printf("A: open interactive demo\n");
     std::printf("B: volver");
 }
 
 void drawSettings(PrintConsole& top, PrintConsole& bottom) {
     clearScreens(top, bottom);
-    std::printf("CONFIGURACION\n");
+    std::printf("SETTINGS\n");
     std::printf("==============================\n");
-    std::printf("Plataforma: Nintendo 3DS / 2DS\n");
-    std::printf("Pantalla: doble pantalla\n");
-    std::printf("Entrada local: botones + Circle Pad\n");
-    std::printf("Audio Wii: en desarrollo\n");
-    std::printf("Graficos GX: en desarrollo\n");
-    std::printf("Bluetooth Wii: no implementado\n");
+    std::printf("Platform: Nintendo 3DS / 2DS\n");
+    std::printf("Display: dual screens\n");
+    std::printf("Local input: buttons + Circle Pad\n");
+    std::printf("Wii audio: in development\n");
+    std::printf("GX graphics: in development\n");
+    std::printf("Wii Bluetooth: not implemented\n");
     consoleSelect(&bottom);
-    std::printf("Los ajustes avanzados se habilitaran conforme\n");
-    std::printf("se implementen los subsistemas del emulador.\n\n");
+    std::printf("Advanced settings will be added as\n");
+    std::printf("emulator subsystems are implemented.\n\n");
     std::printf("B: volver");
 }
 
 void drawAbout(PrintConsole& top, PrintConsole& bottom) {
     clearScreens(top, bottom);
-    std::printf("ACERCA DE XAVRX-WII\n");
+    std::printf("ABOUT XAVRX-WII\n");
     std::printf("==============================\n");
-    std::printf("Proyecto: emulador experimental de Wii\n");
+    std::printf("Project: experimental Wii emulator\n");
     std::printf("Version: %.*s\n",
                 static_cast<int>(xavrx::Emulator::version().size()),
                 xavrx::Emulator::version().data());
-    std::printf("Formato homebrew: .3dsx\n");
-    std::printf("Objetivo: modelado de hardware Wii\n");
+    std::printf("Homebrew format: .3dsx\n");
+    std::printf("Goal: Wii hardware modeling\n");
     consoleSelect(&bottom);
-    std::printf("La compilacion .3dsx confirma que la aplicacion\n");
-    std::printf("se construye para 3DS; no demuestra compatibilidad\n");
-    std::printf("con juegos comerciales ni rendimiento de Wii.\n\n");
+    std::printf("The .3dsx build confirms the app was\n");
+    std::printf("built for 3DS; it does not prove compatibility\n");
+    std::printf("with commercial games or Wii-level performance.\n\n");
     std::printf("B: volver");
 }
 
@@ -197,10 +197,10 @@ void drawBalanceDemo(PrintConsole& top, PrintConsole& bottom,
     std::printf("               ATRAS\n");
 
     consoleSelect(&bottom);
-    std::printf("Mueve el Circle Pad para desplazar la carga simulada.\n");
-    std::printf("Tiempo estable cerca del centro: %u cuadros\n", stableFrames);
-    std::printf("\nB: terminar demo y volver");
-    std::printf("\nLos cuatro valores son calculados por software;\n");
+    std::printf("Move the Circle Pad to shift the simulated load.\n");
+    std::printf("Stable time near center: %u frames\n", stableFrames);
+    std::printf("\nB: end demo and return");
+    std::printf("\nAll four values are calculated in software;\n");
     std::printf("they do not come from physical sensors.");
 }
 
