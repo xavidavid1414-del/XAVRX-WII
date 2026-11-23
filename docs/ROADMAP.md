@@ -1,25 +1,39 @@
-# XAVRX-WII — 20-Phase Roadmap
-A phase is complete only after implementation, automated checks, correction of discovered defects, and repeat verification. No phase is skipped.
+# XAVRX-WII — Ongoing Version Roadmap
 
-1. **Project foundation** — COMPLETE. Repository structure, C++20/CMake, architecture boundaries, smoke tests, CI.
-2. **CPU foundation** — COMPLETE. Gekko register model, CPU architectural state, condition-register access, and an initial instruction decode framework with focused tests.
-3. **PowerPC integer execution** — COMPLETE. Implemented and tested ADDI/ADDIS, immediate logical operations, ADD/SUBF, AND/OR/XOR, signed register CMP, CR updates, PC advancement, and safe rejection of unsupported encodings.
-4. **CPU control flow and exceptions** — COMPLETE. Implemented relative/absolute and conditional branches, LR/CTR indirect branches, TWI/TW traps, system-call/program/external exception entry, interrupt masking, SRR save/restore, and RFI with automated tests.
-5. **Memory subsystem** — COMPLETE. Added configurable 32-bit RAM range, big-endian 8/16/32/64-bit accessors, natural-alignment and bounds checks, explicit access results, non-overlapping memory-mapped device regions, and callback error propagation with automated tests.
-6. **System hardware model** — IN PROGRESS (expanded Wii scope). Implemented reference clock domains, generic timers/boot state, MEM1/MEM2 aliases, unified CPU-aware memory/MMIO dispatch, Hollywood dual-CPU IRQ and Starlet FIQ mask registers, CPU-owned IPC flags and IRQ routing, shared 24-pin GPIO with ownership and level-sensitive latched interrupts, Starlet timer/alarm IRQ 0, initial clock/reset register state, PPCKERN gating, per-engine PPC/IOP AHB permission decoding, SRNPROT SRAM-master gates for Broadway/USB1/flash-NAND/SHA/AES, composed WiiSystem initialization, and Starlet SRAM/BOOT0 mapping with mirrors and externally supplied ROM. Initial NAND page storage, SD block-image access, and an EHCI transfer queue with bounded completion backpressure are implemented as limited foundations. The next peripheral batch adds read-only DI image access, bounded WLAN SDIO function memory, and a small Bluetooth HCI command/event subset. Added an active-low Hollywood reset-line decoder with limited DSP/GPU reset side effects, a deterministic opaque-task DSP scheduler, a bounded GX command FIFO, Broadway DSP mailbox/PI/GX MMIO windows, and a first Broadway CPU fetch/execute path with LWZ/STW and cycle advancement; these are foundations, not functional DSP/GPU emulation. Still missing complete NAND/SD/USB/Wi-Fi/Bluetooth/disc controller behavior, DSP instruction/task execution, GX command processing and rendering, full PLL programming, complete peripheral reset sequencing, complete CPU/Starlet integration (a first Broadway fetch/step path now exists for the implemented instruction subset), and device timing. A watchdog has not been invented because no reliable watchdog register is established in the hardware register documentation used. Phase 7 remains blocked.
-7. **Boot and firmware interfaces** — documented boot flow and replaceable firmware/system interfaces.
-8. **Hollywood/GX command foundation** — command processor and validated command stream.
-9. **Graphics pipeline** — GX state model and primitive processing.
-10. **Texture and framebuffer support** — formats, sampling, framebuffer operations.
-11. **Audio DSP foundation** — DSP state, task interface, and timing model.
-12. **Audio output** — mixing, buffering, and host audio abstraction.
-13. **Wii Remote input** — buttons, pointer data, and sensor abstraction.
-14. **Controller support** — Nunchuk, Classic Controller, and GameCube controller abstractions.
-15. **Disc image support** — read-only parsing and access to user-supplied Wii disc images.
-16. **Executable loading and boot integration** — connect loader, memory, CPU, and system startup.
-17. **Timing and synchronization** — coordinate CPU, GPU, audio, and input deterministically.
-18. **Compatibility and regression suite** — reproducible subsystem tests and compatibility reporting.
-19. **Performance and stability** — profiling-led optimization, diagnostics, and robustness fixes.
-20. **Release preparation** — packaging, documentation, supported-feature matrix, and final verification.
+XAVRX-WII follows an open-ended sequence of versions: V1, V2, V3, and onward. There is no fixed number of versions or predetermined final release. Every version should preserve working features, add a clearly scoped improvement, run relevant tests, fix regressions, and document what remains incomplete.
 
-The roadmap is an engineering sequence, not a promise that full-speed or full-game compatibility is guaranteed. Wii emulation is a large, long-term undertaking.
+## V1 — 1.0.0-alpha.1
+
+Initial Nintendo 3DS / 2DS XL homebrew foundation.
+
+- C++20 project structure, CMake build, and automated test suite.
+- Nintendo 3DS homebrew target with a two-screen interface.
+- Initial Wii memory, Hollywood / Starlet, peripheral, and Broadway CPU models.
+- Controller profile screens and a native 3DS Balance Demo.
+- CI workflow targets for .3dsx and .cia packaging.
+
+**V1 status:** baseline source and packaging workflow are present. The latest build results must be checked before declaring each artifact verified. This is not a playable Wii emulator.
+
+## Next development targets
+
+These are continuing engineering priorities, not a finite phase count. Their order may change as tests expose dependencies.
+
+1. Finish and test the Wii hardware foundation: memory/MMIO behavior, clocks, reset sequencing, interrupt routing, timers, NAND, SD, USB, DI, WLAN, Bluetooth, and device timing.
+2. Expand Broadway PowerPC instruction coverage, exceptions, memory behavior, and CPU tests.
+3. Implement the Starlet ARM processor and the IOS-facing system interfaces needed for boot.
+4. Build the Hollywood GX command pipeline, graphics state, texture handling, and framebuffer output.
+5. Implement DSP task execution, audio processing, and synchronized output.
+6. Add Wii Remote, Nunchuk, Classic Controller, and other input paths with honest hardware capability reporting.
+7. Add safe read-only parsing for user-provided Wii disc images, followed by executable loading and boot integration.
+8. Improve deterministic timing, subsystem integration, compatibility tests, diagnostics, and performance.
+9. Verify 3DSX and CIA builds independently and test on real supported hardware where possible.
+
+## Release truthfulness
+
+- A successful C++ build or unit test does not prove Wii game compatibility.
+- A successful .3dsx or .cia packaging job proves only that the homebrew application was packaged.
+- Controller profiles are not Bluetooth connectivity unless a real transport and protocol implementation are present.
+- Simulated sensor values are not physical Balance Board measurements.
+- No version may claim to boot or run a Wii game until that behavior has been demonstrated by reproducible tests.
+
+Full-speed Wii emulation on Nintendo 2DS XL is a major technical challenge and is not guaranteed. Each release must state exactly what is implemented and what remains experimental.
