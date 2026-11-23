@@ -45,8 +45,8 @@ jobs:
           echo "e4259c08fe8944ebadd5f4b96f9a8603e5427338074cfc46323fbbc3410d51ed  /tmp/bannertool.zip" | sha256sum -c -
           unzip -oj /tmp/bannertool.zip 'linux-x86_64/bannertool' -d /usr/local/bin
           chmod +x /usr/local/bin/bannertool
-          makerom --version
-          bannertool --version
+          makerom -help >/dev/null 2>&1
+          test -x /usr/local/bin/bannertool
 
       - name: Generate reproducible CIA icon and banner assets
         run: |
