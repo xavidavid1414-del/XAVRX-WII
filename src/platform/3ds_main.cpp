@@ -3,7 +3,7 @@
 #include <cstdio>
 
 namespace {
-constexpr const char* menu[] = {"Start Wii System", "Load Game", "Controllers", "Settings", "About"};
+constexpr const char* menu[] = {"[PLAY]  Start Wii System", "[DISC]  Load Game", "[PAD]   Controllers", "[GEAR]  Settings", "[INFO]  About"};
 constexpr const char* categories[] = {"Controls", "Interface", "Audio", "Display", "Performance", "Other Settings"};
 constexpr const char* controls[] = {"Wii Remote", "Nunchuk", "Classic Controller", "Wii Remote + Nunchuk", "Controller Profiles", "Calibrate Controls"};
 constexpr const char* physical[] = {"A", "B", "X", "Y", "L", "R", "ZL", "ZR", "D-Pad", "Circle Pad", "C-Stick", "START", "SELECT", "HOME"};
@@ -19,10 +19,10 @@ int clampMap(int value) { return (value + 14) % 14; }
 
 void drawHome(PrintConsole& top, PrintConsole& bottom) {
  consoleSelect(&top); consoleClear();
- std::printf("XAVRX-WII | alpha.5\n");
- std::printf("================================================\n");
- std::printf("                    WII EMULATOR\n\n");
- for(int i=0;i<5;i++) std::printf("%s  %s\n", i==selected?">":" ", menu[i]);
+ std::printf("XAVRX-WII | alpha.6\n");
+ std::printf("\x1b[47;30m\n");
+ std::printf("              XAVRX-WII  [WII]\n\n");
+ for(int i=0;i<5;i++) std::printf("%s  %s\n", i==selected?" > ":"   ", menu[i]);
  std::printf("\n------------------------------------------------------------\n");
  std::printf("SYSTEM  Experimental Wii hardware model\n");
  std::printf("CPU     Broadway PowerPC core: partial\n");
@@ -54,7 +54,7 @@ void drawMapRows(const char* const* names, const int* values, int count, int bas
 
 void drawControllers(PrintConsole& top, PrintConsole& bottom) {
  consoleSelect(&top); consoleClear();
- std::printf("XAVRX-WII | alpha.5\n");
+ std::printf("XAVRX-WII | alpha.6\n");
  std::printf("================================================\n");
  std::printf("             NINTENDO 2DS XL CONTROLLER MAP\n\n");
  for(int i=0;i<6;i++) std::printf("%s  %s\n",i==control?">":" ",controls[i]);
