@@ -1,0 +1,114 @@
+BasicInfo:
+  Title                   : "XAVRX-WII"
+  CompanyCode             : "00"
+  ProductCode             : "CTR-P-XAVR"
+  ContentType             : Application
+  Logo                    : Homebrew
+
+RomFs:
+  RootPath                : "romfs"
+
+TitleInfo:
+  UniqueId                : 0xF00A1
+  Category                : Application
+
+CardInfo:
+  MediaSize               : 128MB
+  MediaType               : Card1
+  CardDevice              : None
+
+Option:
+  UseOnSD                 : true
+  FreeProductCode         : true
+  MediaFootPadding        : false
+  EnableCrypt             : false
+  EnableCompress          : true
+
+SystemControlInfo:
+  SaveDataSize            : 128KB
+  RemasterVersion         : 0
+  StackSize               : 0x40000
+
+AccessControlInfo:
+  FileSystemAccess:
+   - Debug
+   - DirectSdmc
+   - DirectSdmcWrite
+  IdealProcessor          : 0
+  AffinityMask             : 1
+  Priority                 : 16
+  MaxCpu                   : 0x9E
+  DisableDebug             : false
+  EnableForceDebug         : false
+  CanWriteSharedPage       : false
+  CanUsePrivilegedPriority : false
+  CanUseNonAlphabetAndNumber: false
+  PermitMainFunctionArgument: false
+  CanShareDeviceMemory     : false
+  RunnableOnSleep          : false
+  SpecialMemoryArrange    : false
+  CoreVersion              : 2
+  DescVersion              : 2
+  ReleaseKernelMajor       : "02"
+  ReleaseKernelMinor       : "33"
+  MemoryType               : Application
+  HandleTableSize          : 512
+  SystemModeExt            : Legacy
+  CpuSpeed                 : 268MHz
+  EnableL2Cache            : false
+  CanAccessCore2           : false
+  IORegisterMapping:
+   - 1ff50000-1ff57fff
+   - 1ff70000-1ff77fff
+  MemoryMapping:
+   - 1f000000-1f5fffff:r
+  SystemCallAccess:
+    ArbitrateAddress: 34
+    Break: 60
+    CancelTimer: 28
+    ClearEvent: 25
+    ClearTimer: 29
+    CloseHandle: 35
+    ConnectToPort: 45
+    ControlMemory: 1
+    CreateAddressArbiter: 33
+    CreateEvent: 23
+    CreateMemoryBlock: 30
+    CreateMutex: 19
+    CreateSemaphore: 21
+    CreateThread: 8
+    CreateTimer: 26
+    ExitProcess: 3
+    ExitThread: 9
+    GetCurrentProcessorNumber: 17
+    GetSystemTick: 40
+    MapMemoryBlock: 31
+    QueryMemory: 2
+    ReleaseMutex: 20
+    ReleaseSemaphore: 22
+    SendSyncRequest: 50
+    SetThreadPriority: 12
+    SleepThread: 10
+    UnmapMemoryBlock: 32
+    WaitSynchronization1: 36
+  InterruptNumbers:
+  ServiceAccessControl:
+   - APT:U
+   - ac:u
+   - cfg:u
+   - dsp::DSP
+   - fs:USER
+   - gsp::Gpu
+   - hid:USER
+   - ptm:u
+   - srv:
+   - csnd:SND
+  SystemControlInfo:
+    Dependency:
+      ac: 0x0004013000002402L
+      cfg: 0x0004013000001702L
+      csnd: 0x0004013000002702L
+      dsp: 0x0004013000001a02L
+      gsp: 0x0004013000001c02L
+      hid: 0x0004013000001d02L
+      ptm: 0x0004013000002202L
