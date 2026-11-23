@@ -23,7 +23,7 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-  build-3dsx:
+  build-3ds:
     runs-on: ubuntu-latest
     container:
       image: devkitpro/devkitarm:20260610
@@ -34,13 +34,61 @@ jobs:
       - name: Build Nintendo 3DS homebrew
         run: make -f 3ds/Makefile
 
-      - name: Verify 3DSX output
-        run: test -s XAVRX-WII.3dsx
+      - name: Install pinned CIA packaging tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends curl unzip python3
+          curl -fsSL -o /tmp/makerom.zip https://github.com/3DSGuy/Project_CTR/releases/download/makerom-v0.18.4/makerom-v0.18.4-ubuntu_x86_64.zip
+          unzip -oj /tmp/makerom.zip makerom -d /usr/local/bin
+          chmod +x /usr/local/bin/makerom
+          curl -fsSL -o /tmp/bannertool.zip https://github.com/Epicpkmn11/bannertool/releases/download/v1.2.2/bannertool.zip
+          echo "e4259c08fe8944ebadd5f4b96f9a8603e5427338074cfc46323fbbc3410d51ed  /tmp/bannertool.zip" | sha256sum -c -
+          unzip -oj /tmp/bannertool.zip 'linux-x86_64/bannertool' -d /usr/local/bin
+          chmod +x /usr/local/bin/bannertool
+          makerom --version
+          bannertool --version
 
-      - name: Upload 3DSX artifact
+      - name: Generate reproducible CIA icon and banner assets
+        run: |
+          python3 - <<'PY'
+          import struct, zlib, wave
+          from pathlib import Path
+          def png(path, w, h):
+              raw = bytearray()
+              for y in range(h):
+                  raw.append(0)
+                  for x in range(w):
+                      t = x / max(1, w - 1)
+                      raw.extend((int(4 + 20*t), int(55 + 115*t), int(130 + 110*(1-t))))
+              def chunk(kind, data):
+                  return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xffffffff)
+              data = b"\x89PNG\r\n\x1a\n"
+              data += chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+              data += chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+              data += chunk(b"IEND", b"")
+              Path(path).write_bytes(data)
+          png("3ds/icon.png", 48, 48)
+          png("3ds/banner.png", 256, 128)
+          with wave.open("3ds/banner.wav", "wb") as f:
+              f.setnchannels(1); f.setsampwidth(2); f.setframerate(22050)
+              f.writeframes(b"\x00\x00" * 22050)
+          PY
+          bannertool makesmdh -s "XAVRX-WII" -l "Wii emulator foundation for 3DS" -p "XAVRX-WII" -i 3ds/icon.png -o XAVRX-WII.icn
+          bannertool makebanner -i 3ds/banner.png -a 3ds/banner.wav -o XAVRX-WII.bnr
+
+      - name: Package installable CIA
+        run: |
+          makerom -f cia -o XAVRX-WII.cia -DAPP_ENCRYPTED=false -rsf 3ds/project.rsf -target t -exefslogo -elf XAVRX-WII.elf -icon XAVRX-WII.icn -banner XAVRX-WII.bnr
+          test -s XAVRX-WII.3dsx
+          test -s XAVRX-WII.cia
+          file XAVRX-WII.3dsx XAVRX-WII.cia
+
+      - name: Upload 3DSX and CIA artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: XAVRX-WII-3DSX
-          path: XAVRX-WII.3dsx
+          name: XAVRX-WII-3DS-Builds
+          path: |
+            XAVRX-WII.3dsx
+            XAVRX-WII.cia
           if-no-files-found: error
           retention-days: 14
