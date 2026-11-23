@@ -4,26 +4,25 @@ Experimental Nintendo Wii emulator project for Nintendo 3DS / 2DS XL, written in
 
 ## Version
 
-**V1 — 1.0.0-alpha.1**
+**V1 — 1.0.0-alpha.2**
 
-XAVRX-WII uses an open-ended version sequence: V1, V2, V3, and onward. Each new version should build on the previous one with additional implementation, tests, fixes, and verified improvements. There is no predetermined final version.
+The project uses an open-ended version sequence: alpha.3, alpha.4, and onward. Each release must add verified implementation and tests.
 
-## What V1 contains
+## Alpha.2 changes
 
-- Native Nintendo 3DS homebrew application with a two-screen text interface.
-- System initialization and an experimental Wii hardware model.
-- Initial Broadway PowerPC CPU state, decoder, execution and control-flow foundations.
-- Wii memory model and partial Hollywood / Starlet / peripheral models.
-- Controller profile screens for Wii Remote, Nunchuk and Classic Controller.
-- A native 3DS Balance Demo that uses the Circle Pad to simulate four load sensors.
-- Automated CMake test suite and Nintendo 3DS build workflow.
-- CI packaging targets for .3dsx and .cia; each artifact must be confirmed by a successful workflow run before it is called verified.
+- English dual-screen home menu with the complete main menu on the upper screen.
+- Touch target in the upper-right of the lower screen opens Settings.
+- Settings categories: Controls, Interface, Audio, Display, Performance, Other Settings.
+- Controls page lists Wii Remote, Nunchuk, Classic Controller, controller profiles, and calibration.
+- Load Game entry is present as a clearly marked placeholder.
 
-## Important limitations
+## Current implementation status
 
-V1 is an early foundation, **not a playable Wii emulator**. It does not currently boot the Wii System Menu or run commercial Wii games. The controller entries are profiles, not real Wii Bluetooth connections. The Balance Demo is a native 3DS simulation and does not read a physical Balance Board. CPU, GPU, DSP, IOS, firmware boot, disc loading, audio, and peripheral emulation are incomplete.
+The settings interface is a navigation shell. Its entries do not yet change real controller mappings, audio, display, or performance settings. Wii MotionPlus and Balance Board hardware support are not implemented. The current controls are not connected to real Wii Bluetooth devices.
 
-A successful .3dsx or .cia build proves that the homebrew application was packaged; it does not prove Wii game compatibility or playable performance on a 2DS XL.
+The Broadway CPU and Wii hardware models remain partial. **There is no complete Wii ISO/WBFS loader, no Wii boot process, and no verified Wii game execution in alpha.2.** The Load Game screen explicitly reports this limitation; it does not pretend to load a game.
+
+The existing Balance Demo from the earlier build is a native 3DS simulation, not a Wii title. A successful .3dsx or .cia build proves packaging only, not Wii game compatibility or playable performance on a 2DS XL.
 
 ## Build and test the desktop core
 
@@ -33,8 +32,6 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-Run xavrx-wii --version to print the project version. Run xavrx-wii to initialize the experimental hardware foundation.
-
 ## Nintendo 3DS / 2DS XL
 
 Build with devkitPro / devkitARM:
@@ -43,8 +40,4 @@ Build with devkitPro / devkitARM:
 make -f 3ds/Makefile
 ```
 
-The GitHub Actions workflow builds the .3dsx application and attempts to package a .cia. Check the workflow result and artifacts before installing.
-
-## Development
-
-See [architecture](docs/ARCHITECTURE.md), [CPU notes](docs/CPU.md), [system hardware notes](docs/SYSTEM_HARDWARE.md), and [the ongoing version roadmap](docs/ROADMAP.md). A new version is considered verified only after its relevant builds and automated tests pass, with remaining limitations clearly documented.
+Check the GitHub Actions run and inspect both generated packages before installing.
