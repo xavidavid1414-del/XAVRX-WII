@@ -124,7 +124,7 @@ jobs:
       - name: Read emulator version
         id: version
         run: |
-          VERSION=$(sed -n 's/.*return "\\([^"]*\\)".*/\\1/p' include/xavrx/core/emulator.hpp | head -n 1)
+          VERSION=$(grep -oE '"[0-9]+\\.[0-9]+\\.[0-9]+-alpha\\.[0-9]+"' include/xavrx/core/emulator.hpp | head -n 1 | tr -d '"')
           test -n "$VERSION"
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
