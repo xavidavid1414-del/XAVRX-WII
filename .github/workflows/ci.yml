@@ -112,18 +112,28 @@ jobs:
     needs: [build, build-3ds]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout source for version metadata
+        uses: actions/checkout@v4
+
       - name: Download verified 3DS artifacts
         uses: actions/download-artifact@v4
         with:
           name: XAVRX-WII-3DS-Builds
           path: release-files
 
+      - name: Read emulator version
+        id: version
+        run: |
+          VERSION=$(sed -n 's/.*return "\\([^"]*\\)".*/\\1/p' include/xavrx/core/emulator.hpp | head -n 1)
+          test -n "$VERSION"
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Publish GitHub prerelease
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0-alpha.1
+          tag_name: v${{ steps.version.outputs.value }}
           target_commitish: ${{ github.sha }}
-          name: XAVRX-WII V1.0.0-alpha.1
+          name: XAVRX-WII V${{ steps.version.outputs.value }}
           prerelease: true
           generate_release_notes: true
           overwrite_files: true
@@ -131,7 +141,7 @@ jobs:
             release-files/XAVRX-WII.3dsx
             release-files/XAVRX-WII.cia
           body: |
-            XAVRX-WII V1 alpha.
+            XAVRX-WII V${{ steps.version.outputs.value }}.
 
             Includes Nintendo 3DS homebrew packages (.3dsx and .cia).
             This release verifies compilation and packaging only. Wii game execution is not yet implemented or verified.
