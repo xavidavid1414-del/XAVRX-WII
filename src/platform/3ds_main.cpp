@@ -49,6 +49,26 @@ void frame(PrintConsole& top, PrintConsole& bottom) {
   }
  }
 }
+void drawControllers(PrintConsole& top, PrintConsole& bottom) {
+ consoleSelect(&top); consoleClear();
+ std::printf("XAVRX-WII                                      V1.0.0-alpha.3\\n");
+ std::printf("============================================================\\n");
+ std::printf("                    CONTROLLERS\\n\\n");
+ for(int i=0;i<5;i++) std::printf("%s  %s\\n",i==control?">":" ",controls[i]);
+ std::printf("\\nD-PAD: navigate   B: back\\n");
+ consoleSelect(&bottom); consoleClear();
+ std::printf("                 CONTROL DETAILS\\n");
+ std::printf("-------------------------------\\n");
+ if(control==0) {
+  for(int i=0;i<5;i++) std::printf("%s\\n",remote[i]);
+ } else if(control==1) {
+  for(int i=0;i<3;i++) std::printf("%s\\n",nunchuk[i]);
+ } else if(control==2) {
+  for(int i=0;i<4;i++) std::printf("%s\\n",classic[i]);
+ } else if(control==3) std::printf("Controller profile storage is not implemented.\\n");
+ else std::printf("Calibration is not implemented.\\n");
+ std::printf("\\nWii Bluetooth pairing is not implemented.\\n");
+}
 void drawSimple(PrintConsole& top, PrintConsole& bottom, const char* heading, const char* a, const char* b) {
  consoleSelect(&top); consoleClear(); std::printf("%s\n================================\n%s\n%s\n",heading,a,b);
  consoleSelect(&bottom); consoleClear(); std::printf("B: back");
