@@ -6,7 +6,7 @@
 namespace xavrx {
 class Emulator final {
 public:
- [[nodiscard]] static constexpr std::string_view version() noexcept{return "1.0.0-alpha.1";}
+ [[nodiscard]] static constexpr std::string_view version() noexcept{return "1.0.0-alpha.2";}
  [[nodiscard]] bool initialize() noexcept;
  [[nodiscard]] bool initialized() const noexcept;
  [[nodiscard]] system::WiiSystem* system() noexcept{return system_.get();}
