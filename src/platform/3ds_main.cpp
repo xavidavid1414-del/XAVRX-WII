@@ -1,316 +1,102 @@
 #include "xavrx/core/emulator.hpp"
-
 #include <3ds.h>
-#include <algorithm>
-#include <cmath>
 #include <cstdio>
+#include <cstring>
 
 namespace {
-
-enum class Screen { Menu, SystemStatus, Games, Controllers, BalanceBoard, Settings, About, BalanceDemo };
-
-constexpr const char* menuItems[] = {
-    "Start Wii system",
-    "Games / demos",
-    "Controllers",
-    "Wii Balance Board",
-    "Settings",
-    "About"
-};
-constexpr int menuCount = static_cast<int>(sizeof(menuItems) / sizeof(menuItems[0]));
-
-constexpr const char* controllerNames[] = {
-    "Wii Remote",
-    "Nunchuk",
-    "Classic Controller",
-    "Classic Controller Pro",
-    "Wii MotionPlus (optional)"
-};
-constexpr const char* controllerDetails[] = {
-    "D-pad, A/B, +/-, HOME, 1/2, motion and IR pointer.",
-    "Analog stick, C/Z and accelerometer.",
-    "Dual sticks, D-pad, A/B/X/Y, L/R/ZL/ZR, +/- and HOME.",
-    "Dual sticks, D-pad, A/B/X/Y, L/R/ZL/ZR, +/- and HOME.",
-    "Motion extension for the Wii Remote."
-};
-
-void clearScreens(PrintConsole& top, PrintConsole& bottom) {
-    consoleSelect(&top);
-    consoleClear();
-    consoleSelect(&bottom);
-    consoleClear();
-    consoleSelect(&top);
+constexpr const char* menu[] = {"Start Wii System", "Load Game", "Controllers", "Settings", "About"};
+constexpr const char* categories[] = {"Controls", "Interface", "Audio", "Display", "Performance", "Other Settings"};
+constexpr const char* controls[] = {"Wii Remote", "Nunchuk", "Classic Controller", "Controller Profiles", "Calibrate Controls"};
+constexpr const char* remote[] = {"Button Mapping", "Pointer Sensitivity", "Motion Sensitivity", "Speaker Volume", "Rumble"};
+constexpr const char* nunchuk[] = {"Analog Stick Sensitivity", "C Button Mapping", "Z Button Mapping"};
+constexpr const char* classic[] = {"Button Mapping", "Left Stick Sensitivity", "Right Stick Sensitivity", "Trigger Sensitivity"};
+enum class Panel { Home, Settings, Controls, About, LoadGame, System };
+int selected=0, category=0, control=0;
+bool settingsOpen=false;
+void frame(PrintConsole& top, PrintConsole& bottom) {
+ consoleSelect(&top); consoleClear();
+ std::printf("XAVRX-WII                                      V1.0.0-alpha.2\n");
+ std::printf("============================================================\n");
+ std::printf("                    WII EMULATOR\n\n");
+ for(int i=0;i<5;i++) std::printf("%s  %s\n", i==selected?">":" ", menu[i]);
+ std::printf("\n------------------------------------------------------------\n");
+ std::printf("SYSTEM  Experimental Wii hardware model\n");
+ std::printf("CPU     Broadway PowerPC core: partial\n");
+ std::printf("GAMES   Wii disc loading: not implemented\n");
+ std::printf("\nD-PAD: navigate     A: select     START: exit\n");
+ consoleSelect(&bottom); consoleClear();
+ std::printf("                                           [ SETTINGS ]\n");
+ std::printf("                                      Touch the gear area\n");
+ std::printf("\n\n");
+ if(!settingsOpen) {
+  std::printf("                 XAVRX CONTROL PANEL\n\n");
+  std::printf("             Select the gear to open settings.\n");
+  std::printf("             The lower screen is touch-enabled.\n");
+ } else {
+  std::printf("                 SETTINGS\n");
+  std::printf("-------------------------------\n");
+  for(int i=0;i<6;i++) std::printf("%s %s\n", i==category?">":" ", categories[i]);
+  std::printf("\nTap a category to open it. B: close\n");
+  if(category==0) {
+   std::printf("\nCONTROLS\n");
+   for(int i=0;i<5;i++) std::printf("%s %s\n", i==control?">":" ", controls[i]);
+   std::printf("\nWii Remote / Nunchuk / Classic Controller\n");
+   std::printf("Profiles and calibration are listed here.\n");
+  } else {
+   std::printf("\n%s\n", categories[category]);
+   std::printf("Options will become active as their\n");
+   std::printf("corresponding subsystem is implemented.\n");
+  }
+ }
 }
-
-void present() {
-    gfxFlushBuffers();
-    gfxSwapBuffers();
-    gspWaitForVBlank();
+void drawSimple(PrintConsole& top, PrintConsole& bottom, const char* heading, const char* a, const char* b) {
+ consoleSelect(&top); consoleClear(); std::printf("%s\n================================\n%s\n%s\n",heading,a,b);
+ consoleSelect(&bottom); consoleClear(); std::printf("B: back");
 }
-
-void drawMenu(PrintConsole& top, PrintConsole& bottom, int selected,
-              const xavrx::Emulator& emulator) {
-    clearScreens(top, bottom);
-    std::printf("XAVRX-WII  |  HOME MENU\n");
-    std::printf("==============================\n");
-    std::printf("Nintendo 3DS / 2DS - version %.*s\n\n",
-                static_cast<int>(xavrx::Emulator::version().size()),
-                xavrx::Emulator::version().data());
-    for (int i = 0; i < menuCount; ++i) {
-        std::printf("%s %s\n", i == selected ? ">" : " ", menuItems[i]);
-    }
-    std::printf("\nSystem status: %s\n",
-                emulator.initialized() ? "initialized" : "not initialized");
-    std::printf("Build: experimental 3DS homebrew\n");
-
-    consoleSelect(&bottom);
-    std::printf("CONTROLS\n");
-    std::printf("D-pad: move   A: select\n");
-    std::printf("B: back        START: exit\n\n");
-    std::printf("Note: commercial Wii games do not run yet.\n");
-    std::printf("The included demo is a native 3DS minigame.");
 }
-
-void drawSystemStatus(PrintConsole& top, PrintConsole& bottom, const xavrx::Emulator& emulator) {
-    clearScreens(top, bottom);
-    std::printf("WII SYSTEM STATUS\n");
-    std::printf("==============================\n");
-    std::printf("Initialization: %s\n", emulator.initialized() ? "successful" : "failed");
-    std::printf("Memory and devices: experimental model\n");
-    std::printf("Broadway CPU: core in development\n");
-    std::printf("Starlet CPU: core in development\n");
-    std::printf("GX GPU / DSP: in development\n");
-    consoleSelect(&bottom);
-    std::printf("The base system can initialize, but it does not\n");
-    std::printf("boot the original Wii Menu or load games yet.\n\n");
-    std::printf("B: back");
-}
-
-void drawGames(PrintConsole& top, PrintConsole& bottom) {
-    clearScreens(top, bottom);
-    std::printf("GAMES AND DEMOS\n");
-    std::printf("==============================\n");
-    std::printf("> XAVRX Balance Demo\n");
-    std::printf("  Status: ready to play\n");
-    std::printf("  Type: native 3DS minigame\n");
-    std::printf("\nA: start demo   B: back\n");
-    consoleSelect(&bottom);
-    std::printf("IMPORTANT\n");
-    std::printf("This demo tests the menu and analog input\n");
-    std::printf("and a four-sensor visual meter. It is not Wii Fit\n");
-    std::printf("and cannot run Wii game files.");
-}
-
-void drawControllers(PrintConsole& top, PrintConsole& bottom, int selected) {
-    clearScreens(top, bottom);
-    std::printf("CONTROLLERS AND PERIPHERALS\n");
-    std::printf("==============================\n");
-    for (int i = 0; i < 5; ++i) {
-        std::printf("%s %s\n", i == selected ? ">" : " ", controllerNames[i]);
-    }
-    consoleSelect(&bottom);
-    std::printf("%s\n\n", controllerDetails[selected]);
-    std::printf("Selected profile: %s\n", controllerNames[selected]);
-    std::printf("A: change profile   B: back\n");
-    std::printf("\nThese profiles describe planned mappings; they do not\n");
-    std::printf("mean Wii controllers are connected over Bluetooth.");
-}
-
-void drawBalanceBoard(PrintConsole& top, PrintConsole& bottom) {
-    clearScreens(top, bottom);
-    std::printf("WII BALANCE BOARD\n");
-    std::printf("==============================\n");
-    std::printf("Sensors: 4 load cells\n");
-    std::printf("  Front left  [ FL ]\n");
-    std::printf("  Front right    [ FR ]\n");
-    std::printf("  Rear left    [ RL ]\n");
-    std::printf("  Rear right      [ RR ]\n");
-    std::printf("\nMeter: available in DEMO mode\n");
-    consoleSelect(&bottom);
-    std::printf("Physical connection: unavailable in this version.\n");
-    std::printf("The 2DS XL has no weight sensors or\n");
-    std::printf("a compatible Balance Board receiver.\n\n");
-    std::printf("A: open interactive demo\n");
-    std::printf("B: back");
-}
-
-void drawSettings(PrintConsole& top, PrintConsole& bottom) {
-    clearScreens(top, bottom);
-    std::printf("SETTINGS\n");
-    std::printf("==============================\n");
-    std::printf("Platform: Nintendo 3DS / 2DS\n");
-    std::printf("Display: dual screens\n");
-    std::printf("Local input: buttons + Circle Pad\n");
-    std::printf("Wii audio: in development\n");
-    std::printf("GX graphics: in development\n");
-    std::printf("Wii Bluetooth: not implemented\n");
-    consoleSelect(&bottom);
-    std::printf("Advanced settings will be added as\n");
-    std::printf("emulator subsystems are implemented.\n\n");
-    std::printf("B: back");
-}
-
-void drawAbout(PrintConsole& top, PrintConsole& bottom) {
-    clearScreens(top, bottom);
-    std::printf("ABOUT XAVRX-WII\n");
-    std::printf("==============================\n");
-    std::printf("Project: experimental Wii emulator\n");
-    std::printf("Version: %.*s\n",
-                static_cast<int>(xavrx::Emulator::version().size()),
-                xavrx::Emulator::version().data());
-    std::printf("Homebrew format: .3dsx\n");
-    std::printf("Goal: Wii hardware modeling\n");
-    consoleSelect(&bottom);
-    std::printf("The .3dsx build confirms the app was\n");
-    std::printf("built for 3DS; it does not prove compatibility\n");
-    std::printf("with commercial games or Wii-level performance.\n\n");
-    std::printf("B: back");
-}
-
-void drawBalanceDemo(PrintConsole& top, PrintConsole& bottom,
-                     float& x, float& y, unsigned int stableFrames) {
-    circlePosition circle{};
-    hidCircleRead(&circle);
-    x = std::clamp(static_cast<float>(circle.dx) / 156.0f, -1.0f, 1.0f);
-    y = std::clamp(-static_cast<float>(circle.dy) / 156.0f, -1.0f, 1.0f);
-
-    constexpr float quarterLoad = 12.5f;
-    const float fl = quarterLoad * (1.0f - x) * (1.0f - y);
-    const float fr = quarterLoad * (1.0f + x) * (1.0f - y);
-    const float rl = quarterLoad * (1.0f - x) * (1.0f + y);
-    const float rr = quarterLoad * (1.0f + x) * (1.0f + y);
-
-    clearScreens(top, bottom);
-    std::printf("XAVRX BALANCE DEMO\n");
-    std::printf("==============================\n");
-    std::printf("MEDIDOR SIMULADO - NO ES PESO REAL\n\n");
-    std::printf("Carga total ficticia: 50.0 kg\n");
-    std::printf("FL: %5.1f kg     FR: %5.1f kg\n", fl, fr);
-    std::printf("RL: %5.1f kg     RR: %5.1f kg\n", rl, rr);
-    std::printf("\nCentro de presion simulado\n");
-    std::printf("X: %+0.2f     Y: %+0.2f\n", x, y);
-    std::printf("\n");
-    std::printf("              ADELANTE\n");
-    std::printf("        [ FL ]       [ FR ]\n");
-    std::printf("              +\n");
-    std::printf("        [ RL ]       [ RR ]\n");
-    std::printf("               ATRAS\n");
-
-    consoleSelect(&bottom);
-    std::printf("Move the Circle Pad to shift the simulated load.\n");
-    std::printf("Stable time near center: %u frames\n", stableFrames);
-    std::printf("\nB: end demo and return");
-    std::printf("\nAll four values are calculated in software;\n");
-    std::printf("they do not come from physical sensors.");
-}
-
-} // namespace
 
 int main() {
-    gfxInitDefault();
-    PrintConsole topConsole{};
-    PrintConsole bottomConsole{};
-    consoleInit(GFX_TOP, &topConsole);
-    consoleInit(GFX_BOTTOM, &bottomConsole);
-
-    xavrx::Emulator emulator;
-    (void)emulator.initialize();
-
-    int selected = 0;
-    int controllerSelected = 0;
-    Screen screen = Screen::Menu;
-    float demoX = 0.0f;
-    float demoY = 0.0f;
-    unsigned int stableFrames = 0;
-
-    while (aptMainLoop()) {
-        hidScanInput();
-        const u32 down = hidKeysDown();
-
-        if ((down & KEY_START) != 0) {
-            break;
-        }
-
-        switch (screen) {
-        case Screen::Menu:
-            if ((down & KEY_UP) != 0) selected = (selected + menuCount - 1) % menuCount;
-            if ((down & KEY_DOWN) != 0) selected = (selected + 1) % menuCount;
-            if ((down & KEY_A) != 0) {
-                switch (selected) {
-                case 0: screen = Screen::SystemStatus; break;
-                case 1: screen = Screen::Games; break;
-                case 2: screen = Screen::Controllers; break;
-                case 3: screen = Screen::BalanceBoard; break;
-                case 4: screen = Screen::Settings; break;
-                case 5: screen = Screen::About; break;
-                default: break;
-                }
-            }
-            drawMenu(topConsole, bottomConsole, selected, emulator);
-            break;
-
-        case Screen::SystemStatus:
-            if ((down & KEY_B) != 0) screen = Screen::Menu;
-            if (screen == Screen::SystemStatus) drawSystemStatus(topConsole, bottomConsole, emulator);
-            break;
-
-        case Screen::Games:
-            if ((down & KEY_A) != 0) {
-                screen = Screen::BalanceDemo;
-                stableFrames = 0;
-            } else if ((down & KEY_B) != 0) {
-                screen = Screen::Menu;
-            }
-            if (screen == Screen::Games) drawGames(topConsole, bottomConsole);
-            break;
-
-        case Screen::Controllers:
-            if ((down & KEY_UP) != 0) controllerSelected = (controllerSelected + 4) % 5;
-            if ((down & KEY_DOWN) != 0) controllerSelected = (controllerSelected + 1) % 5;
-            if ((down & KEY_A) != 0) controllerSelected = (controllerSelected + 1) % 5;
-            if ((down & KEY_B) != 0) screen = Screen::Menu;
-            if (screen == Screen::Controllers) drawControllers(topConsole, bottomConsole, controllerSelected);
-            break;
-
-        case Screen::BalanceBoard:
-            if ((down & KEY_A) != 0) {
-                screen = Screen::BalanceDemo;
-                stableFrames = 0;
-            } else if ((down & KEY_B) != 0) {
-                screen = Screen::Menu;
-            }
-            if (screen == Screen::BalanceBoard) drawBalanceBoard(topConsole, bottomConsole);
-            break;
-
-        case Screen::Settings:
-            if ((down & KEY_B) != 0) screen = Screen::Menu;
-            if (screen == Screen::Settings) drawSettings(topConsole, bottomConsole);
-            break;
-
-        case Screen::About:
-            if ((down & KEY_B) != 0) screen = Screen::Menu;
-            if (screen == Screen::About) drawAbout(topConsole, bottomConsole);
-            break;
-
-        case Screen::BalanceDemo: {
-            circlePosition circle{};
-            hidCircleRead(&circle);
-            const float nx = static_cast<float>(circle.dx) / 156.0f;
-            const float ny = static_cast<float>(circle.dy) / 156.0f;
-            if (std::abs(nx) < 0.15f && std::abs(ny) < 0.15f) ++stableFrames;
-            else stableFrames = 0;
-            if ((down & KEY_B) != 0) {
-                screen = Screen::Games;
-                break;
-            }
-            drawBalanceDemo(topConsole, bottomConsole, demoX, demoY, stableFrames);
-            break;
-        }
-        }
-
-        present();
+ gfxInitDefault();
+ PrintConsole top{}, bottom{};
+ consoleInit(GFX_TOP,&top); consoleInit(GFX_BOTTOM,&bottom);
+ xavrx::Emulator emulator; (void)emulator.initialize();
+ Panel panel=Panel::Home;
+ while(aptMainLoop()) {
+  hidScanInput(); const u32 down=hidKeysDown();
+  if(down&KEY_START) break;
+  if(panel==Panel::Home) {
+   if(down&KEY_UP) selected=(selected+4)%5;
+   if(down&KEY_DOWN) selected=(selected+1)%5;
+   if(down&KEY_A) {
+    if(selected==0) panel=Panel::System;
+    else if(selected==1) panel=Panel::LoadGame;
+    else if(selected==3) {settingsOpen=true;panel=Panel::Settings;}
+    else if(selected==4) panel=Panel::About;
+   }
+   touchPosition touch{};
+   if(down&KEY_TOUCH) { hidTouchRead(&touch); if(touch.px>=270 && touch.py<=42) {settingsOpen=true;panel=Panel::Settings;} }
+   frame(top,bottom);
+  } else if(panel==Panel::Settings) {
+   touchPosition touch{};
+   if(down&KEY_TOUCH) {
+    hidTouchRead(&touch);
+    if(touch.px>=270 && touch.py<=42) {settingsOpen=false;panel=Panel::Home;}
+    else if(touch.py>=58 && touch.py<208) {
+     int pick=(touch.py-58)/25; if(pick>=0&&pick<6) category=pick;
+     else if(category==0) control=(touch.py-58)/25;
     }
-
-    gfxExit();
-    return 0;
+   }
+   if(down&KEY_B) {settingsOpen=false;panel=Panel::Home;}
+   if(down&KEY_UP) category=(category+5)%6;
+   if(down&KEY_DOWN) category=(category+1)%6;
+   frame(top,bottom);
+  } else {
+   if(down&KEY_B) panel=Panel::Home;
+   if(panel==Panel::System) drawSimple(top,bottom,"WII SYSTEM STATUS",emulator.initialized()?"Hardware initialization: OK":"Hardware initialization: FAILED","Broadway / Hollywood / Starlet remain partial.");
+   if(panel==Panel::LoadGame) drawSimple(top,bottom,"LOAD WII GAME","No Wii ISO/WBFS loader is available yet.","Disc parsing and game execution are not implemented.");
+   if(panel==Panel::About) drawSimple(top,bottom,"ABOUT XAVRX-WII","Experimental Wii emulator for Nintendo 3DS.","Build package does not imply Wii game compatibility.");
+  }
+  gfxFlushBuffers(); gfxSwapBuffers(); gspWaitForVBlank();
+ }
+ gfxExit(); return 0;
 }
