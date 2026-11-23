@@ -22,7 +22,7 @@ void drawHome(PrintConsole& top, PrintConsole& bottom) {
  std::printf("XAVRX-WII | alpha.6\n");
  std::printf("              XAVRX-WII  [WII]\n\n");
  for(int i=0;i<5;i++) std::printf("%s  %s\n", i==selected?" > ":"   ", menu[i]);
- std::printf("\n----------------------------------------\n");
+ std::printf("\n");
  std::printf("SYSTEM  Experimental Wii hardware model\n");
  std::printf("CPU     Broadway PowerPC core: partial\n");
  std::printf("GAMES   Wii disc loading: not implemented\n");
@@ -54,13 +54,13 @@ void drawMapRows(const char* const* names, const int* values, int count, int bas
 void drawControllers(PrintConsole& top, PrintConsole& bottom) {
  consoleSelect(&top); std::printf("\x1b[47;30m"); consoleClear();
  std::printf("XAVRX-WII | alpha.6\n");
- std::printf("================================================\n");
+ std::printf("\n");
  std::printf("          [PAD]  2DS XL CONTROLS\n\n");
  for(int i=0;i<6;i++) std::printf("%s  %s\n",i==control?">":" ",controls[i]);
  std::printf("\nUP/DOWN: controller  L/R: mapping row\nB: back  A: change selected mapping  X: reset\n");
 
  consoleSelect(&bottom); consoleClear();
- std::printf(" [PAD] %s\n------------------------------\n", controls[control]);
+ std::printf(" [PAD] %s\n", controls[control]);
  if(control==0) {
   drawMapRows(remoteNames,remoteMap,8,0,mappingRow);
  } else if(control==1) {
@@ -112,7 +112,7 @@ void resetMapping() {
  }
 }
 void drawSimple(PrintConsole& top, PrintConsole& bottom, const char* heading, const char* a, const char* b) {
- consoleSelect(&top); std::printf("\x1b[47;30m"); consoleClear(); std::printf("%s\n----------------------------------------\n%s\n%s\n",heading,a,b);
+ consoleSelect(&top); std::printf("\x1b[47;30m"); consoleClear(); std::printf("%s\n%s\n%s\n",heading,a,b);
  consoleSelect(&bottom); consoleClear(); std::printf("B: back");
 }
 }
