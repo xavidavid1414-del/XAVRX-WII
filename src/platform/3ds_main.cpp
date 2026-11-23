@@ -83,7 +83,7 @@ void drawSystemStatus(PrintConsole& top, PrintConsole& bottom, const xavrx::Emul
     consoleSelect(&bottom);
     std::printf("The base system can initialize, but it does not\n");
     std::printf("boot the original Wii Menu or load games yet.\n\n");
-    std::printf("B: volver");
+    std::printf("B: back");
 }
 
 void drawGames(PrintConsole& top, PrintConsole& bottom) {
@@ -131,7 +131,7 @@ void drawBalanceBoard(PrintConsole& top, PrintConsole& bottom) {
     std::printf("The 2DS XL has no weight sensors or\n");
     std::printf("a compatible Balance Board receiver.\n\n");
     std::printf("A: open interactive demo\n");
-    std::printf("B: volver");
+    std::printf("B: back");
 }
 
 void drawSettings(PrintConsole& top, PrintConsole& bottom) {
@@ -147,7 +147,7 @@ void drawSettings(PrintConsole& top, PrintConsole& bottom) {
     consoleSelect(&bottom);
     std::printf("Advanced settings will be added as\n");
     std::printf("emulator subsystems are implemented.\n\n");
-    std::printf("B: volver");
+    std::printf("B: back");
 }
 
 void drawAbout(PrintConsole& top, PrintConsole& bottom) {
@@ -164,7 +164,7 @@ void drawAbout(PrintConsole& top, PrintConsole& bottom) {
     std::printf("The .3dsx build confirms the app was\n");
     std::printf("built for 3DS; it does not prove compatibility\n");
     std::printf("with commercial games or Wii-level performance.\n\n");
-    std::printf("B: volver");
+    std::printf("B: back");
 }
 
 void drawBalanceDemo(PrintConsole& top, PrintConsole& bottom,
