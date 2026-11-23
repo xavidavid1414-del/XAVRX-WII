@@ -135,7 +135,7 @@ int main() {
     if(selected==0) panel=Panel::System;
     else if(selected==1) panel=Panel::LoadGame;
     else if(selected==2) { panel=Panel::Controls; control=0; mappingRow=0; }
-    else if(selected==3) panel=Panel::Settings;
+    else if(selected==3) { panel=Panel::Settings; settingsOpen=true; }
     else panel=Panel::About;
    }
    touchPosition touch{};
