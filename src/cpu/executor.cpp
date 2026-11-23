@@ -102,6 +102,39 @@ ExecutionResult IntegerExecutor::execute(std::uint32_t word, CpuState& state) no
         write_result = logical_destination_ra = true;
         update_condition = record_form(word);
         break;
+
+    case InstructionId::MoveFromCr:
+        result = state.condition_register();
+        write_result = true;
+        break;
+    case InstructionId::MoveToCrFields: {
+        const auto mask = (word >> 12U) & 0xFFU;
+        for (unsigned i = 0; i < 8U; ++i) {
+            if ((mask & (1U << (7U - i))) != 0U) {
+                const auto shift = (7U - i) * 4U;
+                state.set_condition_field(i, static_cast<std::uint8_t>((state.gpr(rs) >> shift) & 0xFU));
+            }
+        }
+        break;
+    }
+    case InstructionId::MoveFromSpr: {
+        const auto spr = ((word >> 16U) & 0x1FU) | ((word >> 6U) & 0x3E0U);
+        if (spr == 1U) result = state.xer();
+        else if (spr == 8U) result = state.lr();
+        else if (spr == 9U) result = state.ctr();
+        else return ExecutionResult::UnsupportedEncoding;
+        write_result = true;
+        break;
+    }
+    case InstructionId::MoveToSpr: {
+        const auto spr = ((word >> 16U) & 0x1FU) | ((word >> 6U) & 0x3E0U);
+        const auto value = state.gpr(rs);
+        if (spr == 1U) state.set_xer(value);
+        else if (spr == 8U) state.set_lr(value);
+        else if (spr == 9U) state.set_ctr(value);
+        else return ExecutionResult::UnsupportedEncoding;
+        break;
+    }
     case InstructionId::Compare: {
         if ((word & (1U << 21U)) != 0U) return ExecutionResult::UnsupportedEncoding;
         const auto lhs = std::bit_cast<std::int32_t>(state.gpr(ra));
